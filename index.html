@@ -3,7 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Chitra Gupta's Lekha-Jokha: Astra Claims</title>
+<title>Karmo Ka HisabKitab: Astra Claims</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#1B2545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HisabKitab">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
@@ -42,6 +50,8 @@ h1 span{display:block;font-size:.45em;font-weight:500;color:var(--muted);margin-
 .meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}
 button{font-family:var(--body);font-size:13px;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 14px}
 button:hover{border-color:var(--saffron)}
+#installBtn{background:var(--saffron);border-color:var(--saffron);color:#1B2545;font-weight:600}
+[hidden]{display:none!important}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
 
 /* Summary */
@@ -110,9 +120,10 @@ footer{margin-top:24px;font-size:12.5px;color:var(--muted);text-align:center}
 <body>
 <div class="wrap">
   <header>
-    <h1>Chitra Gupta's Lekha-Jokha<span>Astra claims and their verification status</span></h1>
+    <h1>Karmo Ka HisabKitab<span>Astra claims and their verification status</span></h1>
     <div class="meta">
       <span id="updated">Loading…</span>
+      <button id="installBtn" type="button" hidden>Install app</button>
       <button id="refreshBtn" type="button">Refresh</button>
     </div>
   </header>
@@ -398,6 +409,20 @@ $("nextBtn").addEventListener("click", () => { page++; renderTable(); window.scr
 function sortBy(key){ if (sortKey === key) sortDir = -sortDir; else { sortKey = key; sortDir = 1; } apply(false); }
 $("thead").addEventListener("click", e => { const th = e.target.closest("th"); if (th) sortBy(th.dataset.key); });
 $("thead").addEventListener("keydown", e => { const th = e.target.closest("th"); if (th && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); sortBy(th.dataset.key); } });
+
+/* Installable app */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; $("installBtn").hidden = false; });
+$("installBtn").addEventListener("click", async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null; $("installBtn").hidden = true;
+});
+window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; });
 
 renderTable();
 load(false);
