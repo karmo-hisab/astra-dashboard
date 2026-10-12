@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chitra Gupta's Lekha-Jokha: Astra Claims</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2545; --paper:#F7F8FB; --card:#FFFFFF; --line:#DDE2EC; --muted:#5D6785;
+  --saffron:#D98E04;
+  --ok:#1F7A4D;  --ok-bg:#E3F3EA;
+  --bad:#B23A2B; --bad-bg:#FBE7E3;
+  --wait:#8A6100;--wait-bg:#FBF1D9;
+  --neutral-bg:#EEF0F5;
+  --display:"Rajdhani","Arial Narrow",Arial,sans-serif;
+  --body:"Hind","Segoe UI",Roboto,Arial,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E6E9F5; --paper:#11162A; --card:#181F38; --line:#2A3354; --muted:#9AA3C2; --saffron:#F0A82A;
+    --ok:#5FD39A; --ok-bg:#163A2A; --bad:#F08A7B; --bad-bg:#3E1D1A; --wait:#F2C562; --wait-bg:#3A3015; --neutral-bg:#222A47;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E6E9F5; --paper:#11162A; --card:#181F38; --line:#2A3354; --muted:#9AA3C2; --saffron:#F0A82A;
+  --ok:#5FD39A; --ok-bg:#163A2A; --bad:#F08A7B; --bad-bg:#3E1D1A; --wait:#F2C562; --wait-bg:#3A3015; --neutral-bg:#222A47;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:13.5px;line-height:1.45}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 40px}
+
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(24px,3vw,32px);line-height:1;margin:0}
+h1 span{display:block;font-size:.45em;font-weight:500;color:var(--muted);margin-top:6px}
+.meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}
+button{font-family:var(--body);font-size:13px;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 14px}
+button:hover{border-color:var(--saffron)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
+
+/* Summary */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border:1px solid var(--line);border-top:4px solid var(--saffron);border-radius:10px;margin-bottom:18px}
+.stat{padding:10px 14px}
+.stat+.stat{border-left:1px solid var(--line)}
+.stat h2{font-family:var(--display);font-size:14.5px;font-weight:600;margin:0;color:var(--muted)}
+.stat .big{font-family:var(--display);font-size:26px;font-weight:700;line-height:1.15}
+.types{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.type{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px}
+.type h3{font-family:var(--display);font-size:14px;font-weight:600;margin:0;color:var(--muted)}
+.type .big{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.15}
+.type .sub{font-size:12px;color:var(--muted)}
+.type .sub b{color:var(--ok);font-weight:600}
+.stat.ok .big{color:var(--ok)} .stat.bad .big{color:var(--bad)} .stat.wait .big{color:var(--wait)}
+
+/* Filters */
+.filters{display:grid;grid-template-columns:1.6fr repeat(6,minmax(0,1fr)) auto;gap:10px;margin-bottom:14px}
+label.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}
+input,select{font-family:var(--body);font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);width:100%;min-width:0}
+.filters button{align-self:end;height:33px}
+.resultbar{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:14px;color:var(--muted)}
+
+/* Table */
+.tablebox{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:1100px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12.5px}
+th{position:sticky;top:0;background:var(--card);font-family:var(--display);font-weight:600;font-size:15px;white-space:nowrap;cursor:pointer;user-select:none;font-size:13.5px}
+th .arr{color:var(--saffron);margin-left:4px}
+tbody tr.row-bad{background:var(--bad-bg)}
+tbody tr.row-wait{background:var(--wait-bg)}
+tbody tr.row-ok{background:var(--ok-bg)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+td.name{font-weight:600}
+.badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:500;background:var(--card)}
+.badge.ok{color:var(--ok)} .badge.bad{color:var(--bad)} .badge.wait{color:var(--wait)} .badge.neutral{color:var(--muted)}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.pager{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:14px;font-size:14px;color:var(--muted)}
+
+.notice{padding:16px 18px;border-radius:10px;margin-bottom:16px;font-size:14.5px}
+.notice.err{background:var(--bad-bg);color:var(--bad)}
+.notice.load{background:var(--card);border:1px solid var(--line);color:var(--muted)}
+.bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:30%;background:var(--saffron);animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+@media (prefers-reduced-motion: reduce){.bar i{animation:none;width:100%}}
+footer{margin-top:24px;font-size:12.5px;color:var(--muted);text-align:center}
+
+@media (max-width: 860px){
+  .stats{grid-template-columns:1fr 1fr}
+  .stat+.stat{border-left:none}
+  .stat{border-bottom:1px solid var(--line)}
+  .stat:first-child{grid-column:1/-1}
+  .types{grid-template-columns:1fr 1fr}
+  .filters{grid-template-columns:1fr 1fr}
+  .filters label.f:first-child{grid-column:1/-1}
+  .tablebox{background:none;border:none;overflow:visible}
+  table{min-width:0}
+  thead{display:none}
+  tbody tr{display:block;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:8px 4px}
+  td{display:grid;grid-template-columns:42% 1fr;gap:8px;border:none;padding:4px 10px}
+  td::before{content:attr(data-label);color:var(--muted);font-size:13px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Chitra Gupta's Lekha-Jokha<span>Astra claims and their verification status</span></h1>
+    <div class="meta">
+      <span id="updated">Loading…</span>
+      <button id="refreshBtn" type="button">Refresh</button>
+    </div>
+  </header>
+
+  <div id="notice"></div>
+
+  <section class="stats" aria-label="Summary for the current filters">
+    <div class="stat"><h2>Total claims</h2><div class="big" id="sTotal">0</div></div>
+    <div class="stat ok"><h2>Hit 💯</h2><div class="big" id="sHit">0</div></div>
+    <div class="stat bad"><h2>Miss 💔</h2><div class="big" id="sMiss">0</div></div>
+    <div class="stat wait"><h2>Pending</h2><div class="big" id="sPend">0</div></div>
+    <div class="stat ok"><h2>Astra fired (Used)</h2><div class="big" id="sFired">0</div></div>
+  </section>
+
+  <section class="types" aria-label="Claims by type" id="types"></section>
+
+  <div class="filters">
+    <label class="f">Search name, UID, application number or Astra ID
+      <input id="q" type="search" placeholder="e.g. Suraj, 29187, C26906642" autocomplete="off">
+    </label>
+    <label class="f">Dronacharya (Coordinator)<select id="fDrona"></select></label>
+    <label class="f">Sarathi (Team Leader)<select id="fSarathi"></select></label>
+    <label class="f">Hit or Miss
+      <select id="fResult">
+        <option value="">All</option>
+        <option value="ok">Hit</option>
+        <option value="bad">Miss</option>
+        <option value="wait">Pending</option>
+      </select>
+    </label>
+    <label class="f">Payment month<select id="fMonth"></select></label>
+    <label class="f">Claim date from<input id="dFrom" type="date"></label>
+    <label class="f">Claim date to<input id="dTo" type="date"></label>
+    <button id="resetBtn" type="button">Clear</button>
+  </div>
+
+  <div class="resultbar">
+    <span id="count"></span>
+    <span>Tap a column heading to sort</span>
+  </div>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr id="thead"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <button id="prevBtn" type="button">Previous</button>
+    <span id="pageInfo"></span>
+    <button id="nextBtn" type="button">Next</button>
+  </div>
+
+  <footer>Updates automatically every 10 minutes. New claims can take 5–10 minutes to appear.</footer>
+</div>
+
+<script>
+/* ================== SETTINGS ================== */
+const SHEET_ID  = "1cbiaWIg9FKRd5mybYKuxGdc1Ziw0s0hFvEq_0u_qaaQ";
+const SHEET_TAB = "Imported Claimed Data";
+const PAGE_SIZE = 50;
+const REFRESH_MINUTES = 10;
+
+/* Sheet columns read by the page. hidden = used for filters only, not shown in the table */
+const COLS = [
+  {key:"name",    label:"Claimed name",          col:"M"},
+  {key:"uid",     label:"UID",                   col:"L", num:true},
+  {key:"claim",   label:"Claim",                 col:"E"},
+  {key:"app",     label:"Application No.",       col:"C", num:true},
+  {key:"astra",   label:"Astra ID",              col:"N", num:true},
+  {key:"paid",    label:"Actual payment date & time", col:"Q", date:true},
+  {key:"drona",   label:"Dronacharya",           col:"J"},
+  {key:"final",   label:"Hit (💯) or Miss (💔)", col:"V", status:true},
+  {key:"fired",   label:"Astra ID fired",        col:"W", fired:true},
+  {key:"sarathi", label:"Sarathi",               col:"I", hidden:true},
+  {key:"month",   label:"Payment month",         col:"O", hidden:true},
+];
+/* ============================================== */
+
+const SHOWN = COLS.filter(c => !c.hidden);
+const $ = id => document.getElementById(id);
+let ALL = [], VIEW = [], page = 1, sortKey = "_ts", sortDir = -1;
+
+/* Final status from column V, e.g. "Step1: Approved, Step2: To be evaluated"
+   Hit     = Step 1 AND Step 2 both Approved
+   Pending = any step still to be evaluated / pending / clash / with quality assurance
+   Miss    = everything else (rejection reasons) */
+function statusClass(v){
+  const s = (v || "").replace(/\s+/g, " ").trim().toLowerCase();
+  if (!s) return "wait";
+  const m = s.match(/step\s*1\s*:?\s*(.*?)[,\s]*step\s*2\s*:?\s*(.*)$/);
+  const s1 = m ? m[1].replace(/[,.\s]+$/, "").trim() : s;
+  const s2 = m ? m[2].replace(/[,.\s]+$/, "").trim() : "";
+  if (s1 === "approved" && s2 === "approved") return "ok";
+  if (/(to be evaluated|pending|clash|quality assurance)/.test(s)) return "wait";
+  return "bad";
+}
+/* Astra ID fired status: "Used" = fired successfully; "Unused" / "Astra not fired till now" = not fired */
+function isFired(v){ return (v || "").trim().toLowerCase() === "used"; }
+
+/* Claim types */
+const TYPES = [
+  {match:/arrow/i,        label:"LPUNEST Application 🎯"},
+  {match:/brahmast/i,     label:"Admission 🏹"},
+  {match:/akshaya/i,      label:"Mess 🍜"},
+  {match:/naga\s*pasha/i, label:"Hostel 🐍"},
+];
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function showNotice(kind, html){ $("notice").innerHTML = html ? '<div class="notice ' + kind + '">' + html + '</div>' : ""; }
+
+/* Loads the sheet through Google's script (JSONP) endpoint, which browsers don't block */
+function fetchSheet(){
+  return new Promise((resolve, reject) => {
+    const cb = "__astraCb" + Date.now();
+    const s = document.createElement("script");
+    const timer = setTimeout(() => { cleanup(); reject(new Error("no response from Google; check sharing")); }, 45000);
+    function cleanup(){ clearTimeout(timer); try{ delete window[cb]; }catch(_){ window[cb] = undefined; } s.remove(); }
+    window[cb] = data => { cleanup(); resolve(data); };
+    s.onerror = () => { cleanup(); reject(new Error("request blocked or sheet not shared")); };
+    const query = "select " + COLS.map(c => c.col).join(",") + ",A where A is not null";
+    s.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq" +
+            "?tqx=" + encodeURIComponent("out:json;responseHandler:" + cb) +
+            "&headers=1&sheet=" + encodeURIComponent(SHEET_TAB) +
+            "&tq=" + encodeURIComponent(query) + "&_=" + Date.now();
+    document.head.appendChild(s);
+  });
+}
+function cellText(c){ if (!c) return ""; if (c.f != null) return String(c.f); return c.v == null ? "" : String(c.v); }
+function cellTs(c){
+  if (!c || c.v == null) return 0;
+  const m = String(c.v).match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/);
+  if (m) return new Date(+m[1], +m[2], +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0)).getTime();
+  const d = Date.parse(cellText(c)); return isNaN(d) ? 0 : d;
+}
+
+async function load(isBackground){
+  if (!isBackground) showNotice("load", "Loading claims from the sheet…<div class='bar'><i></i></div>");
+  $("refreshBtn").disabled = true;
+  try{
+    const data = await fetchSheet();
+    if (data.status === "error"){
+      const e = data.errors && data.errors[0];
+      throw new Error((e && (e.detailed_message || e.message)) || "sheet error");
+    }
+    const fresh = [];
+    for (const row of (data.table && data.table.rows) || []){
+      const r = row.c || [], o = {};
+      COLS.forEach((c, i) => o[c.key] = cellText(r[i]).trim());
+      o._ts = cellTs(r[COLS.length]);
+      o._paidTs = cellTs(r[COLS.findIndex(c => c.key === "paid")]);
+      if (!o.name && !o.app && !o._ts) continue;
+      o._res = statusClass(o.final);
+      o._search = [o.name, o.uid, o.app, o.astra].join(" ").toLowerCase();
+      fresh.push(o);
+    }
+    if (isBackground && ALL.length && fresh.length < ALL.length * 0.9) return; // keep old data if fetch looks incomplete
+    assignTeams(fresh);
+    ALL = fresh;
+    buildOptions();
+    apply(false);
+    showNotice("", "");
+    $("updated").textContent = "Updated " + new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+  }catch(e){
+    if (!ALL.length || !isBackground){
+      showNotice("err", "<b>Could not load claims from the Google Sheet.</b><br>Check that the sheet is shared as <i>Anyone with the link: Viewer</i> and the tab is named <i>" +
+        esc(SHEET_TAB) + "</i>, then press Refresh. (" + esc(e.message) + ")");
+    }
+  }finally{ $("refreshBtn").disabled = false; }
+}
+
+/* Team structure: Dronacharya (coordinator) -> Sarathi (team leader) -> counselors.
+   A blank Sarathi means the claim was made by the team leader, so it belongs to their own team. */
+function uidOf(text){ const m = String(text || "").match(/(\d{3,})\s*$/); return m ? m[1] : ""; }
+function assignTeams(rows){
+  const names = new Map();
+  for (const r of rows) if (r.sarathi){
+    const u = uidOf(r.sarathi) || r.sarathi;
+    if (!names.has(u)) names.set(u, r.sarathi.replace(/\s*:\s*\d+\s*$/, "").trim());
+  }
+  for (const r of rows){
+    r._isTL = !r.sarathi;
+    r._team = r._isTL ? (r.uid || r.name) : (uidOf(r.sarathi) || r.sarathi);
+    if (!names.has(r._team)) names.set(r._team, r.name || r._team);
+  }
+  for (const r of rows) r._teamLabel = names.get(r._team) + (/^\d+$/.test(r._team) ? " : " + r._team : "");
+}
+
+const DROPDOWNS = [
+  {id:"fDrona",   key:"drona"},
+  {id:"fSarathi", key:"_team", labelKey:"_teamLabel", dependsOn:"fDrona"},
+  {id:"fMonth",   key:"month"},
+];
+function buildOptions(){
+  for (const f of DROPDOWNS){
+    const sel = $(f.id), cur = sel.value, labels = new Map();
+    const parentVal = f.dependsOn ? $(f.dependsOn).value : "";
+    for (const r of ALL){
+      if (parentVal && (r.drona || "(blank)") !== parentVal) continue;
+      const v = r[f.key] || "(blank)";
+      if (!labels.has(v)) labels.set(v, f.labelKey ? r[f.labelKey] : v);
+    }
+    const vals = [...labels.keys()].sort((a,b) => String(labels.get(a)).localeCompare(String(labels.get(b)), undefined, {numeric:true}));
+    sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '">' + esc(labels.get(v)) + '</option>').join("");
+    if (vals.includes(cur)) sel.value = cur;
+  }
+}
+
+function apply(resetPage = true){
+  const q = $("q").value.trim().toLowerCase();
+  const res = $("fResult").value;
+  const active = DROPDOWNS.map(f => ({key:f.key, val:$(f.id).value})).filter(f => f.val);
+  /* Date range uses the claim submission date (Timestamp, column A) */
+  const from = $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null;
+  const to   = $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null;
+  VIEW = ALL.filter(r => {
+    if (q && !r._search.includes(q)) return false;
+    if (from !== null && r._ts < from) return false;
+    if (to !== null && r._ts > to) return false;
+    if (res && (res === "wait" ? (r._res === "ok" || r._res === "bad") : r._res !== res)) return false;
+    for (const f of active) if ((r[f.key] || "(blank)") !== f.val) return false;
+    return true;
+  });
+  const col = COLS.find(c => c.key === sortKey);
+  VIEW.sort((a, b) => {
+    let x = a[sortKey], y = b[sortKey];
+    if (col && col.date){ x = a._paidTs; y = b._paidTs; }
+    else if (col && col.num){
+      const nx = parseFloat(String(x).replace(/[^\d.]/g, "")), ny = parseFloat(String(y).replace(/[^\d.]/g, ""));
+      if (!isNaN(nx) && !isNaN(ny)){ x = nx; y = ny; }
+    }
+    if (x < y) return -sortDir;
+    if (x > y) return sortDir;
+    return b._ts - a._ts;
+  });
+  if (resetPage) page = 1;
+  let hit = 0, miss = 0;
+  for (const r of VIEW){ if (r._res === "ok") hit++; else if (r._res === "bad") miss++; }
+  $("sTotal").textContent = VIEW.length.toLocaleString();
+  $("sHit").textContent = hit.toLocaleString();
+  $("sMiss").textContent = miss.toLocaleString();
+  $("sPend").textContent = (VIEW.length - hit - miss).toLocaleString();
+  $("sFired").textContent = VIEW.reduce((n, r) => n + (isFired(r.fired) ? 1 : 0), 0).toLocaleString();
+  $("types").innerHTML = TYPES.map(t => {
+    let n = 0, h = 0;
+    for (const r of VIEW){ if (t.match.test(r.claim)){ n++; if (r._res === "ok") h++; } }
+    return '<div class="type"><h3>' + t.label + '</h3><div class="big">' + n.toLocaleString() +
+           '</div><div class="sub"><b>' + h.toLocaleString() + '</b> hit</div></div>';
+  }).join("");
+  renderTable();
+}
+
+function renderTable(){
+  $("thead").innerHTML = SHOWN.map(c => '<th scope="col" tabindex="0" data-key="' + c.key + '">' + esc(c.label) +
+    (sortKey === c.key ? '<span class="arr">' + (sortDir === 1 ? "▲" : "▼") + '</span>' : "") + '</th>').join("");
+  const pages = Math.max(1, Math.ceil(VIEW.length / PAGE_SIZE));
+  page = Math.min(page, pages);
+  const slice = VIEW.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  $("tbody").innerHTML = !slice.length
+    ? '<tr><td class="empty" colspan="' + SHOWN.length + '">' + (ALL.length ? "No claims match. Press Clear to see all claims." : "No claims loaded yet.") + '</td></tr>'
+    : slice.map(r => '<tr class="row-' + r._res + '">' + SHOWN.map(c => {
+        const v = r[c.key];
+        const cls = (c.num || c.date) ? "num" : (c.key === "name" ? "name" : "");
+        const inner = c.status ? '<span class="badge ' + r._res + '">' + esc(v || "No status") + '</span>'
+                    : c.fired  ? '<span class="badge ' + (isFired(v) ? "ok" : "neutral") + '">' + esc(v || "No status") + '</span>'
+                    : (v ? esc(v) : '<span style="color:var(--muted)">–</span>');
+        return '<td class="' + cls + '" data-label="' + esc(c.label) + '">' + inner + '</td>';
+      }).join("") + '</tr>').join("");
+  $("count").textContent = VIEW.length.toLocaleString() + " of " + ALL.length.toLocaleString() + " claims";
+  $("pageInfo").textContent = "Page " + page + " of " + pages;
+  $("prevBtn").disabled = page <= 1;
+  $("nextBtn").disabled = page >= pages;
+}
+
+let t;
+$("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); });
+["fSarathi","fResult","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
+$("fDrona").addEventListener("change", () => { buildOptions(); apply(); });  // team leader list follows the coordinator
+$("resetBtn").addEventListener("click", () => { $("q").value = ""; ["fDrona","fSarathi","fResult","fMonth","dFrom","dTo"].forEach(id => $(id).value = ""); buildOptions(); apply(); });
+$("refreshBtn").addEventListener("click", () => load(false));
+$("prevBtn").addEventListener("click", () => { page--; renderTable(); window.scrollTo({top:0}); });
+$("nextBtn").addEventListener("click", () => { page++; renderTable(); window.scrollTo({top:0}); });
+function sortBy(key){ if (sortKey === key) sortDir = -sortDir; else { sortKey = key; sortDir = 1; } apply(false); }
+$("thead").addEventListener("click", e => { const th = e.target.closest("th"); if (th) sortBy(th.dataset.key); });
+$("thead").addEventListener("keydown", e => { const th = e.target.closest("th"); if (th && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); sortBy(th.dataset.key); } });
+
+renderTable();
+load(false);
+setInterval(() => load(true), REFRESH_MINUTES * 60000 + Math.floor(Math.random() * 120000));
+</script>
+</body>
+</html>
