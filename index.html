@@ -532,7 +532,7 @@ function cell(c, r){
     case "name":  return '<span class="who"><b>' + esc(v || "–") + '</b><small>UID ' + esc(r.uid || "–") + '</small></span>';
     case "claim": { const t = TYPES.find(t => t.match.test(v || ""));
                     return t ? '<span class="tag neutral" style="font-weight:500;color:var(--ink)">' + icon(t.icon) + esc(t.label) + '</span>' : esc(v || "–"); }
-    case "app":   return '<span class="mask" title="Masked for privacy">' + esc(maskApp(v)) + '</span>';
+    case "app":   return '<span class="mask">' + esc(v || "–") + '</span>';
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
                          (v ? '<span class="reason">' + esc(v) + '</span>' : "");
     case "fired": return '<span class="tag ' + (isFired(v) ? "ok" : "neutral") + '">' + icon(isFired(v) ? "fired" : "notfired") + esc(firedLabel(v)) + '</span>';
