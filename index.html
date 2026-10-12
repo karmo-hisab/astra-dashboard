@@ -286,12 +286,17 @@ footer b{color:var(--muted);font-weight:600}
 <!--PREVIEW_SCRIPT-->
 <script>
 /* ================== SETTINGS ================== */
-/* Claims come from data.json, which a GitHub Action builds from the Google Sheet every 10 minutes.
-   The sheet ID is stored as a GitHub secret, so it is not in this page. */
-const DATA_URL = "data.json";
+const SHEET_ID  = "1cbiaWIg9FKRd5mybYKuxGdc1Ziw0s0hFvEq_0u_qaaQ";
+const SHEET_TAB = "Imported Claimed Data";
 const PAGE_SIZE = 50;
 const REFRESH_MINUTES = 10;
 
+/* Sheet columns read by the page (order matters for loading) */
+const FIELDS = [
+  {key:"name",    col:"M"}, {key:"uid",   col:"L"}, {key:"claim", col:"E"}, {key:"app",   col:"C"},
+  {key:"astra",   col:"N"}, {key:"paid",  col:"Q"}, {key:"drona", col:"J"}, {key:"final", col:"V"},
+  {key:"fired",   col:"W"}, {key:"sarathi", col:"I"}, {key:"month", col:"O"},
+];
 /* Table columns shown */
 const SHOWN = [
   {key:"name",  label:"Counselor"},
@@ -353,19 +358,29 @@ function showNotice(kind, html){ $("notice").innerHTML = html ? '<div class="not
 const fmt = n => Number(n).toLocaleString("en-IN");
 const pct = (a, b) => b ? Math.round(a * 100 / b) + "%" : "–";
 
-/* Loads data.json (built by the GitHub Action) and turns it into claim objects */
-async function fetchClaims(){
-  const res = await fetch(DATA_URL, {cache:"no-cache"});
-  if (!res.ok) throw new Error("data file not found (" + res.status + ")");
-  const data = await res.json();
-  const F = {}; data.fields.forEach((f, i) => F[f] = i);
-  const D = data.dict;
-  const rows = data.rows.map(r => ({
-    _ts: r[F.ts], name: r[F.name], uid: r[F.uid], claim: D.claim[r[F.claim]], app: r[F.app], astra: r[F.astra],
-    paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
-    fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]]
-  }));
-  return {rows, updated: data.updated};
+/* Loads the sheet through Google's script (JSONP) endpoint, which browsers don't block */
+function fetchSheet(){
+  return new Promise((resolve, reject) => {
+    const cb = "__astraCb" + Date.now();
+    const s = document.createElement("script");
+    const timer = setTimeout(() => { cleanup(); reject(new Error("no response from Google; check sharing")); }, 45000);
+    function cleanup(){ clearTimeout(timer); try{ delete window[cb]; }catch(_){ window[cb] = undefined; } s.remove(); }
+    window[cb] = data => { cleanup(); resolve(data); };
+    s.onerror = () => { cleanup(); reject(new Error("request blocked or sheet not shared")); };
+    const query = "select " + FIELDS.map(c => c.col).join(",") + ",A where A is not null";
+    s.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq" +
+            "?tqx=" + encodeURIComponent("out:json;responseHandler:" + cb) +
+            "&headers=1&sheet=" + encodeURIComponent(SHEET_TAB) +
+            "&tq=" + encodeURIComponent(query) + "&_=" + Date.now();
+    document.head.appendChild(s);
+  });
+}
+function cellText(c){ if (!c) return ""; if (c.f != null) return String(c.f); return c.v == null ? "" : String(c.v); }
+function cellTs(c){
+  if (!c || c.v == null) return 0;
+  const m = String(c.v).match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/);
+  if (m) return new Date(+m[1], +m[2], +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0)).getTime();
+  const d = Date.parse(cellText(c)); return isNaN(d) ? 0 : d;
 }
 
 function setUpdated(text, loading){
@@ -378,9 +393,17 @@ async function load(isBackground){
   setUpdated("Updating…", true);
   $("refreshBtn").disabled = true;
   try{
-    const {rows, updated} = await fetchClaims();
+    const data = await fetchSheet();
+    if (data.status === "error"){
+      const e = data.errors && data.errors[0];
+      throw new Error((e && (e.detailed_message || e.message)) || "sheet error");
+    }
     const fresh = [];
-    for (const o of rows){
+    for (const row of (data.table && data.table.rows) || []){
+      const r = row.c || [], o = {};
+      FIELDS.forEach((c, i) => o[c.key] = cellText(r[i]).trim());
+      o._ts = cellTs(r[FIELDS.length]);
+      o._paidTs = cellTs(r[FIELDS.findIndex(c => c.key === "paid")]);
       if (!o.name && !o.app && !o._ts) continue;
       o._res = statusClass(o.final);
       o._search = [o.name, o.uid, o.app, o.astra].join(" ").toLowerCase();
@@ -392,12 +415,12 @@ async function load(isBackground){
     buildOptions();
     apply(false);
     showNotice("", "");
-    setUpdated("Data as of " + updated, false);
+    setUpdated("Updated " + new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}), false);
   }catch(e){
     setUpdated("Not updated", false);
     if (!ALL.length || !isBackground){
-      showNotice("err", "<b>Couldn't load the claims data.</b><br>Select Refresh to try again. If this keeps happening, " +
-        "check the Actions tab on GitHub: the data update job may have stopped. (" + esc(e.message) + ")");
+      showNotice("err", "<b>Couldn't load claims from the Google Sheet.</b><br>Check that the sheet is shared as <i>Anyone with the link: Viewer</i> and the tab is named <i>" +
+        esc(SHEET_TAB) + "</i>, then select Refresh. (" + esc(e.message) + ")");
     }
   }finally{ $("refreshBtn").disabled = false; }
 }
@@ -480,7 +503,6 @@ function apply(resetPage = true){
   $("sHit").textContent = fmt(hit);   $("sHitSub").textContent = pct(hit, decided) + " of decided";
   $("sMiss").textContent = fmt(miss); $("sMissSub").textContent = pct(miss, decided) + " of decided";
   $("sPend").textContent = fmt(pend); $("sPendSub").textContent = pct(pend, VIEW.length) + " of all claims";
-  /* Share of Hits whose Astra ID has been used; only counts claims that are both Hit and Used, so it never exceeds 100% */
   $("sFired").textContent = fmt(fired);
   $("sFiredSub").textContent = pct(firedHit, hit) + " of hits fired" + (fired > firedHit ? ", " + fmt(fired - firedHit) + " not Hit" : "");
   const w = n => VIEW.length ? (n * 100 / VIEW.length) + "%" : "0";
