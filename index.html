@@ -52,6 +52,11 @@ button{font-family:var(--body);font-size:13px;cursor:pointer;border-radius:6px;b
 button:hover{border-color:var(--saffron)}
 #installBtn{background:var(--saffron);border-color:var(--saffron);color:#1B2545;font-weight:600}
 [hidden]{display:none!important}
+.help{background:var(--card);border:1px solid var(--saffron);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13.5px;position:relative}
+.help h3{font-family:var(--display);font-size:16px;margin:0 0 6px}
+.help ol{margin:0;padding-left:20px}
+.help li{margin:3px 0}
+.help .close{position:absolute;top:8px;right:8px;padding:2px 9px}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
 
 /* Summary */
@@ -123,11 +128,12 @@ footer{margin-top:24px;font-size:12.5px;color:var(--muted);text-align:center}
     <h1>Karmo Ka HisabKitab<span>Astra claims and their verification status</span></h1>
     <div class="meta">
       <span id="updated">Loading…</span>
-      <button id="installBtn" type="button" hidden>Install app</button>
+      <button id="installBtn" type="button">📲 Install app</button>
       <button id="refreshBtn" type="button">Refresh</button>
     </div>
   </header>
 
+  <div id="installHelp" class="help" hidden></div>
   <div id="notice"></div>
 
   <section class="stats" aria-label="Summary for the current filters">
@@ -415,14 +421,40 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 let installPrompt = null;
-window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; $("installBtn").hidden = false; });
+const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+if (standalone) $("installBtn").hidden = true;   // already opened as the installed app
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; });
+
+function installSteps(){
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const android = /Android/i.test(ua);
+  if (ios) return ["Open this page in <b>Safari</b> (not Chrome).",
+                   "Tap the <b>Share</b> button (square with an arrow).",
+                   "Tap <b>Add to Home Screen</b>, then <b>Add</b>."];
+  if (android) return ["Open this page in <b>Chrome</b>.",
+                       "Tap the <b>⋮</b> menu at the top right.",
+                       "Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>."];
+  return ["Use <b>Chrome</b> or <b>Edge</b>.",
+          "Click the install icon at the right end of the address bar,",
+          "or open the <b>⋮</b> / <b>…</b> menu and choose <b>Cast, save and share → Install page</b> (Chrome) or <b>Apps → Install this site as an app</b> (Edge)."];
+}
 $("installBtn").addEventListener("click", async () => {
-  if (!installPrompt) return;
-  installPrompt.prompt();
-  await installPrompt.userChoice;
-  installPrompt = null; $("installBtn").hidden = true;
+  if (installPrompt){
+    installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    installPrompt = null;
+    if (choice && choice.outcome === "accepted") $("installBtn").hidden = true;
+    return;
+  }
+  const box = $("installHelp");
+  box.innerHTML = '<button class="close" type="button" aria-label="Close">✕</button>' +
+    '<h3>Install Karmo Ka HisabKitab</h3><ol>' + installSteps().map(x => '<li>' + x + '</li>').join("") + '</ol>';
+  box.hidden = false;
+  box.querySelector(".close").addEventListener("click", () => { box.hidden = true; });
+  box.scrollIntoView({behavior:"smooth", block:"start"});
 });
-window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; });
+window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; $("installHelp").hidden = true; });
 
 renderTable();
 load(false);
