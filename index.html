@@ -470,14 +470,19 @@ function apply(resetPage = true){
   if (resetPage) page = 1;
 
   // Summary
-  let hit = 0, miss = 0, fired = 0;
-  for (const r of VIEW){ if (r._res === "ok") hit++; else if (r._res === "bad") miss++; if (isFired(r.fired)) fired++; }
+  let hit = 0, miss = 0, fired = 0, firedHit = 0;
+  for (const r of VIEW){
+    if (r._res === "ok") hit++; else if (r._res === "bad") miss++;
+    if (isFired(r.fired)){ fired++; if (r._res === "ok") firedHit++; }
+  }
   const pend = VIEW.length - hit - miss, decided = hit + miss;
   $("sTotal").textContent = fmt(VIEW.length);
   $("sHit").textContent = fmt(hit);   $("sHitSub").textContent = pct(hit, decided) + " of decided";
   $("sMiss").textContent = fmt(miss); $("sMissSub").textContent = pct(miss, decided) + " of decided";
   $("sPend").textContent = fmt(pend); $("sPendSub").textContent = pct(pend, VIEW.length) + " of all claims";
-  $("sFired").textContent = fmt(fired); $("sFiredSub").textContent = pct(fired, hit) + " of hits";
+  /* Share of Hits whose Astra ID has been used; only counts claims that are both Hit and Used, so it never exceeds 100% */
+  $("sFired").textContent = fmt(fired);
+  $("sFiredSub").textContent = pct(firedHit, hit) + " of hits fired" + (fired > firedHit ? ", " + fmt(fired - firedHit) + " not Hit" : "");
   const w = n => VIEW.length ? (n * 100 / VIEW.length) + "%" : "0";
   $("sMix").innerHTML = '<span class="ok" style="width:' + w(hit) + '"></span><span class="bad" style="width:' + w(miss) +
                         '"></span><span class="wait" style="width:' + w(pend) + '"></span>';
