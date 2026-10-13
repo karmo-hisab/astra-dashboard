@@ -583,6 +583,7 @@ const normName = s => String(s || "").toLowerCase().replace(/^\s*(dr|prof|mr|ms|
 const catOf = c => /arrow/i.test(c || "") ? "app" : /brahmast/i.test(c || "") ? "adm" : /(naga\s*pasha|akshaya)/i.test(c || "") ? "post" : "";
 const isTLRole = r => /team\s*leader/i.test(r || "");
 const isCounselorRole = r => /counsel/i.test(r || "");
+const isCoordRole = r => /coordinator|dronacharya/i.test(r || "");
 const isPostSkill = s => /post\s*-?\s*adm/i.test(s || "");
 const OTHER = "other:", NOSKILL = "(No skill listed)";
 
@@ -624,6 +625,19 @@ function compute(){
   const coordOf = n => { const k = normName(n) || "(none)"; if (!coordName.has(k)) coordName.set(k, n || "(No coordinator)"); return k; };
   const getCoord = k => { if (!coords.has(k)) coords.set(k, Object.assign(blank(), {key:k})); return coords.get(k); };
   const tlSet = new Set(ROSTER.filter(p => p.active && isTLRole(p.role)).map(p => String(p.uid)));
+  // Team leader lookup by name, for rows where "Team Leader UID" is blank (names used by two team leaders are skipped)
+  const tlByName = new Map(), dupNames = new Set();
+  for (const p of ROSTER) if (p.active && isTLRole(p.role)){
+    const k = normName(p.name); if (!k) continue;
+    if (tlByName.has(k) && tlByName.get(k) !== String(p.uid)) dupNames.add(k); else tlByName.set(k, String(p.uid));
+  }
+  const tlOf = p => {
+    if (!p) return "";
+    const u = String(p.tlUid || "").trim();
+    if (tlSet.has(u)) return u;
+    const k = normName(p.tlName);
+    return k && !dupNames.has(k) && tlByName.has(k) ? tlByName.get(k) : "";
+  };
   const getTeam = (uid, label, ck) => {
     if (!teams.has(uid)){
       const other = uid.startsWith(OTHER), tl = byUid.get(uid);
@@ -636,7 +650,8 @@ function compute(){
     const t = String(r._team);
     if (!haveRoster || tlSet.has(t)) return t;
     const cp = byUid.get(String(r.uid));
-    return cp && cp.active && tlSet.has(String(cp.tlUid)) ? String(cp.tlUid) : OTHER + ck;
+    const tu = cp && cp.active ? tlOf(cp) : "";
+    return tu || OTHER + ck;
   };
   const getPerson = (uid, name) => {
     if (!people.has(uid)){
@@ -644,7 +659,7 @@ function compute(){
       people.set(uid, Object.assign(blank(), {uid, name: (p && p.name) || name || uid,
         active: haveRoster ? !!(p && p.active) : true, isTL: !!(p && isTLRole(p.role)),
         skill: (p && p.skill) || NOSKILL, sim: !!(p && p.sim === "Yes"),
-        teamUid: p && tlSet.has(String(p.tlUid)) ? String(p.tlUid) : "", coordKey: p ? coordOf(p.coord) : ""}));
+        teamUid: (p && !isTLRole(p.role)) ? tlOf(p) : "", coordKey: p ? coordOf(p.coord) : ""}));
     }
     return people.get(uid);
   };
@@ -659,10 +674,14 @@ function compute(){
     if (!person.teamUid){ person.teamUid = t.uid; person.coordKey = t.coordKey; }
   }
   for (const p of ROSTER){
-    if (!p.active || !personOk(p) || (!isTLRole(p.role) && !isCounselorRole(p.role))) continue;
-    const ck = coordOf(p.coord); getCoord(ck);
-    if (isTLRole(p.role)) getTeam(String(p.uid), p.name, ck);
-    else if (tlSet.has(String(p.tlUid))) getTeam(String(p.tlUid), p.tlName, ck);
+    if (!p.active || !personOk(p) || isCoordRole(p.role)) continue;
+    const ck = coordOf(p.coord);
+    if (isTLRole(p.role)){ getCoord(ck); getTeam(String(p.uid), p.name, ck); getPerson(String(p.uid), p.name); continue; }
+    // Team members: anyone assigned to a current team leader (any role), plus counselors without a team
+    const tu = tlOf(p);
+    if (!tu && !isCounselorRole(p.role)) continue;
+    getCoord(ck);
+    if (tu) getTeam(tu, p.tlName, ck);
     getPerson(String(p.uid), p.name);
   }
   for (const c of coords.values()) c.name = coordName.get(c.key) || c.key;
@@ -688,7 +707,8 @@ function compute(){
       if (sg && sg.members.length >= 2){ g = sg; p.wider = true; }
     }
     p.cmp = g; p.groupSize = g ? g.members.length : 0;
-    p.score = (!g || g.members.length < 2) ? null : pctl(total(p), g.totals);
+    p.noHits = !!g && g.members.length >= 2 && g.totals[g.totals.length - 1] === 0;   // nobody in the group has an approved claim yet
+    p.score = (!g || g.members.length < 2 || p.noHits) ? null : pctl(total(p), g.totals);
   }
   const byScore = (a, b) => ((b.score ?? -1) - (a.score ?? -1)) || total(b) - total(a) || String(a.name).localeCompare(String(b.name));
   for (const g of [...groups.values(), ...skillGroups.values()]) [...g.members].sort(byScore).forEach((p, i) => { if (p.cmp === g) p.groupRank = i + 1; });
@@ -705,7 +725,7 @@ function compute(){
 
 const td = (label, html, cls) => '<td' + (cls ? ' class="' + cls + '"' : '') + ' data-label="' + label + '"><div>' + html + '</div></td>';
 const rankCell = i => '<span class="rank' + (i < 3 ? " top" : "") + '">' + (i + 1) + '</span>';
-const bandTag = s => { const b = band(s); return '<span class="bandtag ' + b.key + '">' + b.label + '</span>'; };
+const bandTag = s => { const b = band(s); return '<span class="bandtag ' + b.key + '">' + (s === null || s === undefined ? "Not ranked yet" : b.label) + '</span>'; };
 const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="color:var(--faint)">–</span>' : '<span class="score">' + s + '</span>') + (sub ? '<small class="subl">' + sub + '</small>' : '');
 const ord = n => { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 const hitsCell = h => fmt(h.app + h.adm + h.post) + '<small class="subl">App ' + fmt(h.app) + ', Adm ' + fmt(h.adm) + ', Post ' + fmt(h.post) + '</small>';
@@ -738,7 +758,7 @@ function render(){
   $("oTeamsSub").textContent = sc ? "under this coordinator" : fmt(d.coords.size) + " coordinators";
   $("oPeople").textContent = fmt(peopleIn.length);
   $("oPeopleSub").textContent = fmt(peopleIn.filter(p => p.sim).length) + " with SIM";
-  $("zeroNote").innerHTML = tot.ok ? "" : '<div class="zero">No verified Hits yet for this selection, so everyone shows the same neutral score. Rankings will appear as claims are approved.</div>';
+  $("zeroNote").innerHTML = tot.ok ? "" : '<div class="zero">No approved claims yet for this selection, so scores show "–". Rankings appear automatically as claims are approved.</div>';
 
   // Table for the current view
   const q = $("q").value.trim().toLowerCase();
@@ -752,17 +772,17 @@ function render(){
       return '<tr>' + td("Rank", rankCell(i)) +
         td("Counselor", '<span class="who"><b>' + esc(p.name) + '</b><small>UID ' + esc(p.uid) + (t && !t.other ? ", team " + esc(t.name) : "") + '</small></span>') +
         td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") +
-        td("Score", scoreCell(p.score, p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
-        td("Band", bandTag(p.score)) + '</tr>';
+        td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
+        td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : bandTag(p.score)) + '</tr>';
     };
   } else if (view === "teams"){
     head = ["Rank","Team leader","Skill","Team hits","Team score","Band"];
     rows = [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!sc || t.coordKey === sc) && (!q || (t.name + " " + t.uid).toLowerCase().includes(q)))
       .sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
     toRow = (t, i) => '<tr class="click" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' + td("Rank", rankCell(i)) +
-      td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>' + esc(t.coordName) + '</small></span>') +
+      td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
       td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") +
-      td("Team score", scoreCell(t.score, fmt(t.counselors) + " counselors"), "num") + td("Band", bandTag(t.score)) + '</tr>';
+      td("Team score", scoreCell(t.score, t.score === null ? fmt(t.counselors) + " counselors, no approved claims yet" : fmt(t.counselors) + " counselors"), "num") + td("Band", bandTag(t.score)) + '</tr>';
   } else {
     head = ["Rank","Coordinator","Teams","Hits","Score","Band"];
     rows = [...d.coords.values()].filter(c => !q || c.name.toLowerCase().includes(q)).sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
