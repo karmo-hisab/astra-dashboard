@@ -325,7 +325,8 @@ footer b{color:var(--muted);font-weight:600}
 const CLIENT_ID = "417974248161-sp1ocl4mgqb1lk7haj8ft3vs5unh7pqg.apps.googleusercontent.com";
 const API_URL   = "https://script.google.com/macros/s/AKfycbwrIMxy6N874vreI4gv83OndtlEsfYKWwqIaWs4sdTwtxnTUObiv7BpEQNVTpeqd1Cc/exec";
 const DOMAIN    = "lpu.co.in";
-const PAGE_SIZE = 10;
+/* Entries per page in the Claim register: 5 on phones, 10 on larger screens */
+const pageSize = () => window.matchMedia("(max-width: 720px)").matches ? 5 : 10;
 const REFRESH_MINUTES = 10;
 
 /* Sheet columns read by the page (order matters for loading) */
@@ -619,9 +620,10 @@ function cell(c, r){
 function renderTable(){
   $("thead").innerHTML = SHOWN.map(c => '<th scope="col" tabindex="0" data-key="' + c.key + '">' + esc(c.label) +
     (sortKey === c.key ? '<span class="arr">' + (sortDir === 1 ? "▲" : "▼") + '</span>' : "") + '</th>').join("");
-  const pages = Math.max(1, Math.ceil(VIEW.length / PAGE_SIZE));
+  const size = pageSize();
+  const pages = Math.max(1, Math.ceil(VIEW.length / size));
   page = Math.min(page, pages);
-  const start = (page - 1) * PAGE_SIZE, slice = VIEW.slice(start, start + PAGE_SIZE);
+  const start = (page - 1) * size, slice = VIEW.slice(start, start + size);
   $("tbody").innerHTML = !slice.length
     ? '<tr><td class="empty" colspan="' + SHOWN.length + '">' + (ALL.length ? "No claims match these filters. Select Clear all to see every claim." : "No claims loaded yet.") + '</td></tr>'
     : slice.map(r => '<tr class="row-' + r._res + '">' + SHOWN.map(c =>
@@ -646,7 +648,7 @@ $("thead").addEventListener("keydown", e => { const th = e.target.closest("th");
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).catch(() => {}));
 }
 let installPrompt = null;
 const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -692,6 +694,8 @@ $("themeBtn").addEventListener("click", () => {
   applyTheme(order[(order.indexOf(currentTheme()) + 1) % order.length]);
 });
 applyTheme(currentTheme());
+
+window.matchMedia("(max-width: 720px)").addEventListener("change", () => { page = 1; renderTable(); });
 
 $("signOutBtn").addEventListener("click", () => {
   clearToken();
