@@ -98,6 +98,26 @@ tr.sel td:first-child{border-left-color:var(--accent)}
 .tfilters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:12px;align-items:end}
 @media (max-width: 980px){ .tfilters{grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media (max-width: 720px){ .tfilters{grid-template-columns:1fr 1fr} .coords{grid-template-columns:1fr 1fr;gap:10px} .sechead input{max-width:none} .ccard h3{white-space:normal} }
+.bandtag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:3px;padding:1px 8px;white-space:nowrap;border:1px solid currentColor}
+.bandtag.ok{color:var(--ok);background:var(--ok-bg)}
+.bandtag.okl{color:#2F7F86;background:rgba(47,127,134,.10)}
+.bandtag.wait{color:var(--wait);background:var(--wait-bg)}
+.bandtag.bad{color:var(--bad);background:var(--bad-bg)}
+.bandtag.neutral{color:var(--faint);background:transparent}
+:root[data-theme="dark"] .bandtag.okl{color:#6FC7CE}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .bandtag.okl{color:#6FC7CE} }
+.score{font-family:var(--serif);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums lining-nums}
+.subl{display:block;color:var(--faint);font-size:11.5px;font-weight:400;white-space:nowrap}
+.unit{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--faint)}
+.simtag{display:inline-block;font-size:11px;font-weight:700;border-radius:3px;padding:0 6px;color:var(--faint);border:1px solid var(--line);margin-left:4px;vertical-align:1px}
+.simtag.on{color:var(--navy-2);border-color:var(--navy-2)}
+:root[data-theme="dark"] .simtag.on{color:#9DB8FF;border-color:#9DB8FF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .simtag.on{color:#9DB8FF;border-color:#9DB8FF} }
+.howpanel{padding:12px 16px;margin:-4px 0 22px;font-size:13px;color:var(--muted);line-height:1.6}
+.howpanel b{color:var(--ink)}
+.bands{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ccard .row h3{margin:0;flex:1;min-width:0}
+th small{font-weight:500;color:var(--faint);font-size:11px}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -300,7 +320,7 @@ footer b{color:var(--muted);font-weight:600}
   <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg>Overview</h2>
   <section class="stats" aria-label="Overview for the current selection">
     <div class="stat tot"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Claims</h2><div class="big" id="oClaims">–</div><div class="sub" id="oClaimsSub">&nbsp;</div></div>
-    <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Hit rate</h2><div class="big" id="oRate">–</div><div class="sub" id="oRateSub">&nbsp;</div></div>
+    <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Verified hits</h2><div class="big" id="oHits">–</div><div class="sub" id="oHitsSub">&nbsp;</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Coordinators</h2><div class="big" id="oCoords">–</div><div class="sub">Dronacharya</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-admission"/></svg>Team leaders</h2><div class="big" id="oTeams">–</div><div class="sub">Sarathi</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Counselors</h2><div class="big" id="oPeople">–</div><div class="sub" id="oPeopleSub">&nbsp;</div></div>
@@ -315,7 +335,7 @@ footer b{color:var(--muted);font-weight:600}
       <label class="f">Payment month<select id="fMonth"></select></label>
       <label class="f">Claim type<select id="fType"></select></label>
       <label class="f">Skill<select id="fSkill"></select></label>
-      <label class="f">Campaign<select id="fCampaign"></select></label>
+      <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
       <label class="f">Claim date from<input id="dFrom" type="date"></label>
       <label class="f">Claim date to<input id="dTo" type="date"></label>
       <label class="check"><input id="incLeft" type="checkbox">Include people who have left</label>
@@ -324,6 +344,9 @@ footer b{color:var(--muted);font-weight:600}
 
   <div class="crumbs" id="crumbs"></div>
 
+  <div class="howpanel panel"><b>How performance is scored.</b> Only verified Hits count. Each counselor is compared with peers of the same <b>skill</b> and <b>type (SIM or Normal)</b>; team leaders with team leaders of the same skill. Each Hit count gets a percentile in the peer group, and the <b>score (0–100)</b> = 40% Applications + 40% Admissions + 20% Post-admission. A team's score is the average of its counselors; a coordinator's score is the average of all their counselors.
+    <span class="bands"><span class="bandtag ok">Top 75+</span><span class="bandtag okl">Above median 50–74</span><span class="bandtag wait">Below median 25–49</span><span class="bandtag bad">Needs attention under 25</span></span></div>
+
   <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-grid"/></svg>Coordinators (Dronacharya)</h2>
   <section class="coords" id="coords" aria-label="Coordinators"></section>
 
@@ -331,32 +354,33 @@ footer b{color:var(--muted);font-weight:600}
     <span class="resultbar" id="teamCount"></span></div>
   <section class="panel table-panel">
     <div class="tablebox"><table><thead><tr>
-      <th>Rank</th><th>Team leader</th><th>Coordinator</th><th>Counselors</th><th>Claims</th><th>Hit</th><th>Miss</th><th>Pending</th><th>Hit %</th>
+      <th>Rank</th><th>Team leader</th><th>Coordinator</th><th>Skill</th><th>Counselors</th><th>Team hits</th><th>Team score</th><th>Team leader's own</th><th>Band</th>
     </tr></thead><tbody id="teamBody"></tbody></table></div>
     <div class="pager"><span id="teamInfo"></span><div><button id="teamPrev" type="button">Previous</button><button id="teamNext" type="button">Next</button></div></div>
   </section>
   <p class="note" id="teamNote"></p>
 
   <div class="sechead"><h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg>Counselor leaderboard</h2>
-    <input id="q" type="search" placeholder="Search name or UID" autocomplete="off" aria-label="Search counselors"></div>
+    <input id="q" type="search" placeholder="Search name, UID or skill" autocomplete="off" aria-label="Search counselors"></div>
   <section class="panel table-panel">
     <div class="tablebox"><table><thead><tr>
-      <th>Rank</th><th>Counselor</th><th>Team leader</th><th>Skill</th><th>Claims</th><th>Hit</th><th>Miss</th><th>Pending</th><th>Hit %</th>
+      <th>Rank</th><th>Counselor</th><th>Peer group</th><th>Team leader</th><th>Applications</th><th>Admissions</th><th>Post-admission</th><th>Score</th><th>Band</th>
     </tr></thead><tbody id="peopleBody"></tbody></table></div>
     <div class="pager"><span id="peopleInfo"></span><div><button id="peoplePrev" type="button">Previous</button><button id="peopleNext" type="button">Next</button></div></div>
   </section>
-  <p class="note">Ranked by Hits, then Hit %. Hit % counts decided claims only: Hit ÷ (Hit + Miss).</p>
+  <p class="note">Ranked by score, then total Hits. "2nd of 8 in group" is the position within the peer group. Groups with only one person aren't scored.</p>
 
-  <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg>Performance by skill</h2>
+  <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg>Peer group benchmarks</h2>
   <section class="panel table-panel">
     <div class="tablebox"><table><thead><tr>
-      <th>Skill</th><th>Counselors</th><th>Claims</th><th>Hit</th><th>Miss</th><th>Pending</th><th>Hit %</th>
-    </tr></thead><tbody id="skillBody"></tbody></table></div>
+      <th>Peer group</th><th>People</th><th>Applications<br><small>P25 / Median / P75</small></th><th>Admissions<br><small>P25 / Median / P75</small></th><th>Post-admission<br><small>P25 / Median / P75</small></th>
+    </tr></thead><tbody id="groupBody"></tbody></table></div>
   </section>
+  <p class="note">Verified Hits per person in each group: a quarter of the group is below P25, half below the Median, three quarters below P75.</p>
 
   <footer>
     <span><b>For LPU internal use only.</b> Access is limited to @lpu.co.in accounts. Please don't share screenshots outside LPU.</span>
-    <span>Team structure from the duty list. Claims count for the team recorded on each claim.</span>
+    <span>Team structure, skills and SIM from the duty list (TL Bifurcation).</span>
   </footer>
 </div>
 
@@ -503,7 +527,7 @@ async function fetchClaims(useShared){
     fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]]
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
-  const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], campaign:r[RF.campaign],
+  const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
   return {rows, updated: data.updated, roster};
 }
@@ -561,104 +585,170 @@ function assignTeams(rows){
 }
 
 /* ================== TEAMS PAGE ================== */
-/* Structure: Coordinator (Dronacharya) -> Team leader (Sarathi) -> Counselors.
-   Claims count for the coordinator and team written on each claim (history stays correct when people move or leave).
-   The duty list (TL Bifurcation) adds skills, campaigns and staff with no claims yet. */
+/* Performance = verified Hits, compared only with peers.
+   Peer group: counselors = same Skill + same type (SIM / Normal); team leaders = team leaders of the same Skill.
+   Each Hit count (Applications, Admissions, Post-admission) gets a percentile within the peer group;
+   Score = 40% Applications + 40% Admissions + 20% Post-admission percentiles (0-100).
+   Tree: a team's score = average score of its counselors; a coordinator's score = average of all their counselors. */
+const WEIGHTS = {app: 0.4, adm: 0.4, post: 0.2};
+const CATS = [{key:"app", label:"Applications"}, {key:"adm", label:"Admissions"}, {key:"post", label:"Post-admission"}];
 let sel = {coord: "", team: ""}, teamPage = 1, peoplePage = 1;
 const normName = s => String(s || "").toLowerCase().replace(/^\s*(dr|prof|mr|ms|mrs)\.?\s+/, "").replace(/[^a-z0-9]/g, "");
 const typeOf = c => { const t = TYPES.find(t => t.match.test(c || "")); return t ? t.astra : ""; };
+const catOf = c => /arrow/i.test(c || "") ? "app" : /brahmast/i.test(c || "") ? "adm" : /(naga\s*pasha|akshaya)/i.test(c || "") ? "post" : "";
 const isTLRole = r => /team\s*leader/i.test(r || "");
+const isCounselorRole = r => /counsel/i.test(r || "");
+const OTHER = "other:";
+const NOSKILL = "(No skill listed)";
 
-function rosterMaps(){
-  const byUid = new Map();
-  for (const p of ROSTER) byUid.set(String(p.uid), p);
-  return byUid;
-}
+function rosterMaps(){ const m = new Map(); for (const p of ROSTER) m.set(String(p.uid), p); return m; }
 
 function buildOptions(){
   const fill = (id, vals, label) => {
-    const sel_ = $(id), cur = sel_.value;
+    const el = $(id), cur = el.value;
     const list = [...new Set(vals.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
-    sel_.innerHTML = '<option value="">All</option>' + list.map(v => '<option value="' + esc(v) + '">' + esc(label ? label(v) : v) + '</option>').join("");
-    if (list.includes(cur)) sel_.value = cur;
+    el.innerHTML = '<option value="">All</option>' + list.map(v => '<option value="' + esc(v) + '">' + esc(label ? label(v) : v) + '</option>').join("");
+    if (list.includes(cur)) el.value = cur;
   };
   fill("fMonth", ALL.map(r => r.month));
   fill("fType", TYPES.map(t => t.astra), v => { const t = TYPES.find(x => x.astra === v); return t ? t.emoji + " " + t.astra + " (" + t.label + ")" : v; });
   fill("fSkill", ROSTER.map(p => p.skill));
-  fill("fCampaign", ROSTER.map(p => p.campaign));
 }
 
-const blank = () => ({claims:0, ok:0, bad:0, wait:0});
-function add(s, r){ s.claims++; if (r._res === "ok") s.ok++; else if (r._res === "bad") s.bad++; else s.wait++; }
-const rate = s => (s.ok + s.bad) ? s.ok / (s.ok + s.bad) : -1;
-const byRank = (a, b) => b.ok - a.ok || rate(b) - rate(a) || b.claims - a.claims || String(a.name).localeCompare(String(b.name));
+const blank = () => ({claims:0, ok:0, bad:0, wait:0, h:{app:0, adm:0, post:0}});
+function add(s, r){
+  s.claims++;
+  if (r._res === "ok"){ s.ok++; const c = catOf(r.claim); if (c) s.h[c]++; }
+  else if (r._res === "bad") s.bad++; else s.wait++;
+}
+/* Percentile of v within a sorted list (mid-rank method): share of peers below, plus half of ties */
+function pctl(v, arr){
+  if (!arr.length) return null;
+  let below = 0, equal = 0;
+  for (const x of arr){ if (x < v) below++; else if (x === v) equal++; }
+  return Math.round((below + equal / 2) * 100 / arr.length);
+}
+function quart(arr, q){
+  if (!arr.length) return 0;
+  const pos = (arr.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+  return Math.round(arr[lo] + (arr[hi] - arr[lo]) * (pos - lo));
+}
+function band(score){
+  if (score === null || score === undefined) return {key:"neutral", label:"Not ranked"};
+  if (score >= 75) return {key:"ok", label:"Top"};
+  if (score >= 50) return {key:"okl", label:"Above median"};
+  if (score >= 25) return {key:"wait", label:"Below median"};
+  return {key:"bad", label:"Needs attention"};
+}
+const avg = list => { const v = list.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
 
 function compute(){
-  const byUid = rosterMaps();
-  const haveRoster = ROSTER.length > 0;
-  const f = {month:$("fMonth").value, type:$("fType").value, skill:$("fSkill").value, campaign:$("fCampaign").value,
+  const byUid = rosterMaps(), haveRoster = ROSTER.length > 0;
+  const f = {month:$("fMonth").value, type:$("fType").value, skill:$("fSkill").value, sim:$("fSim").value,
              from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
              to:   $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null};
-  const personOk = p => (!f.skill || (p && p.skill === f.skill)) && (!f.campaign || (p && p.campaign === f.campaign));
+  const personOk = p => (!f.skill || (p && p.skill === f.skill)) && (!f.sim || (p && (f.sim === "SIM") === (p.sim === "Yes")));
 
-  const coords = new Map(), teams = new Map(), people = new Map();
-  const coordName = new Map();   // key -> best display name (duty list spelling preferred)
+  const coords = new Map(), teams = new Map(), people = new Map(), coordName = new Map();
   for (const p of ROSTER) if (p.coord) coordName.set(normName(p.coord), p.coord);
   const coordOf = name => { const k = normName(name) || "(none)"; if (!coordName.has(k)) coordName.set(k, name || "(No coordinator)"); return k; };
   const getCoord = k => { if (!coords.has(k)) coords.set(k, Object.assign(blank(), {key:k, teams:new Set(), people:new Set()})); return coords.get(k); };
-  const tlLabel = uid => { const p = byUid.get(String(uid)); return p ? p.name : null; };
+  const tlSet = new Set(ROSTER.filter(p => p.active && isTLRole(p.role)).map(p => String(p.uid)));
   const getTeam = (uid, label, ck) => {
-    if (!teams.has(uid)) teams.set(uid, Object.assign(blank(), {uid, name: tlLabel(uid) || label || uid, coordKey: ck, members:new Set(), leftClaims:0}));
+    if (!teams.has(uid)){
+      const other = uid.startsWith(OTHER), tl = byUid.get(uid);
+      teams.set(uid, Object.assign(blank(), {uid, other, name: other ? "Other (not on current team list)" : ((tl && tl.name) || label || uid),
+        skill: tl ? (tl.skill || NOSKILL) : "", coordKey: (!other && tl && tlSet.has(uid)) ? coordOf(tl.coord) : ck, members:new Set(), leftClaims:0}));
+    }
     return teams.get(uid);
+  };
+  const teamFor = (r, ck) => {
+    const t = String(r._team);
+    if (!haveRoster || tlSet.has(t)) return t;
+    const cp = byUid.get(String(r.uid));
+    if (cp && cp.active && tlSet.has(String(cp.tlUid))) return String(cp.tlUid);
+    return OTHER + ck;
   };
   const getPerson = (uid, name) => {
     if (!people.has(uid)){
       const p = byUid.get(String(uid));
-      people.set(uid, Object.assign(blank(), {uid, name: (p && p.name) || name || uid, roster: p || null,
+      people.set(uid, Object.assign(blank(), {uid, name: (p && p.name) || name || uid,
         active: haveRoster ? !!(p && p.active) : true, isTL: !!(p && isTLRole(p.role)),
-        skill: (p && p.skill) || "", teamUid: p ? String(p.tlUid) : "", coordKey: p ? coordOf(p.coord) : ""}));
+        skill: (p && p.skill) || NOSKILL, sim: !!(p && p.sim === "Yes"),
+        teamUid: p && tlSet.has(String(p.tlUid)) ? String(p.tlUid) : "", coordKey: p ? coordOf(p.coord) : ""}));
     }
     return people.get(uid);
   };
 
-  let leftClaims = 0;
   for (const r of ALL){
     if (f.month && r.month !== f.month) continue;
     if (f.type && typeOf(r.claim) !== f.type) continue;
     if (f.from !== null && r._ts < f.from) continue;
     if (f.to !== null && r._ts > f.to) continue;
     const p = byUid.get(String(r.uid));
-    if ((f.skill || f.campaign) && !personOk(p)) continue;
-    const ck = coordOf(r.drona);
-    const c = getCoord(ck); add(c, r);
-    const t = getTeam(String(r._team), r._teamLabel ? r._teamLabel.replace(/\s*:\s*\d+\s*$/, "") : "", ck); add(t, r);
-    c.teams.add(t.uid);
+    if ((f.skill || f.sim) && !personOk(p)) continue;
+    const ck = coordOf(r.drona), c = getCoord(ck);
+    add(c, r);
+    const t = getTeam(teamFor(r, ck), r._teamLabel ? r._teamLabel.replace(/\s*:\s*\d+\s*$/, "") : "", ck); add(t, r);
+    if (!t.other) c.teams.add(t.uid);
     const person = getPerson(String(r.uid), r.name); add(person, r);
-    if (!person.teamUid){ person.teamUid = t.uid; person.coordKey = ck; }
-    if (!person.active){ t.leftClaims++; leftClaims++; }
-    if (!person.isTL) c.people.add(person.uid);
+    if (!person.teamUid){ person.teamUid = t.uid; person.coordKey = t.coordKey; }
+    if (!person.active) t.leftClaims++;
   }
-  // Staff on the duty list with no claims (yet) still appear, with zeros
   for (const p of ROSTER){
     if (!p.active || !personOk(p)) continue;
+    if (!isTLRole(p.role) && !isCounselorRole(p.role)) continue;     // coordinators, snoopers and other roles are not ranked
     const ck = coordOf(p.coord), c = getCoord(ck);
-    const t = getTeam(String(p.tlUid), p.tlName, ck); c.teams.add(t.uid);
-    if (!isTLRole(p.role)){ t.members.add(String(p.uid)); c.people.add(String(p.uid)); }
+    if (isTLRole(p.role)){ const t = getTeam(String(p.uid), p.name, ck); c.teams.add(t.uid); }
+    else if (tlSet.has(String(p.tlUid))){ const t = getTeam(String(p.tlUid), p.tlName, ck); c.teams.add(t.uid); t.members.add(String(p.uid)); }
     getPerson(String(p.uid), p.name);
   }
-  for (const c of coords.values()) c.name = coordName.get(c.key) || c.key;
+  for (const c of coords.values()){
+    c.name = coordName.get(c.key) || c.key;
+    if (haveRoster) c.teams = new Set([...tlSet].filter(u => { const t = teams.get(u); return t && t.coordKey === c.key; }));
+  }
   for (const t of teams.values()){ const c = coords.get(t.coordKey); t.coordName = c ? c.name : ""; }
-  return {coords, teams, people, leftClaims, haveRoster};
+
+  /* ---- Peer groups and percentiles ---- */
+  const groups = new Map();
+  const groupKey = p => p.isTL ? "TL|" + p.skill : p.skill + "|" + (p.sim ? "SIM" : "Normal");
+  const groupLabel = k => { const [a, b] = k.split("|"); return a === "TL" ? "Team leaders: " + b : a + " (" + b + ")"; };
+  for (const p of people.values()){
+    p.group = groupKey(p);
+    if (!p.active) continue;                                  // benchmarks use current staff only
+    if (!groups.has(p.group)) groups.set(p.group, {key:p.group, label:groupLabel(p.group), members:[], app:[], adm:[], post:[]});
+    const g = groups.get(p.group); g.members.push(p); for (const c of CATS) g[c.key].push(p.h[c.key]);
+  }
+  for (const g of groups.values()) for (const c of CATS) g[c.key].sort((a, b) => a - b);
+  for (const p of people.values()){
+    const g = groups.get(p.group);
+    p.groupSize = g ? g.members.length : 0;
+    p.score = (!g || g.members.length < 2) ? null : Math.round(CATS.reduce((s, c) => s + WEIGHTS[c.key] * pctl(p.h[c.key], g[c.key]), 0));
+  }
+  const hitsTotal = p => p.h.app + p.h.adm + p.h.post;
+  const byScore = (a, b) => ((b.score ?? -1) - (a.score ?? -1)) || hitsTotal(b) - hitsTotal(a) || String(a.name).localeCompare(String(b.name));
+  for (const g of groups.values()) g.members.sort(byScore).forEach((p, i) => p.groupRank = i + 1);
+
+  /* ---- Tree: team and coordinator scores from their counselors ---- */
+  const current = [...people.values()].filter(p => !p.isTL && p.active);
+  for (const t of teams.values()){
+    const mem = current.filter(p => p.teamUid === t.uid);
+    t.counselors = mem.length; t.score = avg(mem.map(p => p.score));
+    const tl = people.get(t.uid); t.tlScore = tl ? tl.score : null; t.tlRank = tl ? tl.groupRank : null; t.tlGroupSize = tl ? tl.groupSize : 0;
+  }
+  for (const c of coords.values()){
+    const mem = current.filter(p => p.coordKey === c.key);
+    c.counselors = mem.length; c.score = avg(mem.map(p => p.score));
+  }
+  return {coords, teams, people, groups, haveRoster, byScore};
 }
 
-function rateCell(s){
-  const r = rate(s);
-  if (r < 0) return '<span style="color:var(--faint)">–</span>';
-  const cls = r >= 0.5 ? "ok" : r >= 0.3 ? "wait" : "bad";
-  return '<span class="hitp" style="color:var(--' + cls + ')">' + Math.round(r * 100) + '%</span>';
-}
 const td = (label, html, cls) => '<td' + (cls ? ' class="' + cls + '"' : '') + ' data-label="' + label + '"><div>' + html + '</div></td>';
 const rankCell = i => '<span class="rank' + (i < 3 ? " top" : "") + '">' + (i + 1) + '</span>';
+const bandTag = s => { const b = band(s); return '<span class="bandtag ' + b.key + '">' + b.label + '</span>'; };
+const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="color:var(--faint)">–</span>' : '<span class="score">' + s + '</span>') +
+  (sub ? '<small class="subl">' + sub + '</small>' : '');
+const ord = n => { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 
 function pageSlice(list, pg){
   const size = pageSize(), pages = Math.max(1, Math.ceil(list.length / size));
@@ -667,29 +757,27 @@ function pageSlice(list, pg){
   return {items: list.slice(start, start + size), start, pages, pg};
 }
 
-let LAST = null;
 function render(){
   if (!ALL.length && !ROSTER.length) return;
-  const d = compute(); LAST = d;
+  const d = compute();
   const incLeft = $("incLeft").checked;
-  $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Rankings use claims only; skills and staff without claims aren\'t shown.</div>';
-
-  // Selection must still exist
+  $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Scores need the team list for skills and SIM; showing claims only.</div>';
   if (sel.coord && !d.coords.has(sel.coord)) sel = {coord:"", team:""};
   if (sel.team && !d.teams.has(sel.team)) sel.team = "";
+  const inScope = p => (!sel.coord || p.coordKey === sel.coord) && (!sel.team || p.teamUid === sel.team);
 
-  // Overview (follows the coordinator / team selection)
+  // Overview
   const scopeTeams = [...d.teams.values()].filter(t => (!sel.coord || t.coordKey === sel.coord) && (!sel.team || t.uid === sel.team));
-  const tot = scopeTeams.reduce((s, t) => (s.claims += t.claims, s.ok += t.ok, s.bad += t.bad, s.wait += t.wait, s), blank());
-  const scopePeople = [...d.people.values()].filter(p => !p.isTL && p.active && (!sel.coord || p.coordKey === sel.coord) && (!sel.team || p.teamUid === sel.team));
+  const tot = scopeTeams.reduce((s, t) => { s.claims += t.claims; s.ok += t.ok; s.bad += t.bad; s.wait += t.wait; for (const c of CATS) s.h[c.key] += t.h[c.key]; return s; }, blank());
+  const scopePeople = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p));
   $("oClaims").textContent = fmt(tot.claims);
   $("oClaimsSub").textContent = fmt(tot.ok) + " hit, " + fmt(tot.bad) + " miss, " + fmt(tot.wait) + " pending";
-  $("oRate").textContent = rate(tot) < 0 ? "–" : Math.round(rate(tot) * 100) + "%";
-  $("oRateSub").textContent = "of " + fmt(tot.ok + tot.bad) + " decided claims";
+  $("oHits").textContent = fmt(tot.ok);
+  $("oHitsSub").textContent = "App " + fmt(tot.h.app) + ", Adm " + fmt(tot.h.adm) + ", Post " + fmt(tot.h.post);
   $("oCoords").textContent = fmt(sel.coord ? 1 : d.coords.size);
-  $("oTeams").textContent = fmt(scopeTeams.length);
+  $("oTeams").textContent = fmt(scopeTeams.filter(t => !t.other).length);
   $("oPeople").textContent = fmt(scopePeople.length);
-  $("oPeopleSub").textContent = fmt(scopePeople.filter(p => p.claims > 0).length) + " with claims";
+  $("oPeopleSub").textContent = fmt(scopePeople.filter(p => p.sim).length) + " with SIM";
 
   // Breadcrumbs
   let crumbs = '<span>Showing:</span>';
@@ -700,78 +788,81 @@ function render(){
   }
   $("crumbs").innerHTML = crumbs;
 
-  // Coordinator cards
-  const coordList = [...d.coords.values()].sort(byRank);
-  $("coords").innerHTML = coordList.map(c => {
-    const counselors = [...c.people].filter(u => { const p = d.people.get(u); return p && p.active; }).length;
-    const w = n => c.claims ? (n * 100 / c.claims) + "%" : "0";
+  // Coordinator cards (ranked by score = average of their counselors' scores)
+  const coordList = [...d.coords.values()].sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
+  $("coords").innerHTML = coordList.map((c, i) => {
+    const b = band(c.score);
     return '<button type="button" class="ccard' + (sel.coord === c.key ? " sel" : "") + '" data-coord="' + esc(c.key) + '">' +
-      '<h3>' + esc(c.name) + '</h3>' +
-      '<div class="row"><span class="big">' + fmt(c.claims) + '</span><span class="rate">' + (rate(c) < 0 ? "–" : Math.round(rate(c) * 100) + "% hit") + '</span></div>' +
-      '<div class="mix" aria-hidden="true"><span class="ok" style="width:' + w(c.ok) + '"></span><span class="bad" style="width:' + w(c.bad) + '"></span><span class="wait" style="width:' + w(c.wait) + '"></span></div>' +
-      '<div class="sub">' + fmt(c.teams.size) + ' teams, ' + fmt(counselors) + ' counselors</div></button>';
+      '<div class="row"><h3>' + esc(c.name) + '</h3><span class="rank' + (i < 3 ? " top" : "") + '">#' + (i + 1) + '</span></div>' +
+      '<div class="row"><span class="big">' + (c.score ?? "–") + '<small class="unit"> score</small></span><span class="bandtag ' + b.key + '">' + b.label + '</span></div>' +
+      '<div class="sub">' + fmt(c.ok) + ' hits, ' + fmt(c.teams.size) + ' teams, ' + fmt(c.counselors) + ' counselors</div></button>';
   }).join("") || '<p class="empty">No coordinators for these filters.</p>';
 
-  // Team leaders
-  const teamList = [...d.teams.values()].filter(t => !sel.coord || t.coordKey === sel.coord).sort(byRank);
+  // Team leaders (ranked by team score = average of their counselors' scores)
+  const teamList = [...d.teams.values()].filter(t => (!sel.coord || t.coordKey === sel.coord) && (!t.other || t.claims > 0))
+    .sort((a, b) => (a.other - b.other) || ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
   const tp = pageSlice(teamList, teamPage); teamPage = tp.pg;
-  $("teamCount").textContent = fmt(teamList.length) + " teams";
-  $("teamBody").innerHTML = tp.items.map((t, i) =>
-    '<tr class="click' + (sel.team === t.uid ? " sel" : "") + '" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0">' +
+  $("teamCount").textContent = fmt(teamList.filter(t => !t.other).length) + " teams";
+  $("teamBody").innerHTML = tp.items.map((t, i) => {
+    const hitsLine = 'App ' + fmt(t.h.app) + ', Adm ' + fmt(t.h.adm) + ', Post ' + fmt(t.h.post);
+    if (t.other) return '<tr>' + td("Rank", '<span style="color:var(--faint)">–</span>') +
+      td("Team leader", '<span class="who"><b style="color:var(--muted)">' + esc(t.name) + '</b><small>Claims that can\'t be placed in a current team</small></span>') +
+      td("Coordinator", esc(t.coordName)) + td("Skill", "–") + td("Counselors", "–", "num") +
+      td("Team hits", fmt(t.ok) + '<small class="subl">' + hitsLine + '</small>', "num") + td("Team score", "–") + td("Team leader's own", "–") + td("Band", "–") + '</tr>';
+    return '<tr class="click' + (sel.team === t.uid ? " sel" : "") + '" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0">' +
       td("Rank", rankCell(tp.start + i)) +
       td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + '</small></span>') +
-      td("Coordinator", esc(t.coordName)) +
-      td("Counselors", fmt(t.members.size), "num") +
-      td("Claims", fmt(t.claims), "num") + td("Hit", fmt(t.ok), "num") + td("Miss", fmt(t.bad), "num") + td("Pending", fmt(t.wait), "num") +
-      td("Hit %", rateCell(t), "num") + '</tr>').join("") ||
-    '<tr><td class="empty" colspan="9">No teams for these filters.</td></tr>';
+      td("Coordinator", esc(t.coordName)) + td("Skill", esc(t.skill || "–")) +
+      td("Counselors", fmt(t.counselors), "num") +
+      td("Team hits", fmt(t.ok) + '<small class="subl">' + hitsLine + '</small>', "num") +
+      td("Team score", scoreCell(t.score, "average of counselors"), "num") +
+      td("Team leader's own", scoreCell(t.tlScore, t.tlRank && t.tlGroupSize > 1 ? ord(t.tlRank) + " of " + t.tlGroupSize + " TLs in skill" : (t.tlGroupSize === 1 ? "only TL in skill" : "")), "num") +
+      td("Band", bandTag(t.score)) + '</tr>';
+  }).join("") || '<tr><td class="empty" colspan="9">No teams for these filters.</td></tr>';
   $("teamInfo").textContent = teamList.length ? "Showing " + fmt(tp.start + 1) + "–" + fmt(tp.start + tp.items.length) + " of " + fmt(teamList.length) : "";
   $("teamPrev").disabled = tp.pg <= 1; $("teamNext").disabled = tp.pg >= tp.pages;
   const leftInScope = teamList.reduce((n, t) => n + t.leftClaims, 0);
-  $("teamNote").textContent = leftInScope ? "Team totals include " + fmt(leftInScope) + " claims by people who have left." : "";
+  $("teamNote").textContent = (leftInScope ? "Team hits include " + fmt(leftInScope) + " claims by people who have left. " : "") + "Team score uses current counselors only.";
 
   // Counselor leaderboard
   const q = $("q").value.trim().toLowerCase();
-  const peopleList = [...d.people.values()].filter(p =>
-    !p.isTL && (incLeft || p.active) &&
-    (!sel.coord || p.coordKey === sel.coord) && (!sel.team || p.teamUid === sel.team) &&
-    (!q || (p.name + " " + p.uid).toLowerCase().includes(q))
-  ).sort(byRank);
+  const peopleList = [...d.people.values()].filter(p => !p.isTL && (incLeft || p.active) && inScope(p) &&
+    (!q || (p.name + " " + p.uid + " " + p.skill).toLowerCase().includes(q))).sort(d.byScore);
   const pp = pageSlice(peopleList, peoplePage); peoplePage = pp.pg;
   $("peopleBody").innerHTML = pp.items.map((p, i) => {
     const t = d.teams.get(p.teamUid);
+    const grp = esc(p.skill) + ' <span class="simtag' + (p.sim ? " on" : "") + '">' + (p.sim ? "SIM" : "Normal") + '</span>';
+    const sub = !p.active ? "left, not ranked" : p.score === null ? (p.groupSize === 1 ? "only one in group" : "") : ord(p.groupRank) + " of " + p.groupSize + " in group";
     return '<tr>' + td("Rank", rankCell(pp.start + i)) +
       td("Counselor", '<span class="who"><b>' + esc(p.name) + (p.active ? "" : '<span class="left-tag">Left</span>') + '</b><small>UID ' + esc(p.uid) + '</small></span>') +
-      td("Team leader", esc(t ? t.name : "–")) + td("Skill", esc(p.skill || "–")) +
-      td("Claims", fmt(p.claims), "num") + td("Hit", fmt(p.ok), "num") + td("Miss", fmt(p.bad), "num") + td("Pending", fmt(p.wait), "num") +
-      td("Hit %", rateCell(p), "num") + '</tr>';
+      td("Peer group", grp) + td("Team leader", esc(t && !t.other ? t.name : "–")) +
+      td("Applications", fmt(p.h.app), "num") + td("Admissions", fmt(p.h.adm), "num") + td("Post-admission", fmt(p.h.post), "num") +
+      td("Score", scoreCell(p.active ? p.score : null, sub), "num") +
+      td("Band", p.active ? bandTag(p.score) : '<span class="bandtag neutral">Left</span>') + '</tr>';
   }).join("") || '<tr><td class="empty" colspan="9">No counselors match.</td></tr>';
   $("peopleInfo").textContent = peopleList.length ? "Showing " + fmt(pp.start + 1) + "–" + fmt(pp.start + pp.items.length) + " of " + fmt(peopleList.length) : "";
   $("peoplePrev").disabled = pp.pg <= 1; $("peopleNext").disabled = pp.pg >= pp.pages;
 
-  // Skills (within the current selection)
-  const skills = new Map();
-  for (const p of d.people.values()){
-    if (p.isTL || !(incLeft || p.active)) continue;
-    if ((sel.coord && p.coordKey !== sel.coord) || (sel.team && p.teamUid !== sel.team)) continue;
-    const k = p.skill || "(No skill listed)";
-    if (!skills.has(k)) skills.set(k, Object.assign(blank(), {name:k, people:0}));
-    const s = skills.get(k); s.people++; s.claims += p.claims; s.ok += p.ok; s.bad += p.bad; s.wait += p.wait;
-  }
-  $("skillBody").innerHTML = [...skills.values()].sort((a, b) => rate(b) - rate(a) || b.ok - a.ok).map(s =>
-    '<tr>' + td("Skill", '<b>' + esc(s.name) + '</b>') + td("Counselors", fmt(s.people), "num") + td("Claims", fmt(s.claims), "num") +
-      td("Hit", fmt(s.ok), "num") + td("Miss", fmt(s.bad), "num") + td("Pending", fmt(s.wait), "num") + td("Hit %", rateCell(s), "num") + '</tr>'
-  ).join("") || '<tr><td class="empty" colspan="7">No skills to show.</td></tr>';
+  // Peer group benchmarks (P25 / Median / P75 of Hits) for groups in the current selection
+  const groupsInScope = [...d.groups.values()].filter(g => g.members.some(inScope))
+    .sort((a, b) => (a.key.startsWith("TL|") - b.key.startsWith("TL|")) || a.label.localeCompare(b.label));
+  const qcell = arr => quart(arr, .25) + ' / <b>' + quart(arr, .5) + '</b> / ' + quart(arr, .75);
+  $("groupBody").innerHTML = groupsInScope.map(g => {
+    const one = g.members.length < 2;
+    return '<tr>' + td("Peer group", '<b>' + esc(g.label) + '</b>') + td("People", fmt(g.members.length), "num") +
+      td("Applications", one ? "–" : qcell(g.app), "num") + td("Admissions", one ? "–" : qcell(g.adm), "num") +
+      td("Post-admission", one ? "–" : qcell(g.post), "num") + '</tr>';
+  }).join("") || '<tr><td class="empty" colspan="5">No peer groups to show.</td></tr>';
 
-  const nActive = ["fMonth","fType","fSkill","fCampaign","dFrom","dTo"].filter(id => $(id).value).length + ($("incLeft").checked ? 1 : 0);
+  const nActive = ["fMonth","fType","fSkill","fSim","dFrom","dTo"].filter(id => $(id).value).length + ($("incLeft").checked ? 1 : 0);
   $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
 }
 
 /* Events */
-["fMonth","fType","fSkill","fCampaign","dFrom","dTo","incLeft"].forEach(id => $(id).addEventListener("change", () => { teamPage = 1; peoplePage = 1; render(); }));
+["fMonth","fType","fSkill","fSim","dFrom","dTo","incLeft"].forEach(id => $(id).addEventListener("change", () => { teamPage = 1; peoplePage = 1; render(); }));
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { peoplePage = 1; render(); }, 200); });
 $("resetBtn").addEventListener("click", () => {
-  ["fMonth","fType","fSkill","fCampaign","dFrom","dTo","q"].forEach(id => $(id).value = ""); $("incLeft").checked = false;
+  ["fMonth","fType","fSkill","fSim","dFrom","dTo","q"].forEach(id => $(id).value = ""); $("incLeft").checked = false;
   sel = {coord:"", team:""}; teamPage = 1; peoplePage = 1; render();
 });
 $("refreshBtn").addEventListener("click", () => load(false));
