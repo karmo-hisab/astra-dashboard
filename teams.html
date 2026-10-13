@@ -68,8 +68,15 @@ body.locked .wrap, body.locked .needs-auth{display:none!important}
 .ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-3px}
 .ic.lg{width:18px;height:18px}
 
+.frow{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line-2)}
+.frow:first-of-type{border-top:none;padding-top:2px}
+.flabel{flex:none;width:52px;padding-top:20px;font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.cfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
+.cfilters .span2{grid-column:span 2}
+@media (max-width: 720px){ .frow{flex-direction:column;gap:6px} .flabel{padding-top:0} .cfilters{grid-template-columns:1fr 1fr} .cfilters .span2{grid-column:1/-1} }
 .stats4{grid-template-columns:repeat(4,1fr)!important}
-.tfilters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:end}
+.tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
+.tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
 .viewbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
 .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px;gap:3px}
 .seg button{border:none;background:none;padding:6px 16px;border-radius:4px;font-weight:600;color:var(--muted)}
@@ -103,8 +110,8 @@ tr.click:hover td{background:var(--neutral-bg)}
 .more .tablebox{border-top:1px solid var(--line)}
 .bands{display:flex;flex-wrap:wrap;gap:6px}
 .zero{font-size:13px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:6px;padding:9px 14px;margin-bottom:10px}
-@media (max-width: 980px){ .tfilters{grid-template-columns:repeat(3,minmax(0,1fr))} .stats4{grid-template-columns:1fr 1fr!important} }
-@media (max-width: 720px){ .tfilters{grid-template-columns:1fr 1fr} .seg{width:100%} .seg button{flex:1;padding:7px 6px} }
+@media (max-width: 980px){ .tfilters{grid-template-columns:repeat(2,minmax(0,1fr))} .stats4{grid-template-columns:1fr 1fr!important} }
+@media (max-width: 720px){ .tfilters,.tfilters.one{grid-template-columns:1fr 1fr} .tfilters.one label{grid-column:1/-1} .frow{flex-direction:column;gap:6px} .flabel{padding-top:0} .seg{width:100%} .seg button{flex:1;padding:7px 6px} }
 th.sortable{cursor:pointer;user-select:none}
 th.sortable:hover{color:var(--ink)}
 th .arr{margin-left:4px;font-size:10px;color:var(--accent)}
@@ -114,6 +121,17 @@ tbody tr.hl td{background:var(--wait-bg)!important}
 tbody tr.hl td:first-child{border-left-color:var(--accent)!important}
 tbody tr.hl td b{color:var(--ink)}
 @media (max-width: 720px){ tbody tr.hl{border-left:4px solid var(--accent)!important} }
+.frow{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line-2)}
+.frow:first-of-type{border-top:none;padding-top:2px}
+.flabel{flex:none;width:52px;padding-top:20px;font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.rankbox{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px}
+.move{font-size:11px;font-weight:700;line-height:1}
+.move.up{color:var(--ok)} .move.down{color:var(--bad)} .move.same{color:var(--faint)} .move.new{color:#2F7F86}
+.spark{display:inline-flex;flex-direction:column;color:var(--muted)}
+.spark.up{color:var(--ok)} .spark.down{color:var(--bad)}
+.idle{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--wait);border:1px solid currentColor;border-radius:3px;padding:0 5px;vertical-align:1px}
+.idletxt{color:var(--wait);font-weight:600}
+.more .tablebox + .tablebox{margin-top:0}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -325,13 +343,27 @@ footer b{color:var(--muted);font-weight:600}
       <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-filter"/></svg>Filters<span class="chip" id="activeChip" hidden></span></h2>
       <button class="linkbtn" id="resetBtn" type="button">Clear all</button>
     </div>
-    <div class="tfilters">
-      <label class="f">Coordinator<select id="fCoord"></select></label>
-      <label class="f">Team leader<select id="fTeam"></select></label>
-      <label class="f">Skill<select id="fSkill"></select></label>
-      <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
-      <label class="f">Payment month<select id="fMonth"></select></label>
-      <label class="f">Search<input id="q" type="search" placeholder="Name or UID" autocomplete="off"></label>
+    <div class="frow">
+      <span class="flabel">Who</span>
+      <div class="tfilters">
+        <label class="f">Coordinator<select id="fCoord"></select></label>
+        <label class="f">Team leader<select id="fTeam"></select></label>
+        <label class="f">Skill<select id="fSkill"></select></label>
+        <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel">When</span>
+      <div class="tfilters">
+        <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option></select></label>
+        <label class="f">Payment month<select id="fMonth"></select></label>
+        <label class="f">Band<select id="fBand"><option value="">All</option><option value="ok">Top</option><option value="okl">Above median</option><option value="wait">Below median</option><option value="bad">Needs attention</option><option value="none">Not ranked yet</option></select></label>
+        <label class="f">Activity<select id="fAct"><option value="">All</option><option value="idle">No claims in last 7 days</option><option value="active">Active in last 7 days</option></select></label>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel">Find</span>
+      <div class="tfilters one"><label class="f"><input id="q" type="search" placeholder="Search name or UID" autocomplete="off" aria-label="Search"></label></div>
     </div>
   </section>
 
@@ -344,6 +376,7 @@ footer b{color:var(--muted);font-weight:600}
     <span class="resultbar" id="viewCount"></span>
   </div>
   <div id="zeroNote"></div>
+  <p class="note" id="periodNote"></p>
 
   <section class="panel table-panel">
     <div class="tablebox"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
@@ -363,6 +396,17 @@ footer b{color:var(--muted);font-weight:600}
       <p>Score is a percentile of approved claims from 0 to 100: a score of 75 means more approved claims than about three quarters of the peer group.</p>
       <p class="bands"><span class="bandtag ok">Top 75+</span><span class="bandtag okl">Above median 50–74</span><span class="bandtag wait">Below median 25–49</span><span class="bandtag bad">Needs attention under 25</span></p>
     </div>
+  </details>
+
+  <details class="panel more">
+    <summary>Averages: SIM vs Normal and by skill</summary>
+    <div class="tablebox"><table><thead><tr>
+      <th>Group</th><th>Counselors</th><th>Hits</th><th>Average hits</th>
+    </tr></thead><tbody id="typeBody"></tbody></table></div>
+    <div class="tablebox"><table><thead><tr>
+      <th>Skill</th><th>Counselors</th><th>Average hits</th><th>SIM average</th><th>Normal average</th>
+    </tr></thead><tbody id="skillBody"></tbody></table></div>
+    <p class="morebody" style="margin:10px 0 0">Average approved claims per counselor, for the current filters and period.</p>
   </details>
 
   <details class="panel more">
@@ -624,7 +668,26 @@ function band(s){
 }
 const avg = l => { const v = l.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
 
-function compute(){
+/* ---- Time helpers ---- */
+const DAY = 864e5, WEEK = 7 * DAY;
+const mondayOf = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); const wd = (d.getDay() + 6) % 7; return d.getTime() - wd * DAY; };
+/* Current and previous window for the Period filter */
+function periodWindow(kind){
+  const now = Date.now(), d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  if (kind === "week"){ const m = mondayOf(now); return {cur:{from:m, to:null}, prev:{from:m - WEEK, to:m}, prevLabel:"last week"}; }
+  if (kind === "month"){
+    const m = new Date(d0.getFullYear(), d0.getMonth(), 1).getTime(), pm = new Date(d0.getFullYear(), d0.getMonth() - 1, 1).getTime();
+    return {cur:{from:m, to:null}, prev:{from:pm, to:m}, prevLabel:"last month"};
+  }
+  if (kind === "30d") return {cur:{from:now - 30 * DAY, to:null}, prev:{from:now - 60 * DAY, to:now - 30 * DAY}, prevLabel:"previous 30 days"};
+  return {cur:{from:null, to:null}, prev:{from:null, to:now - 7 * DAY}, prevLabel:"7 days ago"};   // whole session vs a week ago
+}
+const TREND_WEEKS = 8;
+const weekIndex = (t, start) => { const i = Math.floor((t - start) / WEEK); return i >= 0 && i < TREND_WEEKS ? i : -1; };
+
+function compute(opts){
+  opts = opts || {};
+  const trendStart = mondayOf(Date.now()) - (TREND_WEEKS - 1) * WEEK;
   const byUid = new Map(); for (const p of ROSTER) byUid.set(String(p.uid), p);
   const haveRoster = ROSTER.length > 0;
   const f = {month:$("fMonth").value, skill:$("fSkill").value, sim:$("fSim").value};
@@ -674,13 +737,19 @@ function compute(){
   };
 
   for (const r of ALL){
-    if (f.month && r.month !== f.month) continue;
+    if (!opts.ignoreMonth && f.month && r.month !== f.month) continue;
+    if (opts.from !== null && opts.from !== undefined && r._ts < opts.from) continue;
+    if (opts.to !== null && opts.to !== undefined && r._ts >= opts.to) continue;
     const p = byUid.get(String(r.uid));
     if ((f.skill || f.sim) && !personOk(p)) continue;
     const ck = coordOf(r.drona); add(getCoord(ck), r);
     const t = getTeam(teamFor(r, ck), r._teamLabel ? r._teamLabel.replace(/\s*:\s*\d+\s*$/, "") : "", ck); add(t, r);
     const person = getPerson(String(r.uid), r.name); add(person, r);
     if (!person.teamUid){ person.teamUid = t.uid; person.coordKey = t.coordKey; }
+    if (opts.weeks && r._res === "ok"){                       // weekly Hits for the trend line
+      const wi = weekIndex(r._ts, trendStart);
+      if (wi >= 0){ for (const x of [t, getCoord(ck)]){ x.wk = x.wk || new Array(TREND_WEEKS).fill(0); x.wk[wi]++; } }
+    }
   }
   for (const p of ROSTER){
     if (!p.active || !personOk(p) || isCoordRole(p.role)) continue;
@@ -743,9 +812,61 @@ const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="col
 const ord = n => { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 const hitsCell = h => fmt(h.app + h.adm + h.post) + '<small class="subl">App ' + fmt(h.app) + ', Adm ' + fmt(h.adm) + ', Post ' + fmt(h.post) + '</small>';
 
+/* Rank cell: medal for the top three (only with a real score), plus movement versus the previous period */
+const moveTag = m => m === null || m === undefined ? "" :
+  m === "new" ? '<small class="move new" title="Newly ranked this period">new</small>' :
+  m > 0 ? '<small class="move up" title="Up ' + m + ' since the previous period">▲' + m + '</small>' :
+  m < 0 ? '<small class="move down" title="Down ' + (-m) + ' since the previous period">▼' + (-m) + '</small>' :
+  '<small class="move same" title="Same rank as the previous period">–</small>';
+const rankWithMove = (i, score, move) => '<span class="rankbox">' + rankCell(i, score) + moveTag(move) + '</span>';
+
+/* Small 8-week line of Hits */
+function spark(wk){
+  wk = wk || new Array(TREND_WEEKS).fill(0);
+  const W = 96, H = 26, max = Math.max(1, ...wk), step = W / (wk.length - 1);
+  const pts = wk.map((v, i) => [Math.round(i * step * 10) / 10, Math.round((H - 3 - (v / max) * (H - 6)) * 10) / 10]);
+  const last = wk[wk.length - 1], prev = wk[wk.length - 2], dir = last > prev ? "up" : last < prev ? "down" : "flat";
+  return '<span class="spark ' + dir + '" title="Hits per week, last ' + wk.length + ' weeks: ' + wk.join(", ") + '">' +
+    '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' +
+    '<polyline points="' + pts.map(p => p.join(",")).join(" ") + '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<circle cx="' + pts[pts.length - 1][0] + '" cy="' + pts[pts.length - 1][1] + '" r="2.4" fill="currentColor"/></svg>' +
+    '<small class="subl">this week ' + fmt(last) + '</small></span>';
+}
+
+/* Results that only change when filters or data change are kept, so paging and sorting stay instant */
+const memo = {};
+function cached(name, key, fn){ if (!memo[name] || memo[name].key !== key) memo[name] = {key, val: fn()}; return memo[name].val; }
+let dataStamp = 0, lastAllRef = null;
+
+/* Ordered lists used for ranks (same rules for this period and the previous one) */
+function orderedLists(d, sc, st){
+  const inScope = p => (!sc || p.coordKey === sc) && (!st || p.teamUid === st);
+  const people = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p)).sort(d.byScore);
+  const teams = [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!sc || t.coordKey === sc))
+    .sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
+  const coords = [...d.coords.values()].sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
+  return {people, teams, coords};
+}
+const rankMap = (list, keyFn) => { const m = new Map(); list.forEach((x, i) => m.set(keyFn(x), {i, scored: x.score !== null && x.score !== undefined})); return m; };
+function movement(prevMap, key, i, score){
+  if (score === null || score === undefined) return null;
+  const p = prevMap.get(key);
+  if (!p || !p.scored) return "new";
+  return p.i - i;
+}
+
 function render(){
   if (!ALL.length && !ROSTER.length) return;
-  const d = compute();
+  if (ALL !== lastAllRef){ lastAllRef = ALL; dataStamp++; }
+  const P = periodWindow($("fPeriod").value);
+  const baseKey = [dataStamp, $("fSkill").value, $("fSim").value, $("fMonth").value].join("|");
+  const d = cached("cur", baseKey + "|" + JSON.stringify(P.cur), () => compute(P.cur));
+  const dPrev = cached("prev", baseKey + "|" + JSON.stringify(P.prev), () => compute(P.prev));
+  const dTrend = cached("trend", [dataStamp, $("fSkill").value, $("fSim").value, mondayOf(Date.now())].join("|"), () => compute({weeks:true, ignoreMonth:true}));
+  const lastClaim = cached("last", String(dataStamp), () => { const m = new Map(); for (const r of ALL){ const u = String(r.uid); if (!m.has(u) || m.get(u) < r._ts) m.set(u, r._ts); } return m; });
+  const idleSince = Date.now() - 7 * DAY;
+  const isIdle = p => !(lastClaim.get(String(p.uid)) >= idleSince);
+
   $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Scores need the team list for skills and SIM; showing claims only.</div>';
 
   // Coordinator and team dropdowns
@@ -770,58 +891,76 @@ function render(){
   $("oTeams").textContent = fmt(teamsIn.filter(t => !t.other && d.tlSet.has(t.uid)).length);
   $("oTeamsSub").textContent = sc ? "under this coordinator" : fmt(d.coords.size) + " coordinators";
   $("oPeople").textContent = fmt(peopleIn.length);
-  $("oPeopleSub").textContent = fmt(peopleIn.filter(p => p.sim).length) + " with SIM";
+  const idleN = peopleIn.filter(isIdle).length;
+  $("oPeopleSub").textContent = fmt(peopleIn.filter(p => p.sim).length) + " with SIM, " + fmt(idleN) + " no claims in 7 days";
   $("zeroNote").innerHTML = tot.ok ? "" : '<div class="zero">No approved claims yet for this selection, so scores show "–". Rankings appear automatically as claims are approved.</div>';
+  $("periodNote").textContent = "▲▼ = rank change compared with " + P.prevLabel + ".";
 
-  // Table for the current view
-  const q = $("q").value.trim().toLowerCase();
+  // Ranks now and in the previous period
+  const L = orderedLists(d, sc, st), LP = orderedLists(dPrev, sc, st);
+  L.people.forEach((p, i) => p._rank = i); L.teams.forEach((t, i) => t._rank = i); L.coords.forEach((c, i) => c._rank = i);
+  const prevPeople = rankMap(LP.people, p => p.uid), prevTeams = rankMap(LP.teams, t => t.uid), prevCoords = rankMap(LP.coords, c => c.key);
+
+  // Filters applied after ranking, so ranks stay true
+  const q = $("q").value.trim().toLowerCase(), bandF = $("fBand").value, actF = $("fAct").value;
+  const bandOk = s => !bandF || (bandF === "none" ? (s === null || s === undefined) : band(s).key === bandF);
+  const teamIdle = t => [...d.people.values()].filter(p => !p.isTL && p.active && p.teamUid === t.uid && isIdle(p)).length;
+  const coordIdle = c => [...d.people.values()].filter(p => !p.isTL && p.active && p.coordKey === c.key && isIdle(p)).length;
+  const actOk = n => !actF || (actF === "idle" ? n > 0 : n === 0);
+
   let head = [], rows = [], toRow, sortVals = {}, hlKey = "";
   if (view === "people"){
     head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["score","Score"],["band","Band"]];
-    rows = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p) && (!q || (p.name + " " + p.uid).toLowerCase().includes(q))).sort(d.byScore);
-    rows.forEach((p, i) => p._rank = i);
+    rows = L.people.filter(p => (!q || (p.name + " " + p.uid).toLowerCase().includes(q)) && bandOk(p.score) && actOk(isIdle(p) ? 1 : 0));
     sortVals = {name: p => p.name, group: p => p.skill + (p.post ? " 0" : p.sim ? " 1" : " 2"), hits: p => p.h.app + p.h.adm + p.h.post, score: p => p.score ?? -1, band: p => p.score ?? -1};
-    toRow = (p, i) => {
+    toRow = p => {
       const tag = p.post ? '<span class="simtag post">Post-adm</span>' : '<span class="simtag' + (p.sim ? " on" : "") + '">' + (p.sim ? "SIM" : "Normal") + '</span>';
-      const t = d.teams.get(p.teamUid);
-      return '<tr' + (p._rank < 3 && p.score !== null ? ' class="podium"' : '') + '>' + td("Rank", rankCell(p._rank, p.score)) +
-        td("Counselor", '<span class="who"><b>' + esc(p.name) + '</b><small>UID ' + esc(p.uid) + (t && !t.other ? ", team " + esc(t.name) : "") + '</small></span>') +
+      const t = d.teams.get(p.teamUid), idle = isIdle(p);
+      return '<tr' + (p._rank < 3 && p.score !== null ? ' class="podium"' : '') + '>' + td("Rank", rankWithMove(p._rank, p.score, movement(prevPeople, p.uid, p._rank, p.score))) +
+        td("Counselor", '<span class="who"><b>' + esc(p.name) + (idle ? '<span class="idle" title="No claims in the last 7 days">Idle 7d</span>' : '') + '</b><small>UID ' + esc(p.uid) + (t && !t.other ? ", team " + esc(t.name) : "") + '</small></span>') +
         td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") +
         td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
         td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : bandTag(p.score)) + '</tr>';
     };
   } else if (view === "teams"){
-    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["score","Team score"],["band","Band"]];
-    rows = [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!sc || t.coordKey === sc) && (!q || (t.name + " " + t.uid).toLowerCase().includes(q)))
-      .sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
-    rows.forEach((t, i) => t._rank = i);
-    sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, score: t => t.score ?? -1, band: t => t.score ?? -1};
-    toRow = (t, i) => '<tr class="click" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' + td("Rank", rankCell(t._rank, t.score)) +
-      td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
-      td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") +
-      td("Team score", scoreCell(t.score, t.score === null ? fmt(t.counselors) + " counselors, no approved claims yet" : fmt(t.counselors) + " counselors"), "num") + td("Band", bandTag(t.score)) + '</tr>';
+    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["trend","8-week trend"],["score","Team score"],["band","Band"]];
+    rows = L.teams.filter(t => (!q || (t.name + " " + t.uid).toLowerCase().includes(q)) && bandOk(t.score) && actOk(teamIdle(t)));
+    const wk = t => (dTrend.teams.get(t.uid) || {}).wk;
+    sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, trend: t => (wk(t) || [0])[TREND_WEEKS - 1], score: t => t.score ?? -1, band: t => t.score ?? -1};
+    toRow = t => {
+      const n = teamIdle(t);
+      return '<tr class="click" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' +
+        td("Rank", rankWithMove(t._rank, t.score, movement(prevTeams, t.uid, t._rank, t.score))) +
+        td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
+        td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("8-week trend", spark(wk(t))) +
+        td("Team score", scoreCell(t.score, fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
+        td("Band", bandTag(t.score)) + '</tr>';
+    };
   } else {
-    head = [["rank","Rank"],["name","Coordinator"],["teams","Teams"],["hits","Hits"],["score","Score"],["band","Band"]];
-    rows = [...d.coords.values()].sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
-    rows.forEach((c, i) => c._rank = i);
-    // All coordinators are listed; the one matching the Coordinator / Team leader filter is highlighted
+    head = [["rank","Rank"],["name","Coordinator"],["teams","Teams"],["hits","Hits"],["trend","8-week trend"],["score","Score"],["band","Band"]];
     const teamCoord = st && d.teams.get(st) ? d.teams.get(st).coordKey : "";
-    hlKey = sc || teamCoord;
-    rows = rows.filter(c => !q || c.name.toLowerCase().includes(q));
-    sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, score: c => c.score ?? -1, band: c => c.score ?? -1};
-    toRow = (c, i) => '<tr class="click' + (c.key === hlKey ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' + td("Rank", rankCell(c._rank, c.score)) +
-      td("Coordinator", '<b>' + esc(c.name) + '</b>') + td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors</small>', "num") +
-      td("Hits", hitsCell(c.h), "num") + td("Score", scoreCell(c.score), "num") + td("Band", bandTag(c.score)) + '</tr>';
+    hlKey = sc || teamCoord;                                   // all coordinators listed; the filtered one is highlighted
+    rows = L.coords.filter(c => (!q || c.name.toLowerCase().includes(q)) && bandOk(c.score) && actOk(coordIdle(c)));
+    const wk = c => (dTrend.coords.get(c.key) || {}).wk;
+    sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, trend: c => (wk(c) || [0])[TREND_WEEKS - 1], score: c => c.score ?? -1, band: c => c.score ?? -1};
+    toRow = c => {
+      const n = coordIdle(c);
+      return '<tr class="click' + (c.key === hlKey ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
+        td("Rank", rankWithMove(c._rank, c.score, movement(prevCoords, c.key, c._rank, c.score))) +
+        td("Coordinator", '<b>' + esc(c.name) + '</b>') +
+        td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small>', "num") +
+        td("Hits", hitsCell(c.h), "num") + td("8-week trend", spark(wk(c))) + td("Score", scoreCell(c.score), "num") + td("Band", bandTag(c.score)) + '</tr>';
+    };
   }
   const sv = sortBy[view];
   if (sv.key && sv.key !== "rank" && sortVals[sv.key]){
     const get = sortVals[sv.key];
-    rows.sort((a, b) => {
+    rows = [...rows].sort((a, b) => {
       const x = get(a), y = get(b);
       const c = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), undefined, {numeric:true, sensitivity:"base"});
       return (c * sv.dir) || (a._rank - b._rank);
     });
-  } else if (sv.key === "rank" && sv.dir === -1) rows.reverse();
+  } else if (sv.key === "rank" && sv.dir === -1) rows = [...rows].reverse();
   const size = pageSize(), pages = Math.max(1, Math.ceil(rows.length / size));
   if (jumpToHighlight && hlKey){ const at = rows.findIndex(c => c.key === hlKey); if (at >= 0) pg = Math.floor(at / size) + 1; }
   jumpToHighlight = false;
@@ -832,31 +971,50 @@ function render(){
     return '<th scope="col" class="sortable" tabindex="0" data-key="' + k + '" aria-sort="' + (on ? (sv.dir === 1 ? "ascending" : "descending") : "none") + '">' +
       label + '<span class="arr">' + (on ? (sv.dir === 1 ? "▲" : "▼") : "") + '</span></th>';
   }).join("");
-  $("tbody").innerHTML = items.map((x, i) => toRow(x, start + i)).join("") || '<tr><td class="empty" colspan="6">Nothing matches these filters.</td></tr>';
+  $("tbody").innerHTML = items.map(x => toRow(x)).join("") || '<tr><td class="empty" colspan="' + head.length + '">Nothing matches these filters.</td></tr>';
   const noun = view === "people" ? "counselor" : view === "teams" ? "team" : "coordinator";
   $("viewCount").textContent = fmt(rows.length) + " " + noun + (rows.length === 1 ? "" : "s");
   $("pageInfo").textContent = rows.length ? "Showing " + fmt(start + 1) + "–" + fmt(start + items.length) + " of " + fmt(rows.length) : "";
   $("prevBtn").disabled = pg <= 1; $("nextBtn").disabled = pg >= pages;
   document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view ? "true" : "false"));
 
-  // Benchmarks (inside the collapsed section)
-  const gs = [...d.groups.values()].filter(g => !g.key.startsWith("TL|") && g.members.some(inScope))
-    .sort((a, b) => (a.key.startsWith("TL|") - b.key.startsWith("TL|")) || a.label.localeCompare(b.label));
+  // Averages: SIM vs Normal, and by skill (current counselors in the selection)
+  const avgRow = (label, list) => {
+    const hits = list.reduce((s, p) => s + p.h.app + p.h.adm + p.h.post, 0);
+    return '<tr>' + td("Group", '<b>' + label + '</b>') + td("Counselors", fmt(list.length), "num") + td("Hits", fmt(hits), "num") +
+      td("Average hits", list.length ? '<b>' + (Math.round(hits / list.length * 10) / 10) + '</b>' : "–", "num") + '</tr>';
+  };
+  const reg = peopleIn.filter(p => !p.post);
+  $("typeBody").innerHTML = avgRow("SIM (high intent)", reg.filter(p => p.sim)) + avgRow("Normal", reg.filter(p => !p.sim)) +
+    (peopleIn.some(p => p.post) ? avgRow("Post-admission team", peopleIn.filter(p => p.post)) : "");
+  const bySkill = new Map();
+  for (const p of peopleIn){ if (!bySkill.has(p.skill)) bySkill.set(p.skill, []); bySkill.get(p.skill).push(p); }
+  const avgOf = l => l.length ? Math.round(l.reduce((s, p) => s + p.h.app + p.h.adm + p.h.post, 0) / l.length * 10) / 10 : null;
+  $("skillBody").innerHTML = [...bySkill.entries()].map(([k, l]) => ({k, l, a: avgOf(l)})).sort((x, y) => (y.a ?? -1) - (x.a ?? -1)).map(({k, l, a}) => {
+    const sim = l.filter(p => p.sim), nor = l.filter(p => !p.sim);
+    return '<tr>' + td("Skill", '<b>' + esc(k) + '</b>') + td("Counselors", fmt(l.length), "num") +
+      td("Average hits", a === null ? "–" : '<b>' + a + '</b>', "num") +
+      td("SIM average", sim.length ? avgOf(sim) + '<small class="subl">' + sim.length + ' people</small>' : "–", "num") +
+      td("Normal average", nor.length ? avgOf(nor) + '<small class="subl">' + nor.length + ' people</small>' : "–", "num") + '</tr>';
+  }).join("") || '<tr><td class="empty" colspan="5">No counselors in this selection.</td></tr>';
+
+  // Benchmarks (collapsed)
+  const gs = [...d.groups.values()].filter(g => !g.key.startsWith("TL|") && g.members.some(inScope)).sort((a, b) => a.label.localeCompare(b.label));
   const qc = arr => quart(arr, .25) + ' / <b>' + quart(arr, .5) + '</b> / ' + quart(arr, .75);
   $("groupBody").innerHTML = gs.map(g => '<tr>' + td("Peer group", '<b>' + esc(g.label) + '</b>') + td("People", fmt(g.members.length), "num") +
       td("Approved claims", g.members.length < 2 ? "–" : qc(g.totals), "num") + '</tr>').join("") ||
     '<tr><td class="empty" colspan="3">No groups to show.</td></tr>';
 
-  const nActive = ["fCoord","fTeam","fSkill","fSim","fMonth","q"].filter(id => $(id).value.trim()).length;
+  const nActive = ["fCoord","fTeam","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].filter(id => $(id).value.trim()).length;
   $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
 }
 
 /* Events */
-["fSkill","fSim","fMonth"].forEach(id => $(id).addEventListener("change", () => { pg = 1; render(); }));
+["fSkill","fSim","fMonth","fPeriod","fBand","fAct"].forEach(id => $(id).addEventListener("change", () => { pg = 1; render(); }));
 $("fTeam").addEventListener("change", () => { pg = 1; jumpToHighlight = true; render(); });
 $("fCoord").addEventListener("change", () => { $("fTeam").value = ""; pg = 1; jumpToHighlight = true; render(); });
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 200); });
-$("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fSkill","fSim","fMonth","q"].forEach(id => $(id).value = ""); pg = 1; render(); });
+$("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].forEach(id => $(id).value = ""); pg = 1; render(); });
 $("refreshBtn").addEventListener("click", () => load(false));
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; $("q").value = ""; pg = 1; jumpToHighlight = true; render(); }));
 function drill(tr){
