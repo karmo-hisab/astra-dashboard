@@ -552,42 +552,76 @@ function assignTeams(rows){
 
 const DROPDOWNS = [
   {id:"fDrona",   key:"drona"},
-  {id:"fSarathi", key:"_team", labelKey:"_teamLabel", dependsOn:"fDrona"},
+  {id:"fSarathi", key:"_team", labelKey:"_teamLabel"},
   {id:"fMonth",   key:"month"},
 ];
-function buildOptions(){
-  for (const f of DROPDOWNS){
-    const sel = $(f.id), cur = sel.value, labels = new Map();
-    const parentVal = f.dependsOn ? $(f.dependsOn).value : "";
+const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fMonth","dFrom","dTo"];
+
+/* Current filter choices */
+function readFilters(){
+  return {
+    q: $("q").value.trim().toLowerCase(),
+    res: $("fResult").value,
+    ty: TYPES.find(t => t.astra === $("fType").value),
+    /* Date range uses the claim submission date (Timestamp, column A) */
+    from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
+    to:   $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null,
+    drop: Object.fromEntries(DROPDOWNS.map(d => [d.id, $(d.id).value]))
+  };
+}
+const resOf = r => r._res === "ok" ? "ok" : r._res === "bad" ? "bad" : "wait";
+/* Does a claim pass every filter except the ones named in "skip"? (used to build each dropdown's options) */
+function rowMatches(r, f, skipArg){
+  const skips = Array.isArray(skipArg) ? skipArg : [skipArg], has = k => skips.includes(k);
+  if (!has("q") && f.q && !r._search.includes(f.q)) return false;
+  if (!has("date") && f.from !== null && r._ts < f.from) return false;
+  if (!has("date") && f.to !== null && r._ts > f.to) return false;
+  if (!has("fResult") && f.res && resOf(r) !== f.res) return false;
+  if (!has("fType") && f.ty && !f.ty.match.test(r.claim || "")) return false;
+  for (const d of DROPDOWNS) if (!has(d.id) && f.drop[d.id] && (r[d.key] || "(blank)") !== f.drop[d.id]) return false;
+  return true;
+}
+
+/* Each dropdown only offers values that exist within the other chosen filters, with counts */
+function buildOptions(f){
+  f = f || readFilters();
+  for (const d of DROPDOWNS){
+    const sel = $(d.id), cur = sel.value, opts = new Map();
     for (const r of ALL){
-      if (parentVal && (r.drona || "(blank)") !== parentVal) continue;
-      const v = r[f.key] || "(blank)";
-      if (!labels.has(v)) labels.set(v, f.labelKey ? r[f.labelKey] : v);
+      // the coordinator list ignores the team leader choice, so you can always switch coordinator
+      if (!rowMatches(r, f, d.id === "fDrona" ? ["fDrona", "fSarathi"] : d.id)) continue;
+      const v = r[d.key] || "(blank)";
+      if (!opts.has(v)) opts.set(v, {label: d.labelKey ? r[d.labelKey] : v, n: 0});
+      opts.get(v).n++;
     }
-    const vals = [...labels.keys()].sort((a,b) => String(labels.get(a)).localeCompare(String(labels.get(b)), undefined, {numeric:true}));
-    sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '">' + esc(labels.get(v)) + '</option>').join("");
-    if (vals.includes(cur)) sel.value = cur;
+    if (cur && !opts.has(cur)){                 // keep the current choice visible even if nothing matches now
+      const any = ALL.find(r => (r[d.key] || "(blank)") === cur);
+      opts.set(cur, {label: any && d.labelKey ? any[d.labelKey] : cur, n: 0});
+    }
+    const vals = [...opts.keys()].sort((a, b) => String(opts.get(a).label).localeCompare(String(opts.get(b).label), undefined, {numeric:true}));
+    sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '">' + esc(opts.get(v).label) + ' (' + fmt(opts.get(v).n) + ')</option>').join("");
+    sel.value = cur;
+  }
+  // Fixed lists (Hit or Miss, Claim type): show counts, grey out options with no claims
+  const fixed = [
+    {id:"fResult", count: v => ALL.filter(r => rowMatches(r, f, "fResult") && resOf(r) === v).length},
+    {id:"fType",   count: v => { const t = TYPES.find(x => x.astra === v); return ALL.filter(r => rowMatches(r, f, "fType") && t && t.match.test(r.claim || "")).length; }}
+  ];
+  for (const x of fixed){
+    for (const o of $(x.id).options){
+      if (!o.value) continue;
+      if (!o.dataset.base) o.dataset.base = o.textContent;
+      const n = x.count(o.value);
+      o.textContent = o.dataset.base + " (" + fmt(n) + ")";
+      o.disabled = n === 0 && $(x.id).value !== o.value;
+    }
   }
 }
 
-const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fMonth","dFrom","dTo"];
 function apply(resetPage = true){
-  const q = $("q").value.trim().toLowerCase();
-  const res = $("fResult").value;
-  const ty = TYPES.find(t => t.astra === $("fType").value);      // claim type filter
-  const active = DROPDOWNS.map(f => ({key:f.key, val:$(f.id).value})).filter(f => f.val);
-  /* Date range uses the claim submission date (Timestamp, column A) */
-  const from = $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null;
-  const to   = $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null;
-  VIEW = ALL.filter(r => {
-    if (q && !r._search.includes(q)) return false;
-    if (from !== null && r._ts < from) return false;
-    if (to !== null && r._ts > to) return false;
-    if (res && (res === "wait" ? (r._res === "ok" || r._res === "bad") : r._res !== res)) return false;
-    if (ty && !ty.match.test(r.claim || "")) return false;
-    for (const f of active) if ((r[f.key] || "(blank)") !== f.val) return false;
-    return true;
-  });
+  const f = readFilters();
+  buildOptions(f);
+  VIEW = ALL.filter(r => rowMatches(r, f, null));
   const col = SHOWN.find(c => c.key === sortKey);
   VIEW.sort((a, b) => {
     let x = a[sortKey], y = b[sortKey];
@@ -669,7 +703,12 @@ function renderTable(){
 let t;
 $("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); });
 ["fSarathi","fResult","fType","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
-$("fDrona").addEventListener("change", () => { buildOptions(); apply(); });  // team leader list follows the coordinator
+$("fDrona").addEventListener("change", () => {
+  // if the chosen team leader isn't under the new coordinator, clear it
+  const f = readFilters();
+  if (f.drop.fSarathi && !ALL.some(r => rowMatches(r, f, null))) $("fSarathi").value = "";
+  apply();
+});
 $("resetBtn").addEventListener("click", () => { FILTER_IDS.forEach(id => $(id).value = ""); buildOptions(); apply(); });
 $("refreshBtn").addEventListener("click", () => load(false));
 $("prevBtn").addEventListener("click", () => { page--; renderTable(); window.scrollTo({top:0}); });
