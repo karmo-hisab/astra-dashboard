@@ -68,36 +68,20 @@ body.locked .wrap, body.locked .needs-auth{display:none!important}
 .ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-3px}
 .ic.lg{width:18px;height:18px}
 
-.coords{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:22px}
-.ccard{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:11px 15px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
-.ccard:hover{border-color:var(--navy-2)}
-.ccard.sel{border-color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
-.ccard h3{font-size:14.5px;font-weight:600;margin:0 0 4px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ccard .row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.ccard .big{font-family:var(--serif);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums lining-nums}
-.ccard .rate{font-size:13px;font-weight:700;color:var(--ok)}
-.ccard .sub{font-size:12px;color:var(--faint);margin-top:4px}
-.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-6px 0 18px;font-size:13px;color:var(--muted)}
-.crumb{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:3px 6px 3px 10px;font-weight:600;color:var(--ink)}
-.crumb button{border:none;background:none;padding:0 4px;font-size:14px;color:var(--muted);cursor:pointer}
+.stats4{grid-template-columns:repeat(4,1fr)!important}
+.tfilters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:end}
+.viewbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px;gap:3px}
+.seg button{border:none;background:none;padding:6px 16px;border-radius:4px;font-weight:600;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--navy-2);color:#fff}
+:root[data-theme="dark"] .seg button[aria-selected="true"]{background:#E3E7EF;color:#0E1424}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .seg button[aria-selected="true"]{background:#E3E7EF;color:#0E1424} }
+.table-panel{margin-bottom:18px}
 .left-tag{display:inline-block;margin-left:6px;font-size:11px;font-weight:600;color:var(--faint);border:1px solid var(--line);border-radius:3px;padding:0 5px;vertical-align:1px}
 .rank{font-family:var(--serif);font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
 .rank.top{color:var(--accent)}
-.hitp{font-weight:700;font-variant-numeric:tabular-nums}
-.note{font-size:12.5px;color:var(--faint);margin:-12px 2px 22px;min-height:1px}
-.sechead{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px;margin-bottom:10px}
-.sechead .section-title{margin:0}
-.sechead input{max-width:260px}
-.check{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;align-self:end;height:34px}
-.check input{width:16px;height:16px;accent-color:var(--navy-2)}
-.table-panel{margin-bottom:22px}
 tr.click{cursor:pointer}
 tr.click:hover td{background:var(--neutral-bg)}
-tr.sel td{background:var(--neutral-bg)}
-tr.sel td:first-child{border-left-color:var(--accent)}
-.tfilters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:12px;align-items:end}
-@media (max-width: 980px){ .tfilters{grid-template-columns:repeat(3,minmax(0,1fr))} }
-@media (max-width: 720px){ .tfilters{grid-template-columns:1fr 1fr} .coords{grid-template-columns:1fr 1fr;gap:10px} .sechead input{max-width:none} .ccard h3{white-space:normal} }
 .bandtag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:3px;padding:1px 8px;white-space:nowrap;border:1px solid currentColor}
 .bandtag.ok{color:var(--ok);background:var(--ok-bg)}
 .bandtag.okl{color:#2F7F86;background:rgba(47,127,134,.10)}
@@ -106,18 +90,22 @@ tr.sel td:first-child{border-left-color:var(--accent)}
 .bandtag.neutral{color:var(--faint);background:transparent}
 :root[data-theme="dark"] .bandtag.okl{color:#6FC7CE}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .bandtag.okl{color:#6FC7CE} }
-.score{font-family:var(--serif);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums lining-nums}
+.score{font-family:var(--serif);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums lining-nums}
 .subl{display:block;color:var(--faint);font-size:11.5px;font-weight:400;white-space:nowrap}
-.unit{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--faint)}
 .simtag{display:inline-block;font-size:11px;font-weight:700;border-radius:3px;padding:0 6px;color:var(--faint);border:1px solid var(--line);margin-left:4px;vertical-align:1px}
 .simtag.on{color:var(--navy-2);border-color:var(--navy-2)}
+.simtag.post{color:var(--accent);border-color:var(--accent)}
 :root[data-theme="dark"] .simtag.on{color:#9DB8FF;border-color:#9DB8FF}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .simtag.on{color:#9DB8FF;border-color:#9DB8FF} }
-.howpanel{padding:12px 16px;margin:-4px 0 22px;font-size:13px;color:var(--muted);line-height:1.6}
-.howpanel b{color:var(--ink)}
-.bands{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.ccard .row h3{margin:0;flex:1;min-width:0}
-th small{font-weight:500;color:var(--faint);font-size:11px}
+.more{margin-bottom:14px}
+.more summary{cursor:pointer;padding:11px 16px;font-family:var(--serif);font-weight:600;font-size:15px}
+.morebody{padding:0 16px 14px;font-size:13.5px;color:var(--muted);line-height:1.6}
+.morebody b{color:var(--ink)} .morebody ul{margin:6px 0;padding-left:20px}
+.more .tablebox{border-top:1px solid var(--line)}
+.bands{display:flex;flex-wrap:wrap;gap:6px}
+.zero{font-size:13px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:6px;padding:9px 14px;margin-bottom:10px}
+@media (max-width: 980px){ .tfilters{grid-template-columns:repeat(3,minmax(0,1fr))} .stats4{grid-template-columns:1fr 1fr!important} }
+@media (max-width: 720px){ .tfilters{grid-template-columns:1fr 1fr} .seg{width:100%} .seg button{flex:1;padding:7px 6px} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -317,12 +305,10 @@ footer b{color:var(--muted);font-weight:600}
   <div id="notice"></div>
   <div id="rosterWarn"></div>
 
-  <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg>Overview</h2>
-  <section class="stats" aria-label="Overview for the current selection">
+  <section class="stats stats4" aria-label="Overview for the current selection">
     <div class="stat tot"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Claims</h2><div class="big" id="oClaims">–</div><div class="sub" id="oClaimsSub">&nbsp;</div></div>
     <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Verified hits</h2><div class="big" id="oHits">–</div><div class="sub" id="oHitsSub">&nbsp;</div></div>
-    <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Coordinators</h2><div class="big" id="oCoords">–</div><div class="sub">Dronacharya</div></div>
-    <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-admission"/></svg>Team leaders</h2><div class="big" id="oTeams">–</div><div class="sub">Sarathi</div></div>
+    <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-admission"/></svg>Teams</h2><div class="big" id="oTeams">–</div><div class="sub" id="oTeamsSub">&nbsp;</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Counselors</h2><div class="big" id="oPeople">–</div><div class="sub" id="oPeopleSub">&nbsp;</div></div>
   </section>
 
@@ -332,57 +318,58 @@ footer b{color:var(--muted);font-weight:600}
       <button class="linkbtn" id="resetBtn" type="button">Clear all</button>
     </div>
     <div class="tfilters">
-      <label class="f">Payment month<select id="fMonth"></select></label>
-      <label class="f">Claim type<select id="fType"></select></label>
+      <label class="f">Coordinator<select id="fCoord"></select></label>
+      <label class="f">Team leader<select id="fTeam"></select></label>
       <label class="f">Skill<select id="fSkill"></select></label>
       <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
-      <label class="f">Claim date from<input id="dFrom" type="date"></label>
-      <label class="f">Claim date to<input id="dTo" type="date"></label>
-      <label class="check"><input id="incLeft" type="checkbox">Include people who have left</label>
+      <label class="f">Payment month<select id="fMonth"></select></label>
+      <label class="f">Search<input id="q" type="search" placeholder="Name or UID" autocomplete="off"></label>
     </div>
   </section>
 
-  <div class="crumbs" id="crumbs"></div>
+  <div class="viewbar">
+    <div class="seg" role="tablist" aria-label="View">
+      <button type="button" role="tab" data-view="people" aria-selected="true">Counselors</button>
+      <button type="button" role="tab" data-view="teams" aria-selected="false">Team leaders</button>
+      <button type="button" role="tab" data-view="coords" aria-selected="false">Coordinators</button>
+    </div>
+    <span class="resultbar" id="viewCount"></span>
+  </div>
+  <div id="zeroNote"></div>
 
-  <div class="howpanel panel"><b>How performance is scored.</b> Only verified Hits count. Each counselor is compared with peers of the same <b>skill</b> and <b>type (SIM or Normal)</b>; team leaders with team leaders of the same skill. Each Hit count gets a percentile in the peer group, and the <b>score (0–100)</b> = 40% Applications + 40% Admissions + 20% Post-admission. A team's score is the average of its counselors; a coordinator's score is the average of all their counselors.
-    <span class="bands"><span class="bandtag ok">Top 75+</span><span class="bandtag okl">Above median 50–74</span><span class="bandtag wait">Below median 25–49</span><span class="bandtag bad">Needs attention under 25</span></span></div>
-
-  <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-grid"/></svg>Coordinators (Dronacharya)</h2>
-  <section class="coords" id="coords" aria-label="Coordinators"></section>
-
-  <div class="sechead"><h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-admission"/></svg>Team leaders (Sarathi)</h2>
-    <span class="resultbar" id="teamCount"></span></div>
   <section class="panel table-panel">
-    <div class="tablebox"><table><thead><tr>
-      <th>Rank</th><th>Team leader</th><th>Coordinator</th><th>Skill</th><th>Counselors</th><th>Team hits</th><th>Team score</th><th>Team leader's own</th><th>Band</th>
-    </tr></thead><tbody id="teamBody"></tbody></table></div>
-    <div class="pager"><span id="teamInfo"></span><div><button id="teamPrev" type="button">Previous</button><button id="teamNext" type="button">Next</button></div></div>
+    <div class="tablebox"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="pager"><span id="pageInfo"></span><div><button id="prevBtn" type="button">Previous</button><button id="nextBtn" type="button">Next</button></div></div>
   </section>
-  <p class="note" id="teamNote"></p>
 
-  <div class="sechead"><h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg>Counselor leaderboard</h2>
-    <input id="q" type="search" placeholder="Search name, UID or skill" autocomplete="off" aria-label="Search counselors"></div>
-  <section class="panel table-panel">
-    <div class="tablebox"><table><thead><tr>
-      <th>Rank</th><th>Counselor</th><th>Peer group</th><th>Team leader</th><th>Applications</th><th>Admissions</th><th>Post-admission</th><th>Score</th><th>Band</th>
-    </tr></thead><tbody id="peopleBody"></tbody></table></div>
-    <div class="pager"><span id="peopleInfo"></span><div><button id="peoplePrev" type="button">Previous</button><button id="peopleNext" type="button">Next</button></div></div>
-  </section>
-  <p class="note">Ranked by score, then total Hits. "2nd of 8 in group" is the position within the peer group. Groups with only one person aren't scored.</p>
+  <details class="panel more">
+    <summary>How is this scored?</summary>
+    <div class="morebody">
+      <p>Only <b>approved claims</b> (Hits, approved at both steps) count, with all claim types counted equally. Everyone is compared only with their own peer group:</p>
+      <ul>
+        <li><b>Counselors:</b> same skill and same type (SIM or Normal). Someone alone in their group is compared with everyone in the same skill.</li>
+        <li><b>Post-admission team:</b> compared only with each other.</li>
+        <li><b>Team leaders:</b> team score = average of their counselors' scores.</li>
+        <li><b>Coordinators:</b> score = average of all their counselors' scores.</li>
+      </ul>
+      <p>Score is a percentile of approved claims from 0 to 100: a score of 75 means more approved claims than about three quarters of the peer group.</p>
+      <p class="bands"><span class="bandtag ok">Top 75+</span><span class="bandtag okl">Above median 50–74</span><span class="bandtag wait">Below median 25–49</span><span class="bandtag bad">Needs attention under 25</span></p>
+    </div>
+  </details>
 
-  <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg>Peer group benchmarks</h2>
-  <section class="panel table-panel">
+  <details class="panel more">
+    <summary>Group benchmarks (P25 / Median / P75)</summary>
     <div class="tablebox"><table><thead><tr>
-      <th>Peer group</th><th>People</th><th>Applications<br><small>P25 / Median / P75</small></th><th>Admissions<br><small>P25 / Median / P75</small></th><th>Post-admission<br><small>P25 / Median / P75</small></th>
+      <th>Peer group</th><th>People</th><th>Approved claims per person<br><small>P25 / Median / P75</small></th>
     </tr></thead><tbody id="groupBody"></tbody></table></div>
-  </section>
-  <p class="note">Verified Hits per person in each group: a quarter of the group is below P25, half below the Median, three quarters below P75.</p>
+  </details>
 
   <footer>
     <span><b>For LPU internal use only.</b> Access is limited to @lpu.co.in accounts. Please don't share screenshots outside LPU.</span>
-    <span>Team structure, skills and SIM from the duty list (TL Bifurcation).</span>
+    <span>Teams, skills and SIM from the duty list (TL Bifurcation).</span>
   </footer>
 </div>
+
 
 <!--PREVIEW_SCRIPT-->
 <script>
@@ -585,34 +572,29 @@ function assignTeams(rows){
 }
 
 /* ================== TEAMS PAGE ================== */
-/* Performance = verified Hits, compared only with peers.
-   Peer group: counselors = same Skill + same type (SIM / Normal); team leaders = team leaders of the same Skill.
-   Each Hit count (Applications, Admissions, Post-admission) gets a percentile within the peer group;
-   Score = 40% Applications + 40% Admissions + 20% Post-admission percentiles (0-100).
-   Tree: a team's score = average score of its counselors; a coordinator's score = average of all their counselors. */
-const WEIGHTS = {app: 0.4, adm: 0.4, post: 0.2};
-const CATS = [{key:"app", label:"Applications"}, {key:"adm", label:"Admissions"}, {key:"post", label:"Post-admission"}];
-let sel = {coord: "", team: ""}, teamPage = 1, peoplePage = 1;
+/* Performance = approved claims (Hits), all claim types counted equally, compared only within a peer group:
+   - Counselors: same Skill + same type (SIM / Normal). If alone in that group, compared with everyone in the same Skill.
+   - Post-admission team (Skill contains "Post Admission"): compared only with each other.
+   - Score = percentile of approved claims within the group (0-100).
+   - Team leaders: team score = average of their counselors' scores. Coordinators: average of all their counselors. */
+const CATS = ["app", "adm", "post"];
+let view = "people", pg = 1;
 const normName = s => String(s || "").toLowerCase().replace(/^\s*(dr|prof|mr|ms|mrs)\.?\s+/, "").replace(/[^a-z0-9]/g, "");
-const typeOf = c => { const t = TYPES.find(t => t.match.test(c || "")); return t ? t.astra : ""; };
 const catOf = c => /arrow/i.test(c || "") ? "app" : /brahmast/i.test(c || "") ? "adm" : /(naga\s*pasha|akshaya)/i.test(c || "") ? "post" : "";
 const isTLRole = r => /team\s*leader/i.test(r || "");
 const isCounselorRole = r => /counsel/i.test(r || "");
-const OTHER = "other:";
-const NOSKILL = "(No skill listed)";
-
-function rosterMaps(){ const m = new Map(); for (const p of ROSTER) m.set(String(p.uid), p); return m; }
+const isPostSkill = s => /post\s*-?\s*adm/i.test(s || "");
+const OTHER = "other:", NOSKILL = "(No skill listed)";
 
 function buildOptions(){
-  const fill = (id, vals, label) => {
+  const fill = (id, vals) => {
     const el = $(id), cur = el.value;
     const list = [...new Set(vals.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
-    el.innerHTML = '<option value="">All</option>' + list.map(v => '<option value="' + esc(v) + '">' + esc(label ? label(v) : v) + '</option>').join("");
+    el.innerHTML = '<option value="">All</option>' + list.map(v => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join("");
     if (list.includes(cur)) el.value = cur;
   };
   fill("fMonth", ALL.map(r => r.month));
-  fill("fType", TYPES.map(t => t.astra), v => { const t = TYPES.find(x => x.astra === v); return t ? t.emoji + " " + t.astra + " (" + t.label + ")" : v; });
-  fill("fSkill", ROSTER.map(p => p.skill));
+  fill("fSkill", ROSTER.filter(p => p.active).map(p => p.skill));
 }
 
 const blank = () => ({claims:0, ok:0, bad:0, wait:0, h:{app:0, adm:0, post:0}});
@@ -621,44 +603,32 @@ function add(s, r){
   if (r._res === "ok"){ s.ok++; const c = catOf(r.claim); if (c) s.h[c]++; }
   else if (r._res === "bad") s.bad++; else s.wait++;
 }
-/* Percentile of v within a sorted list (mid-rank method): share of peers below, plus half of ties */
-function pctl(v, arr){
-  if (!arr.length) return null;
-  let below = 0, equal = 0;
-  for (const x of arr){ if (x < v) below++; else if (x === v) equal++; }
-  return Math.round((below + equal / 2) * 100 / arr.length);
-}
-function quart(arr, q){
-  if (!arr.length) return 0;
-  const pos = (arr.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
-  return Math.round(arr[lo] + (arr[hi] - arr[lo]) * (pos - lo));
-}
-function band(score){
-  if (score === null || score === undefined) return {key:"neutral", label:"Not ranked"};
-  if (score >= 75) return {key:"ok", label:"Top"};
-  if (score >= 50) return {key:"okl", label:"Above median"};
-  if (score >= 25) return {key:"wait", label:"Below median"};
+function pctl(v, arr){ let below = 0, eq = 0; for (const x of arr){ if (x < v) below++; else if (x === v) eq++; } return Math.round((below + eq / 2) * 100 / arr.length); }
+function quart(arr, q){ if (!arr.length) return 0; const p = (arr.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p); return Math.round(arr[lo] + (arr[hi] - arr[lo]) * (p - lo)); }
+function band(s){
+  if (s === null || s === undefined) return {key:"neutral", label:"Not ranked"};
+  if (s >= 75) return {key:"ok", label:"Top"};
+  if (s >= 50) return {key:"okl", label:"Above median"};
+  if (s >= 25) return {key:"wait", label:"Below median"};
   return {key:"bad", label:"Needs attention"};
 }
-const avg = list => { const v = list.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+const avg = l => { const v = l.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
 
 function compute(){
-  const byUid = rosterMaps(), haveRoster = ROSTER.length > 0;
-  const f = {month:$("fMonth").value, type:$("fType").value, skill:$("fSkill").value, sim:$("fSim").value,
-             from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
-             to:   $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null};
+  const byUid = new Map(); for (const p of ROSTER) byUid.set(String(p.uid), p);
+  const haveRoster = ROSTER.length > 0;
+  const f = {month:$("fMonth").value, skill:$("fSkill").value, sim:$("fSim").value};
   const personOk = p => (!f.skill || (p && p.skill === f.skill)) && (!f.sim || (p && (f.sim === "SIM") === (p.sim === "Yes")));
-
   const coords = new Map(), teams = new Map(), people = new Map(), coordName = new Map();
   for (const p of ROSTER) if (p.coord) coordName.set(normName(p.coord), p.coord);
-  const coordOf = name => { const k = normName(name) || "(none)"; if (!coordName.has(k)) coordName.set(k, name || "(No coordinator)"); return k; };
-  const getCoord = k => { if (!coords.has(k)) coords.set(k, Object.assign(blank(), {key:k, teams:new Set(), people:new Set()})); return coords.get(k); };
+  const coordOf = n => { const k = normName(n) || "(none)"; if (!coordName.has(k)) coordName.set(k, n || "(No coordinator)"); return k; };
+  const getCoord = k => { if (!coords.has(k)) coords.set(k, Object.assign(blank(), {key:k})); return coords.get(k); };
   const tlSet = new Set(ROSTER.filter(p => p.active && isTLRole(p.role)).map(p => String(p.uid)));
   const getTeam = (uid, label, ck) => {
     if (!teams.has(uid)){
       const other = uid.startsWith(OTHER), tl = byUid.get(uid);
       teams.set(uid, Object.assign(blank(), {uid, other, name: other ? "Other (not on current team list)" : ((tl && tl.name) || label || uid),
-        skill: tl ? (tl.skill || NOSKILL) : "", coordKey: (!other && tl && tlSet.has(uid)) ? coordOf(tl.coord) : ck, members:new Set(), leftClaims:0}));
+        skill: tl ? (tl.skill || NOSKILL) : "", coordKey: (!other && tl && tlSet.has(uid)) ? coordOf(tl.coord) : ck}));
     }
     return teams.get(uid);
   };
@@ -666,8 +636,7 @@ function compute(){
     const t = String(r._team);
     if (!haveRoster || tlSet.has(t)) return t;
     const cp = byUid.get(String(r.uid));
-    if (cp && cp.active && tlSet.has(String(cp.tlUid))) return String(cp.tlUid);
-    return OTHER + ck;
+    return cp && cp.active && tlSet.has(String(cp.tlUid)) ? String(cp.tlUid) : OTHER + ck;
   };
   const getPerson = (uid, name) => {
     if (!people.has(uid)){
@@ -682,212 +651,164 @@ function compute(){
 
   for (const r of ALL){
     if (f.month && r.month !== f.month) continue;
-    if (f.type && typeOf(r.claim) !== f.type) continue;
-    if (f.from !== null && r._ts < f.from) continue;
-    if (f.to !== null && r._ts > f.to) continue;
     const p = byUid.get(String(r.uid));
     if ((f.skill || f.sim) && !personOk(p)) continue;
-    const ck = coordOf(r.drona), c = getCoord(ck);
-    add(c, r);
+    const ck = coordOf(r.drona); add(getCoord(ck), r);
     const t = getTeam(teamFor(r, ck), r._teamLabel ? r._teamLabel.replace(/\s*:\s*\d+\s*$/, "") : "", ck); add(t, r);
-    if (!t.other) c.teams.add(t.uid);
     const person = getPerson(String(r.uid), r.name); add(person, r);
     if (!person.teamUid){ person.teamUid = t.uid; person.coordKey = t.coordKey; }
-    if (!person.active) t.leftClaims++;
   }
   for (const p of ROSTER){
-    if (!p.active || !personOk(p)) continue;
-    if (!isTLRole(p.role) && !isCounselorRole(p.role)) continue;     // coordinators, snoopers and other roles are not ranked
-    const ck = coordOf(p.coord), c = getCoord(ck);
-    if (isTLRole(p.role)){ const t = getTeam(String(p.uid), p.name, ck); c.teams.add(t.uid); }
-    else if (tlSet.has(String(p.tlUid))){ const t = getTeam(String(p.tlUid), p.tlName, ck); c.teams.add(t.uid); t.members.add(String(p.uid)); }
+    if (!p.active || !personOk(p) || (!isTLRole(p.role) && !isCounselorRole(p.role))) continue;
+    const ck = coordOf(p.coord); getCoord(ck);
+    if (isTLRole(p.role)) getTeam(String(p.uid), p.name, ck);
+    else if (tlSet.has(String(p.tlUid))) getTeam(String(p.tlUid), p.tlName, ck);
     getPerson(String(p.uid), p.name);
   }
-  for (const c of coords.values()){
-    c.name = coordName.get(c.key) || c.key;
-    if (haveRoster) c.teams = new Set([...tlSet].filter(u => { const t = teams.get(u); return t && t.coordKey === c.key; }));
-  }
+  for (const c of coords.values()) c.name = coordName.get(c.key) || c.key;
   for (const t of teams.values()){ const c = coords.get(t.coordKey); t.coordName = c ? c.name : ""; }
 
-  /* ---- Peer groups and percentiles ---- */
-  const groups = new Map();
-  const groupKey = p => p.isTL ? "TL|" + p.skill : p.skill + "|" + (p.sim ? "SIM" : "Normal");
-  const groupLabel = k => { const [a, b] = k.split("|"); return a === "TL" ? "Team leaders: " + b : a + " (" + b + ")"; };
+  // Peer groups
+  const groups = new Map(), skillGroups = new Map();
+  const total = p => p.h.app + p.h.adm + p.h.post;
+  const keyOf = p => p.isTL ? "TL|" + p.skill : isPostSkill(p.skill) ? "POST|" + p.skill : p.skill + "|" + (p.sim ? "SIM" : "Normal");
+  const labelOf = k => { const [a, b] = k.split("|"); return a === "TL" ? "Team leaders: " + b : a === "POST" ? b + " (post-admission team)" : a + " (" + b + ")"; };
+  const push = (map, key, label, p) => { if (!map.has(key)) map.set(key, {key, label, members:[], totals:[]}); const g = map.get(key); g.members.push(p); g.totals.push(total(p)); };
   for (const p of people.values()){
-    p.group = groupKey(p);
-    if (!p.active) continue;                                  // benchmarks use current staff only
-    if (!groups.has(p.group)) groups.set(p.group, {key:p.group, label:groupLabel(p.group), members:[], app:[], adm:[], post:[]});
-    const g = groups.get(p.group); g.members.push(p); for (const c of CATS) g[c.key].push(p.h[c.key]);
+    p.group = keyOf(p); p.post = p.group.startsWith("POST|");
+    if (!p.active) continue;
+    push(groups, p.group, labelOf(p.group), p);
+    if (!p.isTL && !p.post) push(skillGroups, "ALL|" + p.skill, p.skill + " (SIM + Normal)", p);
   }
-  for (const g of groups.values()) for (const c of CATS) g[c.key].sort((a, b) => a - b);
+  for (const g of [...groups.values(), ...skillGroups.values()]) g.totals.sort((a, b) => a - b);
   for (const p of people.values()){
-    const g = groups.get(p.group);
-    p.groupSize = g ? g.members.length : 0;
-    p.score = (!g || g.members.length < 2) ? null : Math.round(CATS.reduce((s, c) => s + WEIGHTS[c.key] * pctl(p.h[c.key], g[c.key]), 0));
+    let g = groups.get(p.group); p.wider = false;
+    if (g && g.members.length < 2 && !p.isTL && !p.post){        // alone in Skill + type: compare with the whole skill
+      const sg = skillGroups.get("ALL|" + p.skill);
+      if (sg && sg.members.length >= 2){ g = sg; p.wider = true; }
+    }
+    p.cmp = g; p.groupSize = g ? g.members.length : 0;
+    p.score = (!g || g.members.length < 2) ? null : pctl(total(p), g.totals);
   }
-  const hitsTotal = p => p.h.app + p.h.adm + p.h.post;
-  const byScore = (a, b) => ((b.score ?? -1) - (a.score ?? -1)) || hitsTotal(b) - hitsTotal(a) || String(a.name).localeCompare(String(b.name));
-  for (const g of groups.values()) g.members.sort(byScore).forEach((p, i) => p.groupRank = i + 1);
+  const byScore = (a, b) => ((b.score ?? -1) - (a.score ?? -1)) || total(b) - total(a) || String(a.name).localeCompare(String(b.name));
+  for (const g of [...groups.values(), ...skillGroups.values()]) [...g.members].sort(byScore).forEach((p, i) => { if (p.cmp === g) p.groupRank = i + 1; });
 
-  /* ---- Tree: team and coordinator scores from their counselors ---- */
+  // Tree scores
   const current = [...people.values()].filter(p => !p.isTL && p.active);
-  for (const t of teams.values()){
-    const mem = current.filter(p => p.teamUid === t.uid);
-    t.counselors = mem.length; t.score = avg(mem.map(p => p.score));
-    const tl = people.get(t.uid); t.tlScore = tl ? tl.score : null; t.tlRank = tl ? tl.groupRank : null; t.tlGroupSize = tl ? tl.groupSize : 0;
-  }
+  for (const t of teams.values()){ const m = current.filter(p => p.teamUid === t.uid); t.counselors = m.length; t.score = avg(m.map(p => p.score)); }
   for (const c of coords.values()){
-    const mem = current.filter(p => p.coordKey === c.key);
-    c.counselors = mem.length; c.score = avg(mem.map(p => p.score));
+    const m = current.filter(p => p.coordKey === c.key); c.counselors = m.length; c.score = avg(m.map(p => p.score));
+    c.teamCount = [...teams.values()].filter(t => !t.other && t.coordKey === c.key && tlSet.has(t.uid)).length;
   }
-  return {coords, teams, people, groups, haveRoster, byScore};
+  return {coords, teams, people, groups, haveRoster, byScore, tlSet};
 }
 
 const td = (label, html, cls) => '<td' + (cls ? ' class="' + cls + '"' : '') + ' data-label="' + label + '"><div>' + html + '</div></td>';
 const rankCell = i => '<span class="rank' + (i < 3 ? " top" : "") + '">' + (i + 1) + '</span>';
 const bandTag = s => { const b = band(s); return '<span class="bandtag ' + b.key + '">' + b.label + '</span>'; };
-const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="color:var(--faint)">–</span>' : '<span class="score">' + s + '</span>') +
-  (sub ? '<small class="subl">' + sub + '</small>' : '');
+const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="color:var(--faint)">–</span>' : '<span class="score">' + s + '</span>') + (sub ? '<small class="subl">' + sub + '</small>' : '');
 const ord = n => { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
-
-function pageSlice(list, pg){
-  const size = pageSize(), pages = Math.max(1, Math.ceil(list.length / size));
-  pg = Math.min(Math.max(1, pg), pages);
-  const start = (pg - 1) * size;
-  return {items: list.slice(start, start + size), start, pages, pg};
-}
+const hitsCell = h => fmt(h.app + h.adm + h.post) + '<small class="subl">App ' + fmt(h.app) + ', Adm ' + fmt(h.adm) + ', Post ' + fmt(h.post) + '</small>';
 
 function render(){
   if (!ALL.length && !ROSTER.length) return;
   const d = compute();
-  const incLeft = $("incLeft").checked;
   $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Scores need the team list for skills and SIM; showing claims only.</div>';
-  if (sel.coord && !d.coords.has(sel.coord)) sel = {coord:"", team:""};
-  if (sel.team && !d.teams.has(sel.team)) sel.team = "";
-  const inScope = p => (!sel.coord || p.coordKey === sel.coord) && (!sel.team || p.teamUid === sel.team);
+
+  // Coordinator and team dropdowns
+  const cSel = $("fCoord"), tSel = $("fTeam"), curC = cSel.value, curT = tSel.value;
+  const coordList = [...d.coords.values()].sort((a, b) => a.name.localeCompare(b.name));
+  cSel.innerHTML = '<option value="">All</option>' + coordList.map(c => '<option value="' + esc(c.key) + '">' + esc(c.name) + '</option>').join("");
+  cSel.value = d.coords.has(curC) ? curC : "";
+  const teamOpts = [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!cSel.value || t.coordKey === cSel.value)).sort((a, b) => a.name.localeCompare(b.name));
+  tSel.innerHTML = '<option value="">All</option>' + teamOpts.map(t => '<option value="' + esc(t.uid) + '">' + esc(t.name) + '</option>').join("");
+  tSel.value = teamOpts.some(t => t.uid === curT) ? curT : "";
+  const sc = cSel.value, st = tSel.value;
+  const inScope = p => (!sc || p.coordKey === sc) && (!st || p.teamUid === st);
 
   // Overview
-  const scopeTeams = [...d.teams.values()].filter(t => (!sel.coord || t.coordKey === sel.coord) && (!sel.team || t.uid === sel.team));
-  const tot = scopeTeams.reduce((s, t) => { s.claims += t.claims; s.ok += t.ok; s.bad += t.bad; s.wait += t.wait; for (const c of CATS) s.h[c.key] += t.h[c.key]; return s; }, blank());
-  const scopePeople = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p));
+  const teamsIn = [...d.teams.values()].filter(t => (!sc || t.coordKey === sc) && (!st || t.uid === st));
+  const tot = teamsIn.reduce((s, t) => { s.claims += t.claims; s.ok += t.ok; s.bad += t.bad; s.wait += t.wait; for (const c of CATS) s.h[c] += t.h[c]; return s; }, blank());
+  const peopleIn = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p));
   $("oClaims").textContent = fmt(tot.claims);
   $("oClaimsSub").textContent = fmt(tot.ok) + " hit, " + fmt(tot.bad) + " miss, " + fmt(tot.wait) + " pending";
   $("oHits").textContent = fmt(tot.ok);
   $("oHitsSub").textContent = "App " + fmt(tot.h.app) + ", Adm " + fmt(tot.h.adm) + ", Post " + fmt(tot.h.post);
-  $("oCoords").textContent = fmt(sel.coord ? 1 : d.coords.size);
-  $("oTeams").textContent = fmt(scopeTeams.filter(t => !t.other).length);
-  $("oPeople").textContent = fmt(scopePeople.length);
-  $("oPeopleSub").textContent = fmt(scopePeople.filter(p => p.sim).length) + " with SIM";
+  $("oTeams").textContent = fmt(teamsIn.filter(t => !t.other && d.tlSet.has(t.uid)).length);
+  $("oTeamsSub").textContent = sc ? "under this coordinator" : fmt(d.coords.size) + " coordinators";
+  $("oPeople").textContent = fmt(peopleIn.length);
+  $("oPeopleSub").textContent = fmt(peopleIn.filter(p => p.sim).length) + " with SIM";
+  $("zeroNote").innerHTML = tot.ok ? "" : '<div class="zero">No verified Hits yet for this selection, so everyone shows the same neutral score. Rankings will appear as claims are approved.</div>';
 
-  // Breadcrumbs
-  let crumbs = '<span>Showing:</span>';
-  if (!sel.coord) crumbs += '<span class="crumb">All coordinators</span>';
-  else {
-    crumbs += '<span class="crumb">' + esc(d.coords.get(sel.coord).name) + '<button type="button" data-clear="coord" aria-label="Show all coordinators">✕</button></span>';
-    if (sel.team) crumbs += '<span>›</span><span class="crumb">' + esc(d.teams.get(sel.team).name) + '<button type="button" data-clear="team" aria-label="Show all teams">✕</button></span>';
-  }
-  $("crumbs").innerHTML = crumbs;
-
-  // Coordinator cards (ranked by score = average of their counselors' scores)
-  const coordList = [...d.coords.values()].sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
-  $("coords").innerHTML = coordList.map((c, i) => {
-    const b = band(c.score);
-    return '<button type="button" class="ccard' + (sel.coord === c.key ? " sel" : "") + '" data-coord="' + esc(c.key) + '">' +
-      '<div class="row"><h3>' + esc(c.name) + '</h3><span class="rank' + (i < 3 ? " top" : "") + '">#' + (i + 1) + '</span></div>' +
-      '<div class="row"><span class="big">' + (c.score ?? "–") + '<small class="unit"> score</small></span><span class="bandtag ' + b.key + '">' + b.label + '</span></div>' +
-      '<div class="sub">' + fmt(c.ok) + ' hits, ' + fmt(c.teams.size) + ' teams, ' + fmt(c.counselors) + ' counselors</div></button>';
-  }).join("") || '<p class="empty">No coordinators for these filters.</p>';
-
-  // Team leaders (ranked by team score = average of their counselors' scores)
-  const teamList = [...d.teams.values()].filter(t => (!sel.coord || t.coordKey === sel.coord) && (!t.other || t.claims > 0))
-    .sort((a, b) => (a.other - b.other) || ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
-  const tp = pageSlice(teamList, teamPage); teamPage = tp.pg;
-  $("teamCount").textContent = fmt(teamList.filter(t => !t.other).length) + " teams";
-  $("teamBody").innerHTML = tp.items.map((t, i) => {
-    const hitsLine = 'App ' + fmt(t.h.app) + ', Adm ' + fmt(t.h.adm) + ', Post ' + fmt(t.h.post);
-    if (t.other) return '<tr>' + td("Rank", '<span style="color:var(--faint)">–</span>') +
-      td("Team leader", '<span class="who"><b style="color:var(--muted)">' + esc(t.name) + '</b><small>Claims that can\'t be placed in a current team</small></span>') +
-      td("Coordinator", esc(t.coordName)) + td("Skill", "–") + td("Counselors", "–", "num") +
-      td("Team hits", fmt(t.ok) + '<small class="subl">' + hitsLine + '</small>', "num") + td("Team score", "–") + td("Team leader's own", "–") + td("Band", "–") + '</tr>';
-    return '<tr class="click' + (sel.team === t.uid ? " sel" : "") + '" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0">' +
-      td("Rank", rankCell(tp.start + i)) +
-      td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + '</small></span>') +
-      td("Coordinator", esc(t.coordName)) + td("Skill", esc(t.skill || "–")) +
-      td("Counselors", fmt(t.counselors), "num") +
-      td("Team hits", fmt(t.ok) + '<small class="subl">' + hitsLine + '</small>', "num") +
-      td("Team score", scoreCell(t.score, "average of counselors"), "num") +
-      td("Team leader's own", scoreCell(t.tlScore, t.tlRank && t.tlGroupSize > 1 ? ord(t.tlRank) + " of " + t.tlGroupSize + " TLs in skill" : (t.tlGroupSize === 1 ? "only TL in skill" : "")), "num") +
-      td("Band", bandTag(t.score)) + '</tr>';
-  }).join("") || '<tr><td class="empty" colspan="9">No teams for these filters.</td></tr>';
-  $("teamInfo").textContent = teamList.length ? "Showing " + fmt(tp.start + 1) + "–" + fmt(tp.start + tp.items.length) + " of " + fmt(teamList.length) : "";
-  $("teamPrev").disabled = tp.pg <= 1; $("teamNext").disabled = tp.pg >= tp.pages;
-  const leftInScope = teamList.reduce((n, t) => n + t.leftClaims, 0);
-  $("teamNote").textContent = (leftInScope ? "Team hits include " + fmt(leftInScope) + " claims by people who have left. " : "") + "Team score uses current counselors only.";
-
-  // Counselor leaderboard
+  // Table for the current view
   const q = $("q").value.trim().toLowerCase();
-  const peopleList = [...d.people.values()].filter(p => !p.isTL && (incLeft || p.active) && inScope(p) &&
-    (!q || (p.name + " " + p.uid + " " + p.skill).toLowerCase().includes(q))).sort(d.byScore);
-  const pp = pageSlice(peopleList, peoplePage); peoplePage = pp.pg;
-  $("peopleBody").innerHTML = pp.items.map((p, i) => {
-    const t = d.teams.get(p.teamUid);
-    const grp = esc(p.skill) + ' <span class="simtag' + (p.sim ? " on" : "") + '">' + (p.sim ? "SIM" : "Normal") + '</span>';
-    const sub = !p.active ? "left, not ranked" : p.score === null ? (p.groupSize === 1 ? "only one in group" : "") : ord(p.groupRank) + " of " + p.groupSize + " in group";
-    return '<tr>' + td("Rank", rankCell(pp.start + i)) +
-      td("Counselor", '<span class="who"><b>' + esc(p.name) + (p.active ? "" : '<span class="left-tag">Left</span>') + '</b><small>UID ' + esc(p.uid) + '</small></span>') +
-      td("Peer group", grp) + td("Team leader", esc(t && !t.other ? t.name : "–")) +
-      td("Applications", fmt(p.h.app), "num") + td("Admissions", fmt(p.h.adm), "num") + td("Post-admission", fmt(p.h.post), "num") +
-      td("Score", scoreCell(p.active ? p.score : null, sub), "num") +
-      td("Band", p.active ? bandTag(p.score) : '<span class="bandtag neutral">Left</span>') + '</tr>';
-  }).join("") || '<tr><td class="empty" colspan="9">No counselors match.</td></tr>';
-  $("peopleInfo").textContent = peopleList.length ? "Showing " + fmt(pp.start + 1) + "–" + fmt(pp.start + pp.items.length) + " of " + fmt(peopleList.length) : "";
-  $("peoplePrev").disabled = pp.pg <= 1; $("peopleNext").disabled = pp.pg >= pp.pages;
+  let head = "", rows = [], toRow;
+  if (view === "people"){
+    head = ["Rank","Counselor","Group","Hits","Score","Band"];
+    rows = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p) && (!q || (p.name + " " + p.uid).toLowerCase().includes(q))).sort(d.byScore);
+    toRow = (p, i) => {
+      const tag = p.post ? '<span class="simtag post">Post-adm</span>' : '<span class="simtag' + (p.sim ? " on" : "") + '">' + (p.sim ? "SIM" : "Normal") + '</span>';
+      const t = d.teams.get(p.teamUid);
+      return '<tr>' + td("Rank", rankCell(i)) +
+        td("Counselor", '<span class="who"><b>' + esc(p.name) + '</b><small>UID ' + esc(p.uid) + (t && !t.other ? ", team " + esc(t.name) : "") + '</small></span>') +
+        td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") +
+        td("Score", scoreCell(p.score, p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
+        td("Band", bandTag(p.score)) + '</tr>';
+    };
+  } else if (view === "teams"){
+    head = ["Rank","Team leader","Skill","Team hits","Team score","Band"];
+    rows = [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!sc || t.coordKey === sc) && (!q || (t.name + " " + t.uid).toLowerCase().includes(q)))
+      .sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
+    toRow = (t, i) => '<tr class="click" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' + td("Rank", rankCell(i)) +
+      td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>' + esc(t.coordName) + '</small></span>') +
+      td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") +
+      td("Team score", scoreCell(t.score, fmt(t.counselors) + " counselors"), "num") + td("Band", bandTag(t.score)) + '</tr>';
+  } else {
+    head = ["Rank","Coordinator","Teams","Hits","Score","Band"];
+    rows = [...d.coords.values()].filter(c => !q || c.name.toLowerCase().includes(q)).sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
+    toRow = (c, i) => '<tr class="click" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' + td("Rank", rankCell(i)) +
+      td("Coordinator", '<b>' + esc(c.name) + '</b>') + td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors</small>', "num") +
+      td("Hits", hitsCell(c.h), "num") + td("Score", scoreCell(c.score), "num") + td("Band", bandTag(c.score)) + '</tr>';
+  }
+  const size = pageSize(), pages = Math.max(1, Math.ceil(rows.length / size));
+  pg = Math.min(Math.max(1, pg), pages);
+  const start = (pg - 1) * size, items = rows.slice(start, start + size);
+  $("thead").innerHTML = head.map(h => '<th scope="col">' + h + '</th>').join("");
+  $("tbody").innerHTML = items.map((x, i) => toRow(x, start + i)).join("") || '<tr><td class="empty" colspan="6">Nothing matches these filters.</td></tr>';
+  $("viewCount").textContent = fmt(rows.length) + (view === "people" ? " counselors" : view === "teams" ? " teams" : " coordinators");
+  $("pageInfo").textContent = rows.length ? "Showing " + fmt(start + 1) + "–" + fmt(start + items.length) + " of " + fmt(rows.length) : "";
+  $("prevBtn").disabled = pg <= 1; $("nextBtn").disabled = pg >= pages;
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view ? "true" : "false"));
 
-  // Peer group benchmarks (P25 / Median / P75 of Hits) for groups in the current selection
-  const groupsInScope = [...d.groups.values()].filter(g => g.members.some(inScope))
+  // Benchmarks (inside the collapsed section)
+  const gs = [...d.groups.values()].filter(g => !g.key.startsWith("TL|") && g.members.some(inScope))
     .sort((a, b) => (a.key.startsWith("TL|") - b.key.startsWith("TL|")) || a.label.localeCompare(b.label));
-  const qcell = arr => quart(arr, .25) + ' / <b>' + quart(arr, .5) + '</b> / ' + quart(arr, .75);
-  $("groupBody").innerHTML = groupsInScope.map(g => {
-    const one = g.members.length < 2;
-    return '<tr>' + td("Peer group", '<b>' + esc(g.label) + '</b>') + td("People", fmt(g.members.length), "num") +
-      td("Applications", one ? "–" : qcell(g.app), "num") + td("Admissions", one ? "–" : qcell(g.adm), "num") +
-      td("Post-admission", one ? "–" : qcell(g.post), "num") + '</tr>';
-  }).join("") || '<tr><td class="empty" colspan="5">No peer groups to show.</td></tr>';
+  const qc = arr => quart(arr, .25) + ' / <b>' + quart(arr, .5) + '</b> / ' + quart(arr, .75);
+  $("groupBody").innerHTML = gs.map(g => '<tr>' + td("Peer group", '<b>' + esc(g.label) + '</b>') + td("People", fmt(g.members.length), "num") +
+      td("Approved claims", g.members.length < 2 ? "–" : qc(g.totals), "num") + '</tr>').join("") ||
+    '<tr><td class="empty" colspan="3">No groups to show.</td></tr>';
 
-  const nActive = ["fMonth","fType","fSkill","fSim","dFrom","dTo"].filter(id => $(id).value).length + ($("incLeft").checked ? 1 : 0);
+  const nActive = ["fCoord","fTeam","fSkill","fSim","fMonth","q"].filter(id => $(id).value.trim()).length;
   $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
 }
 
 /* Events */
-["fMonth","fType","fSkill","fSim","dFrom","dTo","incLeft"].forEach(id => $(id).addEventListener("change", () => { teamPage = 1; peoplePage = 1; render(); }));
-let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { peoplePage = 1; render(); }, 200); });
-$("resetBtn").addEventListener("click", () => {
-  ["fMonth","fType","fSkill","fSim","dFrom","dTo","q"].forEach(id => $(id).value = ""); $("incLeft").checked = false;
-  sel = {coord:"", team:""}; teamPage = 1; peoplePage = 1; render();
-});
+["fSkill","fSim","fMonth","fTeam"].forEach(id => $(id).addEventListener("change", () => { pg = 1; render(); }));
+$("fCoord").addEventListener("change", () => { $("fTeam").value = ""; pg = 1; render(); });
+let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 200); });
+$("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fSkill","fSim","fMonth","q"].forEach(id => $(id).value = ""); pg = 1; render(); });
 $("refreshBtn").addEventListener("click", () => load(false));
-$("coords").addEventListener("click", e => {
-  const b = e.target.closest(".ccard"); if (!b) return;
-  sel = sel.coord === b.dataset.coord ? {coord:"", team:""} : {coord:b.dataset.coord, team:""};
-  teamPage = 1; peoplePage = 1; render();
-});
-function pickTeam(tr){
-  if (!tr || !tr.dataset.team) return;
-  sel = sel.team === tr.dataset.team ? {coord:sel.coord, team:""} : {coord:tr.dataset.coord, team:tr.dataset.team};
-  peoplePage = 1; render();
-  $("peopleBody").closest("section").scrollIntoView({behavior:"smooth", block:"start"});
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; $("q").value = ""; pg = 1; render(); }));
+function drill(tr){
+  if (!tr) return;
+  if (tr.dataset.team){ $("fCoord").value = tr.dataset.coord; render(); $("fTeam").value = tr.dataset.team; view = "people"; }
+  else if (tr.dataset.coord){ $("fCoord").value = tr.dataset.coord; $("fTeam").value = ""; view = "teams"; }
+  $("q").value = ""; pg = 1; render();
 }
-$("teamBody").addEventListener("click", e => pickTeam(e.target.closest("tr.click")));
-$("teamBody").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); pickTeam(e.target.closest("tr.click")); } });
-$("crumbs").addEventListener("click", e => {
-  const b = e.target.closest("button[data-clear]"); if (!b) return;
-  sel = b.dataset.clear === "coord" ? {coord:"", team:""} : {coord:sel.coord, team:""};
-  teamPage = 1; peoplePage = 1; render();
-});
-$("teamPrev").addEventListener("click", () => { teamPage--; render(); });
-$("teamNext").addEventListener("click", () => { teamPage++; render(); });
-$("peoplePrev").addEventListener("click", () => { peoplePage--; render(); });
-$("peopleNext").addEventListener("click", () => { peoplePage++; render(); });
+$("tbody").addEventListener("click", e => drill(e.target.closest("tr.click")));
+$("tbody").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); drill(e.target.closest("tr.click")); } });
+$("prevBtn").addEventListener("click", () => { pg--; render(); });
+$("nextBtn").addEventListener("click", () => { pg++; render(); });
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
@@ -938,7 +859,7 @@ $("themeBtn").addEventListener("click", () => {
 });
 applyTheme(currentTheme());
 
-window.matchMedia("(max-width: 720px)").addEventListener("change", () => { teamPage = 1; peoplePage = 1; render(); });
+window.matchMedia("(max-width: 720px)").addEventListener("change", () => { pg = 1; render(); });
 
 $("signOutBtn").addEventListener("click", () => {
   clearToken();
