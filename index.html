@@ -79,30 +79,29 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .panel{background:var(--card);border:1px solid var(--line);border-radius:6px}
 
 /* KPI strip */
-.stats{display:grid;grid-template-columns:repeat(5,1fr);margin-bottom:22px}
-.stat{padding:14px 18px}
-.stat+.stat{border-left:1px solid var(--line)}
-.stat h2{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;margin:0;color:var(--muted);letter-spacing:.2px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+.stat{padding:10px 16px 11px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.stat h2{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin:0;color:var(--muted);letter-spacing:.2px}
 .stat.ok h2 .ic{color:var(--ok)} .stat.bad h2 .ic{color:var(--bad)} .stat.wait h2 .ic{color:var(--wait)} .stat.tot h2 .ic{color:var(--muted)} .stat.fire h2 .ic{color:var(--neutral)}
-.stat .big{font-family:var(--serif);font-size:30px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums lining-nums}
+.stat .big{font-family:var(--serif);font-size:25px;font-weight:700;line-height:1.15;margin-top:2px;font-variant-numeric:tabular-nums lining-nums}
 .stat .sub{font-size:12px;color:var(--faint)}
 .stat.ok{box-shadow:inset 0 3px 0 var(--ok)} .stat.bad{box-shadow:inset 0 3px 0 var(--bad)}
 .stat.wait{box-shadow:inset 0 3px 0 var(--wait)} .stat.tot{box-shadow:inset 0 3px 0 var(--navy-2)} .stat.fire{box-shadow:inset 0 3px 0 var(--neutral)}
-.mix{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--line-2);margin-top:9px}
+.mix{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--line-2);margin-top:6px}
 .mix span{display:block;height:100%}
 .mix .ok{background:var(--ok)} .mix .bad{background:var(--bad)} .mix .wait{background:var(--wait)}
 
 /* Claim types */
-.types{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:22px}
-.type{padding:13px 18px}
-.type+.type{border-left:1px solid var(--line)}
-.type h3{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;margin:0;color:var(--muted)}
+.types{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.type{padding:10px 16px 11px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.type h3{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin:0;color:var(--muted)}
 .type h3 .ic{color:var(--muted)}
 .type .row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.type .big{font-family:var(--serif);font-size:24px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums lining-nums}
+.type .big{font-family:var(--serif);font-size:22px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums lining-nums}
 .type .rate{font-size:12.5px;color:var(--ok);font-weight:600}
 .type .sub{font-size:12px;color:var(--faint);margin-top:2px}
-.meter{height:4px;border-radius:2px;background:var(--line-2);margin-top:8px;overflow:hidden}
+.meter{height:4px;border-radius:2px;background:var(--line-2);margin-top:6px;overflow:hidden}
+.stat h2 .ic,.type h3 .ic{width:20px;height:20px}
 .meter span{display:block;height:100%;background:var(--ok)}
 
 /* Filters */
@@ -157,21 +156,16 @@ footer b{color:var(--muted);font-weight:600}
 
 @media (max-width: 980px){
   .stats{grid-template-columns:repeat(3,1fr)}
-  .stat:nth-child(4){border-left:none}
-  .stat:nth-child(n+4){border-top:1px solid var(--line)}
   .types{grid-template-columns:1fr 1fr}
-  .type:nth-child(3){border-left:none}
-  .type:nth-child(n+3){border-top:1px solid var(--line)}
   .filters{grid-template-columns:repeat(3,1fr)}
   .filters label.f:first-child{grid-column:1/-1}
 }
 @media (max-width: 720px){
   .topbar .in{padding:12px 16px}
   .wrap{padding:16px 14px 28px}
-  .stats{grid-template-columns:1fr 1fr}
-  .stat{border-left:none!important;border-top:1px solid var(--line)}
-  .stat:first-child{grid-column:1/-1;border-top:none}
-  .stat:nth-child(odd):not(:first-child){border-left:1px solid var(--line)!important}
+  .stats{grid-template-columns:1fr 1fr;gap:10px}
+  .stat:first-child{grid-column:1/-1}
+  .types{gap:10px}
   .filters{grid-template-columns:1fr 1fr}
   .table-panel{background:none;border:none}
   .tablebox{overflow:visible}
@@ -225,7 +219,7 @@ footer b{color:var(--muted);font-weight:600}
   <div id="notice"></div>
 
   <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg>Overview</h2>
-  <section class="panel stats" aria-label="Summary for the current filters">
+  <section class="stats" aria-label="Summary for the current filters">
     <div class="stat tot"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Total claims</h2><div class="big" id="sTotal">–</div>
       <div class="mix" id="sMix" aria-hidden="true"></div></div>
     <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Hit</h2><div class="big" id="sHit">–</div><div class="sub" id="sHitSub">&nbsp;</div></div>
@@ -235,7 +229,7 @@ footer b{color:var(--muted);font-weight:600}
   </section>
 
   <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-grid"/></svg>Claims by type</h2>
-  <section class="panel types" aria-label="Claims by type" id="types"></section>
+  <section class="types" aria-label="Claims by type" id="types"></section>
 
   <section class="panel filterpanel" aria-label="Filters">
     <div class="filterhead">
