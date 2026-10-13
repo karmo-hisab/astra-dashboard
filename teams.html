@@ -132,6 +132,19 @@ tbody tr.hl td b{color:var(--ink)}
 .idle{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--wait);border:1px solid currentColor;border-radius:3px;padding:0 5px;vertical-align:1px}
 .idletxt{color:var(--wait);font-weight:600}
 .more .tablebox + .tablebox{margin-top:0}
+.tfilters.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width: 980px){ .tfilters.five{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width: 720px){ .tfilters.five{grid-template-columns:1fr 1fr} }
+.modebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 10px;font-size:13px;color:var(--muted)}
+.modebar button{border-radius:999px;padding:4px 12px;font-size:12.5px}
+.modebar button[aria-pressed="true"]{background:var(--navy-2);border-color:var(--navy-2);color:#fff}
+:root[data-theme="dark"] .modebar button[aria-pressed="true"]{background:#E3E7EF;color:#0E1424;border-color:#E3E7EF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .modebar button[aria-pressed="true"]{background:#E3E7EF;color:#0E1424;border-color:#E3E7EF} }
+.cmp{margin-bottom:12px;border-left:3px solid var(--accent)}
+.cmphead{padding:10px 14px;font-size:13.5px;color:var(--muted)}
+.cmphead b{color:var(--ink)}
+.cmp table{min-width:0}
+.cmp th,.cmp td{padding:7px 14px}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -345,9 +358,10 @@ footer b{color:var(--muted);font-weight:600}
     </div>
     <div class="frow">
       <span class="flabel">Who</span>
-      <div class="tfilters">
+      <div class="tfilters five">
         <label class="f">Coordinator<select id="fCoord"></select></label>
         <label class="f">Team leader<select id="fTeam"></select></label>
+        <label class="f">Counselor<select id="fPerson"></select></label>
         <label class="f">Skill<select id="fSkill"></select></label>
         <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
       </div>
@@ -375,6 +389,12 @@ footer b{color:var(--muted);font-weight:600}
     </div>
     <span class="resultbar" id="viewCount"></span>
   </div>
+  <div class="modebar" id="modeBar" hidden>
+    <span>Show:</span>
+    <button type="button" data-mode="peers" aria-pressed="true">Compare with peers</button>
+    <button type="button" data-mode="only" aria-pressed="false">Only this selection</button>
+  </div>
+  <div id="cmpBox"></div>
   <div id="zeroNote"></div>
   <p class="note" id="periodNote"></p>
 
@@ -630,7 +650,7 @@ function assignTeams(rows){
    - Score = percentile of approved claims within the group (0-100).
    - Team leaders: team score = average of their counselors' scores. Coordinators: average of all their counselors. */
 const CATS = ["app", "adm", "post"];
-let view = "people", pg = 1, jumpToHighlight = false;
+let view = "people", pg = 1, jumpToHighlight = false, mode = "peers";   // "peers" = compare with peers, "only" = only this selection
 const sortBy = {people:{key:"", dir:1}, teams:{key:"", dir:1}, coords:{key:"", dir:1}};   // "" = rank order
 const normName = s => String(s || "").toLowerCase().replace(/^\s*(dr|prof|mr|ms|mrs)\.?\s+/, "").replace(/[^a-z0-9]/g, "");
 const catOf = c => /arrow/i.test(c || "") ? "app" : /brahmast/i.test(c || "") ? "adm" : /(naga\s*pasha|akshaya)/i.test(c || "") ? "post" : "";
@@ -879,6 +899,43 @@ function render(){
   tSel.value = teamOpts.some(t => t.uid === curT) ? curT : "";
   const sc = cSel.value, st = tSel.value;
   const inScope = p => (!sc || p.coordKey === sc) && (!st || p.teamUid === st);
+  // Counselor dropdown (within the chosen coordinator / team)
+  const pSel = $("fPerson"), curP = pSel.value;
+  const personOpts = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  pSel.innerHTML = '<option value="">All</option>' + personOpts.map(p => '<option value="' + esc(p.uid) + '">' + esc(p.name) + ' (' + esc(p.uid) + ')</option>').join("");
+  pSel.value = personOpts.some(p => p.uid === curP) ? curP : "";
+  const sp = pSel.value;
+  const P1 = sp ? d.people.get(sp) : null, T1 = st ? d.teams.get(st) : null;
+
+  /* Who is being compared, and with whom.
+     Peers: counselor -> their scoring group; team leader -> same skill; coordinator -> the skills they handle. */
+  const coordSkills = new Map();
+  for (const x of d.people.values()) if (x.active && x.coordKey){ if (!coordSkills.has(x.coordKey)) coordSkills.set(x.coordKey, new Set()); coordSkills.get(x.coordKey).add(x.skill); }
+  const handles = (ck, skills) => { const s = coordSkills.get(ck); return !!s && [...skills].some(k => s.has(k)); };
+  const level = P1 ? "person" : T1 ? "team" : sc ? "coord" : "";
+  let skills = new Set(), selName = "";
+  if (level === "person"){ skills = new Set([P1.skill]); selName = P1.name; }
+  else if (level === "team"){ skills = new Set([T1.skill]); selName = T1.name + "'s team"; }
+  else if (level === "coord"){ skills = coordSkills.get(sc) || new Set(); selName = (d.coords.get(sc) || {}).name || ""; }
+  const peers = mode === "peers" && level !== "";
+  const skillTxt = [...skills].join(", ");
+  const scope = {
+    people: x => !x.isTL && x.active && (!peers
+      ? (inScope(x) && (!sp || x.uid === sp))
+      : level === "person" ? x.cmp === P1.cmp : skills.has(x.skill)),
+    teams: t => !t.other && d.tlSet.has(t.uid) && (!peers ? (!sc || t.coordKey === sc) && (!st || t.uid === st || level === "coord") : skills.has(t.skill)),
+    coords: c => !peers || handles(c.key, skills)
+  };
+  const hl = {
+    people: x => level === "person" ? x.uid === sp : level === "team" ? x.teamUid === st : level === "coord" ? x.coordKey === sc : false,
+    teams:  t => level === "person" ? t.uid === P1.teamUid : level === "team" ? t.uid === st : level === "coord" ? t.coordKey === sc : false,
+    coords: c => level === "person" ? c.key === P1.coordKey : level === "team" ? c.key === T1.coordKey : level === "coord" ? c.key === sc : false
+  };
+  const peerLabel = {
+    people: level === "person" ? (P1.cmp ? P1.cmp.label : P1.skill) : skillTxt + " counselors",
+    teams: skillTxt + " team leaders",
+    coords: "coordinators handling " + skillTxt
+  };
 
   // Overview
   const teamsIn = [...d.teams.values()].filter(t => (!sc || t.coordKey === sc) && (!st || t.uid === st));
@@ -896,10 +953,14 @@ function render(){
   $("zeroNote").innerHTML = tot.ok ? "" : '<div class="zero">No approved claims yet for this selection, so scores show "–". Rankings appear automatically as claims are approved.</div>';
   $("periodNote").textContent = "▲▼ = rank change compared with " + P.prevLabel + ".";
 
-  // Ranks now and in the previous period
-  const L = orderedLists(d, sc, st), LP = orderedLists(dPrev, sc, st);
+  // Ranks within the list shown (peers or selection), now and in the previous period
+  const A = orderedLists(d, "", ""), AP = orderedLists(dPrev, "", "");
+  const L = {people: A.people.filter(scope.people), teams: A.teams.filter(scope.teams), coords: A.coords.filter(scope.coords)};
   L.people.forEach((p, i) => p._rank = i); L.teams.forEach((t, i) => t._rank = i); L.coords.forEach((c, i) => c._rank = i);
-  const prevPeople = rankMap(LP.people, p => p.uid), prevTeams = rankMap(LP.teams, t => t.uid), prevCoords = rankMap(LP.coords, c => c.key);
+  const keep = (list, keyFn) => { const s = new Set(list.map(keyFn)); return x => s.has(keyFn(x)); };
+  const prevPeople = rankMap(AP.people.filter(keep(L.people, p => p.uid)), p => p.uid);
+  const prevTeams = rankMap(AP.teams.filter(keep(L.teams, t => t.uid)), t => t.uid);
+  const prevCoords = rankMap(AP.coords.filter(keep(L.coords, c => c.key)), c => c.key);
 
   // Filters applied after ranking, so ranks stay true
   const q = $("q").value.trim().toLowerCase(), bandF = $("fBand").value, actF = $("fAct").value;
@@ -908,7 +969,8 @@ function render(){
   const coordIdle = c => [...d.people.values()].filter(p => !p.isTL && p.active && p.coordKey === c.key && isIdle(p)).length;
   const actOk = n => !actF || (actF === "idle" ? n > 0 : n === 0);
 
-  let head = [], rows = [], toRow, sortVals = {}, hlKey = "";
+  let head = [], rows = [], toRow, sortVals = {};
+  const hlFn = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
   if (view === "people"){
     head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["score","Score"],["band","Band"]];
     rows = L.people.filter(p => (!q || (p.name + " " + p.uid).toLowerCase().includes(q)) && bandOk(p.score) && actOk(isIdle(p) ? 1 : 0));
@@ -916,7 +978,8 @@ function render(){
     toRow = p => {
       const tag = p.post ? '<span class="simtag post">Post-adm</span>' : '<span class="simtag' + (p.sim ? " on" : "") + '">' + (p.sim ? "SIM" : "Normal") + '</span>';
       const t = d.teams.get(p.teamUid), idle = isIdle(p);
-      return '<tr' + (p._rank < 3 && p.score !== null ? ' class="podium"' : '') + '>' + td("Rank", rankWithMove(p._rank, p.score, movement(prevPeople, p.uid, p._rank, p.score))) +
+      return '<tr class="click' + (p._rank < 3 && p.score !== null ? " podium" : "") + (hl.people(p) ? " hl" : "") + '" data-person="' + esc(p.uid) + '" tabindex="0" title="Compare this counselor with their peers">' +
+        td("Rank", rankWithMove(p._rank, p.score, movement(prevPeople, p.uid, p._rank, p.score))) +
         td("Counselor", '<span class="who"><b>' + esc(p.name) + (idle ? '<span class="idle" title="No claims in the last 7 days">Idle 7d</span>' : '') + '</b><small>UID ' + esc(p.uid) + (t && !t.other ? ", team " + esc(t.name) : "") + '</small></span>') +
         td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") +
         td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
@@ -929,7 +992,7 @@ function render(){
     sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, trend: t => (wk(t) || [0])[TREND_WEEKS - 1], score: t => t.score ?? -1, band: t => t.score ?? -1};
     toRow = t => {
       const n = teamIdle(t);
-      return '<tr class="click" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' +
+      return '<tr class="click' + (hl.teams(t) ? " hl" : "") + '" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' +
         td("Rank", rankWithMove(t._rank, t.score, movement(prevTeams, t.uid, t._rank, t.score))) +
         td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
         td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("8-week trend", spark(wk(t))) +
@@ -938,14 +1001,12 @@ function render(){
     };
   } else {
     head = [["rank","Rank"],["name","Coordinator"],["teams","Teams"],["hits","Hits"],["trend","8-week trend"],["score","Score"],["band","Band"]];
-    const teamCoord = st && d.teams.get(st) ? d.teams.get(st).coordKey : "";
-    hlKey = sc || teamCoord;                                   // all coordinators listed; the filtered one is highlighted
     rows = L.coords.filter(c => (!q || c.name.toLowerCase().includes(q)) && bandOk(c.score) && actOk(coordIdle(c)));
     const wk = c => (dTrend.coords.get(c.key) || {}).wk;
     sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, trend: c => (wk(c) || [0])[TREND_WEEKS - 1], score: c => c.score ?? -1, band: c => c.score ?? -1};
     toRow = c => {
       const n = coordIdle(c);
-      return '<tr class="click' + (c.key === hlKey ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
+      return '<tr class="click' + (hl.coords(c) ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
         td("Rank", rankWithMove(c._rank, c.score, movement(prevCoords, c.key, c._rank, c.score))) +
         td("Coordinator", '<b>' + esc(c.name) + '</b>') +
         td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small>', "num") +
@@ -962,7 +1023,7 @@ function render(){
     });
   } else if (sv.key === "rank" && sv.dir === -1) rows = [...rows].reverse();
   const size = pageSize(), pages = Math.max(1, Math.ceil(rows.length / size));
-  if (jumpToHighlight && hlKey){ const at = rows.findIndex(c => c.key === hlKey); if (at >= 0) pg = Math.floor(at / size) + 1; }
+  if (jumpToHighlight && level){ const at = rows.findIndex(hlFn); if (at >= 0) pg = Math.floor(at / size) + 1; }
   jumpToHighlight = false;
   pg = Math.min(Math.max(1, pg), pages);
   const start = (pg - 1) * size, items = rows.slice(start, start + size);
@@ -973,7 +1034,31 @@ function render(){
   }).join("");
   $("tbody").innerHTML = items.map(x => toRow(x)).join("") || '<tr><td class="empty" colspan="' + head.length + '">Nothing matches these filters.</td></tr>';
   const noun = view === "people" ? "counselor" : view === "teams" ? "team" : "coordinator";
-  $("viewCount").textContent = fmt(rows.length) + " " + noun + (rows.length === 1 ? "" : "s");
+  const nHl = level ? rows.filter(hlFn).length : 0;
+  $("viewCount").textContent = fmt(rows.length) + " " + noun + (rows.length === 1 ? "" : "s") + (nHl ? ", " + fmt(nHl) + " highlighted" : "");
+
+  // Mode switch and comparison box
+  $("modeBar").hidden = !level;
+  document.querySelectorAll("#modeBar button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode ? "true" : "false"));
+  const full = view === "people" ? L.people : view === "teams" ? L.teams : L.coords;
+  const H = full.filter(hlFn);
+  if (peers && H.length && full.length){
+    const hits = x => x.h.app + x.h.adm + x.h.post;
+    const mean = (l, f) => { const v = l.map(f).filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null; };
+    const best = (l, f) => l.reduce((b, x) => (f(x) ?? -1) > (b ? (f(b) ?? -1) : -1) ? x : b, null);
+    const bH = best(full, hits), bS = best(full, x => x.score);
+    const nm = x => view === "coords" ? x.name : x.name;
+    const rankTxt = H.length === 1 ? ord(H[0]._rank + 1) + " of " + full.length : "best " + ord(Math.min(...H.map(x => x._rank)) + 1) + " of " + full.length;
+    const val = (v, unit) => v === null || v === undefined ? "–" : '<b>' + v + '</b>' + (unit || "");
+    const selHits = H.length === 1 ? hits(H[0]) : mean(H, hits), selScore = H.length === 1 ? H[0].score : mean(H, x => x.score);
+    const lbl = H.length === 1 ? "" : '<small class="subl">average of ' + H.length + '</small>';
+    $("cmpBox").innerHTML = '<div class="cmp panel"><div class="cmphead"><b>' + esc(selName) + '</b> compared with ' + esc(peerLabel[view === "people" ? "people" : view === "teams" ? "teams" : "coords"]) + ' (' + fmt(full.length) + ')</div>' +
+      '<div class="tablebox"><table><thead><tr><th>Measure</th><th>Selected</th><th>Peer average</th><th>Best among peers</th></tr></thead><tbody>' +
+      '<tr>' + td("Measure", "Rank") + td("Selected", '<b>' + rankTxt + '</b>') + td("Peer average", "–") + td("Best among peers", bS && bS.score !== null ? esc(nm(full[0])) : "–") + '</tr>' +
+      '<tr>' + td("Measure", "Approved claims") + td("Selected", val(selHits) + lbl, "num") + td("Peer average", val(mean(full, hits)), "num") + td("Best among peers", bH ? val(hits(bH)) + '<small class="subl">' + esc(nm(bH)) + '</small>' : "–", "num") + '</tr>' +
+      '<tr>' + td("Measure", "Score") + td("Selected", val(selScore) + lbl, "num") + td("Peer average", val(mean(full, x => x.score)), "num") + td("Best among peers", bS && bS.score !== null ? val(bS.score) + '<small class="subl">' + esc(nm(bS)) + '</small>' : "–", "num") + '</tr>' +
+      '</tbody></table></div></div>';
+  } else $("cmpBox").innerHTML = "";
   $("pageInfo").textContent = rows.length ? "Showing " + fmt(start + 1) + "–" + fmt(start + items.length) + " of " + fmt(rows.length) : "";
   $("prevBtn").disabled = pg <= 1; $("nextBtn").disabled = pg >= pages;
   document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view ? "true" : "false"));
@@ -1005,20 +1090,29 @@ function render(){
       td("Approved claims", g.members.length < 2 ? "–" : qc(g.totals), "num") + '</tr>').join("") ||
     '<tr><td class="empty" colspan="3">No groups to show.</td></tr>';
 
-  const nActive = ["fCoord","fTeam","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].filter(id => $(id).value.trim()).length;
+  const nActive = ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].filter(id => $(id).value.trim()).length;
   $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
 }
 
 /* Events */
 ["fSkill","fSim","fMonth","fPeriod","fBand","fAct"].forEach(id => $(id).addEventListener("change", () => { pg = 1; render(); }));
-$("fTeam").addEventListener("change", () => { pg = 1; jumpToHighlight = true; render(); });
-$("fCoord").addEventListener("change", () => { $("fTeam").value = ""; pg = 1; jumpToHighlight = true; render(); });
+$("fTeam").addEventListener("change", () => { $("fPerson").value = ""; pg = 1; jumpToHighlight = true; render(); });
+$("fCoord").addEventListener("change", () => { $("fTeam").value = ""; $("fPerson").value = ""; pg = 1; jumpToHighlight = true; render(); });
+$("fPerson").addEventListener("change", () => { pg = 1; jumpToHighlight = true; render(); });
+document.querySelectorAll("#modeBar button").forEach(b => b.addEventListener("click", () => { mode = b.dataset.mode; pg = 1; jumpToHighlight = true; render(); }));
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 200); });
-$("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].forEach(id => $(id).value = ""); pg = 1; render(); });
+$("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].forEach(id => $(id).value = ""); pg = 1; render(); });
 $("refreshBtn").addEventListener("click", () => load(false));
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; $("q").value = ""; pg = 1; jumpToHighlight = true; render(); }));
 function drill(tr){
   if (!tr) return;
+  if (tr.dataset.person){                                       // counselor row: compare them with their peers (click again to clear)
+    const u = tr.dataset.person;
+    if ($("fPerson").value === u) $("fPerson").value = "";
+    else { $("fCoord").value = ""; $("fTeam").value = ""; render(); $("fPerson").value = u; }
+    pg = 1; jumpToHighlight = true; render(); return;
+  }
+  $("fPerson").value = "";
   if (tr.dataset.team){ $("fCoord").value = tr.dataset.coord; render(); $("fTeam").value = tr.dataset.team; view = "people"; }
   else if (tr.dataset.coord){ $("fCoord").value = tr.dataset.coord; $("fTeam").value = ""; view = "teams"; }
   $("q").value = ""; pg = 1; render();
