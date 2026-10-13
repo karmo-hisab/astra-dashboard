@@ -50,6 +50,18 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45}
 [hidden]{display:none!important}
+/* Sign-in gate */
+.gate{display:none;min-height:calc(100vh - 140px);align-items:center;justify-content:center;padding:28px 16px}
+body.locked .gate{display:flex}
+body.locked .wrap, body.locked .needs-auth{display:none!important}
+.gatecard{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:30px 28px;text-align:center;border-top:3px solid var(--accent)}
+.gatecard img{width:56px;height:56px;border-radius:10px}
+.gatecard h2{font-family:var(--serif);font-size:22px;margin:12px 0 4px}
+.gatecard p{color:var(--muted);margin:0 0 18px;font-size:14px}
+#gBtn{display:flex;justify-content:center;min-height:44px}
+.gatemsg{margin-top:14px;font-size:13px;color:var(--bad);min-height:18px}
+.gatefoot{margin-top:18px;font-size:12px;color:var(--faint)}
+.who-me{color:#C3CBE0;font-size:12.5px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-3px}
 .ic.lg{width:18px;height:18px}
 
@@ -184,6 +196,12 @@ footer b{color:var(--muted);font-weight:600}
   .pager{border-top:none;padding:6px 2px}
 }
 </style>
+<script>
+  /* Google's sign-in library may finish loading before the page code; start it whenever both are ready */
+  window.__gisLoaded = false;
+  function __onGis(){ window.__gisLoaded = true; if (typeof window.initGoogle === "function") window.initGoogle(); }
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="__onGis()"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -213,11 +231,23 @@ footer b{color:var(--muted);font-weight:600}
     <h1>Karmo Ka HisabKitab<span>Astra Claims Verification Dashboard</span></h1>
   </div>
   <div class="meta">
-    <span class="status loading" id="updated"><i></i>Loading…</span>
+    <span class="status loading needs-auth" id="updated"><i></i>Loading…</span>
     <button id="installBtn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-install"/></svg>Install app</button>
-    <button id="refreshBtn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Refresh</button>
+    <span class="who-me needs-auth" id="userEmail"></span>
+    <button id="signOutBtn" class="needs-auth" type="button">Sign out</button>
+    <button id="refreshBtn" class="needs-auth" type="button"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Refresh</button>
   </div>
 </div></div>
+<div class="gate" id="gate">
+  <div class="gatecard">
+    <img src="icon-192.png" alt="" onerror="this.style.display='none'">
+    <h2>Karmo Ka HisabKitab</h2>
+    <p>Sign in with your <b>@lpu.co.in</b> Google account to view Astra claims.</p>
+    <div id="gBtn"></div>
+    <div class="gatemsg" id="gateMsg" role="alert"></div>
+    <div class="gatefoot">For LPU internal use only.</div>
+  </div>
+</div>
 <div class="wrap">
   <div id="installHelp" class="panel help" hidden></div>
   <div id="notice"></div>
@@ -276,7 +306,7 @@ footer b{color:var(--muted);font-weight:600}
   </section>
 
   <footer>
-    <span><b>For LPU internal use only.</b> Please don't share this link or screenshots outside LPU.</span>
+    <span><b>For LPU internal use only.</b> Access is limited to @lpu.co.in accounts. Please don't share screenshots outside LPU.</span>
     <span>Refreshes every 10 minutes. New claims can take 5–10 minutes to appear.</span>
   </footer>
 </div>
@@ -284,8 +314,10 @@ footer b{color:var(--muted);font-weight:600}
 <!--PREVIEW_SCRIPT-->
 <script>
 /* ================== SETTINGS ================== */
-const SHEET_ID  = "1cbiaWIg9FKRd5mybYKuxGdc1Ziw0s0hFvEq_0u_qaaQ";
-const SHEET_TAB = "Imported Claimed Data";
+/* Only signed-in @lpu.co.in accounts receive data. The Google Sheet stays private. */
+const CLIENT_ID = "417974248161-sp1ocl4mgqb1lk7haj8ft3vs5unh7pqg.apps.googleusercontent.com";
+const API_URL   = "https://script.google.com/macros/s/AKfycbwrIMxy6N874vreI4gv83OndtlEsfYKWwqIaWs4sdTwtxnTUObiv7BpEQNVTpeqd1Cc/exec";
+const DOMAIN    = "lpu.co.in";
 const PAGE_SIZE = 50;
 const REFRESH_MINUTES = 10;
 
@@ -356,29 +388,73 @@ function showNotice(kind, html){ $("notice").innerHTML = html ? '<div class="not
 const fmt = n => Number(n).toLocaleString("en-IN");
 const pct = (a, b) => b ? Math.round(a * 100 / b) + "%" : "–";
 
-/* Loads the sheet through Google's script (JSONP) endpoint, which browsers don't block */
-function fetchSheet(){
-  return new Promise((resolve, reject) => {
-    const cb = "__astraCb" + Date.now();
-    const s = document.createElement("script");
-    const timer = setTimeout(() => { cleanup(); reject(new Error("no response from Google; check sharing")); }, 45000);
-    function cleanup(){ clearTimeout(timer); try{ delete window[cb]; }catch(_){ window[cb] = undefined; } s.remove(); }
-    window[cb] = data => { cleanup(); resolve(data); };
-    s.onerror = () => { cleanup(); reject(new Error("request blocked or sheet not shared")); };
-    const query = "select " + FIELDS.map(c => c.col).join(",") + ",A where A is not null";
-    s.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq" +
-            "?tqx=" + encodeURIComponent("out:json;responseHandler:" + cb) +
-            "&headers=1&sheet=" + encodeURIComponent(SHEET_TAB) +
-            "&tq=" + encodeURIComponent(query) + "&_=" + Date.now();
-    document.head.appendChild(s);
-  });
+/* ---------- Sign-in (Google, LPU accounts only) ---------- */
+let idToken = null;
+function jwtPayload(t){
+  try{
+    const p = t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(decodeURIComponent(escape(atob(p))));
+  }catch(_){ return null; }
 }
-function cellText(c){ if (!c) return ""; if (c.f != null) return String(c.f); return c.v == null ? "" : String(c.v); }
-function cellTs(c){
-  if (!c || c.v == null) return 0;
-  const m = String(c.v).match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/);
-  if (m) return new Date(+m[1], +m[2], +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0)).getTime();
-  const d = Date.parse(cellText(c)); return isNaN(d) ? 0 : d;
+function tokenOk(t){ const p = t && jwtPayload(t); return !!(p && p.hd === DOMAIN && p.exp * 1000 > Date.now() + 60000); }
+function saveToken(t){ try{ localStorage.setItem("hk_token", t); }catch(_){} }
+function storedToken(){ try{ return localStorage.getItem("hk_token"); }catch(_){ return null; } }
+function clearToken(){ idToken = null; try{ localStorage.removeItem("hk_token"); }catch(_){} }
+
+function showGate(msg){
+  document.body.classList.add("locked");
+  $("gateMsg").textContent = msg || "";
+  if (window.google && google.accounts && google.accounts.id) google.accounts.id.prompt();
+}
+function signedIn(token){
+  idToken = token;
+  const p = jwtPayload(token);
+  $("userEmail").textContent = p && p.email ? p.email : "";
+  document.body.classList.remove("locked");
+  $("gateMsg").textContent = "";
+  load(false);
+}
+function onCredential(resp){
+  const p = jwtPayload(resp.credential);
+  if (!p || p.hd !== DOMAIN){
+    $("gateMsg").textContent = "Only @lpu.co.in accounts can open this page" + (p && p.email ? " (" + p.email + " isn't allowed)." : ".");
+    return;
+  }
+  saveToken(resp.credential);
+  signedIn(resp.credential);
+}
+function initGoogle(){
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID, callback: onCredential, hd: DOMAIN,
+    auto_select: true, cancel_on_tap_outside: false, itp_support: true, use_fedcm_for_prompt: true
+  });
+  google.accounts.id.renderButton($("gBtn"), {theme:"filled_blue", size:"large", shape:"rectangular", text:"signin_with", width:280});
+  if (document.body.classList.contains("locked")) google.accounts.id.prompt();
+}
+
+/* ---------- Data from the secure service ---------- */
+async function gunzipBase64(b64){
+  if (!("DecompressionStream" in window)) throw new Error("Please update your browser (Chrome, Edge or Safari 16.4+) to view the dashboard.");
+  const bin = atob(b64), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return await new Response(stream).text();
+}
+async function fetchClaims(){
+  if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
+  const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken})});
+  if (!res.ok) throw new Error("service error (" + res.status + ")");
+  const j = await res.json();
+  if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
+  const data = JSON.parse(await gunzipBase64(j.gz));
+  const F = {}; data.fields.forEach((f, i) => F[f] = i);
+  const D = data.dict;
+  const rows = data.rows.map(r => ({
+    _ts: r[F.ts], name: r[F.name], uid: r[F.uid], claim: D.claim[r[F.claim]], app: r[F.app], astra: r[F.astra],
+    paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
+    fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]]
+  }));
+  return {rows, updated: data.updated};
 }
 
 function setUpdated(text, loading){
@@ -391,17 +467,9 @@ async function load(isBackground){
   setUpdated("Updating…", true);
   $("refreshBtn").disabled = true;
   try{
-    const data = await fetchSheet();
-    if (data.status === "error"){
-      const e = data.errors && data.errors[0];
-      throw new Error((e && (e.detailed_message || e.message)) || "sheet error");
-    }
+    const {rows, updated} = await fetchClaims();
     const fresh = [];
-    for (const row of (data.table && data.table.rows) || []){
-      const r = row.c || [], o = {};
-      FIELDS.forEach((c, i) => o[c.key] = cellText(r[i]).trim());
-      o._ts = cellTs(r[FIELDS.length]);
-      o._paidTs = cellTs(r[FIELDS.findIndex(c => c.key === "paid")]);
+    for (const o of rows){
       if (!o.name && !o.app && !o._ts) continue;
       o._res = statusClass(o.final);
       o._search = [o.name, o.uid, o.app, o.astra].join(" ").toLowerCase();
@@ -413,12 +481,12 @@ async function load(isBackground){
     buildOptions();
     apply(false);
     showNotice("", "");
-    setUpdated("Updated " + new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}), false);
+    setUpdated("Data as of " + updated, false);
   }catch(e){
     setUpdated("Not updated", false);
+    if (e.auth){ clearToken(); showGate("Your sign-in has expired. Please sign in again."); return; }
     if (!ALL.length || !isBackground){
-      showNotice("err", "<b>Couldn't load claims from the Google Sheet.</b><br>Check that the sheet is shared as <i>Anyone with the link: Viewer</i> and the tab is named <i>" +
-        esc(SHEET_TAB) + "</i>, then select Refresh. (" + esc(e.message) + ")");
+      showNotice("err", "<b>Couldn't load the claims data.</b><br>Select Refresh to try again. (" + esc(e.message) + ")");
     }
   }finally{ $("refreshBtn").disabled = false; }
 }
@@ -598,9 +666,18 @@ $("installBtn").addEventListener("click", async () => {
 });
 window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; $("installHelp").hidden = true; });
 
+$("signOutBtn").addEventListener("click", () => {
+  clearToken();
+  ALL = []; VIEW = [];
+  if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+  showGate("You have signed out.");
+});
+
 renderTable();
-load(false);
-setInterval(() => load(true), REFRESH_MINUTES * 60000 + Math.floor(Math.random() * 120000));
+if (window.__gisLoaded && window.google) initGoogle();
+const saved = storedToken();
+if (tokenOk(saved)) signedIn(saved); else { clearToken(); document.body.classList.add("locked"); }
+setInterval(() => { if (idToken) load(true); }, REFRESH_MINUTES * 60000 + Math.floor(Math.random() * 120000));
 </script>
 </body>
 </html>
