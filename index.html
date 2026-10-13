@@ -179,6 +179,7 @@ footer b{color:var(--muted);font-weight:600}
   .filters label.f:first-child{grid-column:1/-1}
 }
 @media (max-width: 720px){
+  .who-me{display:none!important}
   .topbar .in{padding:12px 16px}
   .wrap{padding:16px 14px 28px}
   .stats{grid-template-columns:1fr 1fr;gap:10px}
@@ -360,6 +361,7 @@ function statusClass(v){
   const s1 = m ? m[1].replace(/[,.\s]+$/, "").trim() : s;
   const s2 = m ? m[2].replace(/[,.\s]+$/, "").trim() : "";
   if (s1 === "approved" && s2 === "approved") return "ok";
+  if (!m && /^(approved|hit|💯|hit 💯)$/.test(s)) return "ok";      // final status written as a single word, e.g. "Approved"
   if (/(to be evaluated|pending|clash|quality assurance)/.test(s)) return "wait";
   return "bad";
 }
