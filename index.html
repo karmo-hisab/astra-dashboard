@@ -339,8 +339,8 @@ function firedLabel(v){
 const TYPES = [
   {match:/arrow/i,        label:"LPUNEST Application", astra:"Arrow",         emoji:"🎯", icon:"app"},
   {match:/brahmast/i,     label:"Admission",           astra:"Brahmastra",    emoji:"🏹", icon:"admission"},
-  {match:/akshaya/i,      label:"Mess",                astra:"Akshaya Patra", emoji:"🍜", icon:"mess"},
   {match:/naga\s*pasha/i, label:"Hostel",              astra:"Naga Pasha",    emoji:"🐍", icon:"hostel"},
+  {match:/akshaya/i,      label:"Mess",                astra:"Akshaya Patra", emoji:"🍜", icon:"mess"},
 ];
 function claimLabel(c){ const t = TYPES.find(t => t.match.test(c || "")); return t ? t.label : (c || "–"); }
 
