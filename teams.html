@@ -149,6 +149,7 @@ tbody tr.hl td b{color:var(--ink)}
 .tip{font-size:12.5px;color:var(--faint)}
 #moreFilters{margin-top:10px;padding-top:12px;border-top:1px solid var(--line-2)}
 .who small{display:block}
+.rank.none{color:var(--faint);font-weight:400}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -824,8 +825,9 @@ function compute(opts){
 const td = (label, html, cls) => '<td' + (cls ? ' class="' + cls + '"' : '') + ' data-label="' + label + '"><div>' + html + '</div></td>';
 /* Top three get medals (only when they have a real score) */
 const MEDALS = ["🥇", "🥈", "🥉"];
-const rankCell = (i, score) => (i < 3 && score !== null && score !== undefined)
-  ? '<span class="medal" title="Rank ' + (i + 1) + '">' + MEDALS[i] + '</span>'
+const rankCell = (i, score) => (score === null || score === undefined)
+  ? '<span class="rank none" title="Not ranked yet: no approved claims to compare">–</span>'
+  : i < 3 ? '<span class="medal" title="Rank ' + (i + 1) + '">' + MEDALS[i] + '</span>'
   : '<span class="rank">' + (i + 1) + '</span>';
 const bandTag = s => { const b = band(s); return '<span class="bandtag ' + b.key + '">' + (s === null || s === undefined ? "Not ranked yet" : b.label) + '</span>'; };
 const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="color:var(--faint)">–</span>' : '<span class="score">' + s + '</span>') + (sub ? '<small class="subl">' + sub + '</small>' : '');
@@ -940,14 +942,25 @@ function render(){
   if (level === "person"){ skills = new Set([P1.skill]); selName = P1.name; }
   else if (level === "team"){ skills = new Set([T1.skill]); selName = T1.name + "'s team"; }
   else if (level === "coord"){ skills = coordSkills.get(sc) || new Set(); selName = (d.coords.get(sc) || {}).name || ""; }
-  const peers = mode === "peers" && level !== "";
+  const LEVEL_OF_VIEW = {coords: 0, teams: 1, people: 2}, LEVEL_OF_SEL = {coord: 0, team: 1, person: 2};
+  const viewLevel = LEVEL_OF_VIEW[view], selLevel = level ? LEVEL_OF_SEL[level] : -1;
+  const atLevel = level !== "" && viewLevel === selLevel;          // e.g. coordinator chosen + Coordinators view
+  const below = level !== "" && viewLevel > selLevel;              // drill-down: the selection's own teams / counselors
+  const peers = mode === "peers" && atLevel;
   const skillTxt = [...skills].join(", ");
   const scope = {
-    people: x => !x.isTL && x.active && (!peers
-      ? (inScope(x) && (!sp || x.uid === sp))
-      : level === "person" ? x.cmp === P1.cmp : skills.has(x.skill)),
-    teams: t => !t.other && d.tlSet.has(t.uid) && (!peers ? (!sc || t.coordKey === sc) && (!st || t.uid === st || level === "coord") : skills.has(t.skill)),
-    coords: c => !peers || handles(c.key, skills)
+    people: x => !x.isTL && x.active && (
+      view !== "people" ? true :
+      peers ? x.cmp === P1.cmp :                                   // counselor chosen: their scoring group
+      (inScope(x) && (!sp || x.uid === sp))),                      // drill-down or "only this selection"
+    teams: t => !t.other && d.tlSet.has(t.uid) && (
+      view !== "teams" ? true :
+      peers ? skills.has(t.skill) :                                // team leader chosen: same skill
+      below ? t.coordKey === sc :                                  // coordinator chosen: their own teams
+      atLevel ? t.uid === st : true),                              // "only this selection" / above the selection
+    coords: c => view !== "coords" ? true :
+      peers ? handles(c.key, skills) :                             // coordinator chosen: coordinators of the same skills
+      atLevel ? c.key === sc : true
   };
   const hl = {
     people: x => level === "person" ? x.uid === sp : level === "team" ? x.teamUid === st : level === "coord" ? x.coordKey === sc : false,
@@ -993,7 +1006,8 @@ function render(){
   const actOk = n => !actF || (actF === "idle" ? n > 0 : n === 0);
 
   let head = [], rows = [], toRow, sortVals = {};
-  const hlFn = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
+  const hlBase = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
+  const hlFn = x => !below && hlBase(x);                          // no highlighting inside a drill-down (every row belongs to the selection)
   if (view === "people"){
     head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["score","Score"],["band","Band"]];
     rows = L.people.filter(p => (!q || (p.name + " " + p.uid).toLowerCase().includes(q)) && bandOk(p.score) && actOk(isIdle(p) ? 1 : 0));
@@ -1064,24 +1078,25 @@ function render(){
   $("viewCount").textContent = fmt(rows.length) + " " + noun + (rows.length === 1 ? "" : "s") + (nHl ? ", " + fmt(nHl) + " highlighted" : "");
 
   // Mode switch and comparison box
-  $("modeBar").hidden = !level;
+  $("modeBar").hidden = !atLevel;
   document.querySelectorAll("#modeBar button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode ? "true" : "false"));
   const full = view === "people" ? L.people : view === "teams" ? L.teams : L.coords;
   const H = full.filter(hlFn);
-  if (peers && H.length && full.length){
+  if (peers && H.length === 1 && full.length){
     const hits = x => x.h.app + x.h.adm + x.h.post;
     const mean = (l, f) => { const v = l.map(f).filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null; };
     const best = (l, f) => l.reduce((b, x) => (f(x) ?? -1) > (b ? (f(b) ?? -1) : -1) ? x : b, null);
     const bH = best(full, hits), bS = best(full, x => x.score);
     const nm = x => view === "coords" ? x.name : x.name;
-    const rankTxt = H.length === 1 ? ord(H[0]._rank + 1) + " of " + full.length : "best " + ord(Math.min(...H.map(x => x._rank)) + 1) + " of " + full.length;
+    const scored = full.filter(x => x.score !== null && x.score !== undefined).length;
+    const rankTxt = H[0].score === null || H[0].score === undefined ? "Not ranked yet" : ord(H[0]._rank + 1) + " of " + scored;
     const val = (v, unit) => v === null || v === undefined ? "–" : '<b>' + v + '</b>' + (unit || "");
     const selHits = H.length === 1 ? hits(H[0]) : mean(H, hits), selScore = H.length === 1 ? H[0].score : mean(H, x => x.score);
     const lbl = H.length === 1 ? "" : '<small class="subl">average of ' + H.length + '</small>';
     $("cmpBox").innerHTML = '<div class="cmp panel"><div class="cmphead"><b>' + esc(selName) + '</b> compared with ' + esc(peerLabel[view === "people" ? "people" : view === "teams" ? "teams" : "coords"]) + ' (' + fmt(full.length) + ')</div>' +
       '<div class="tablebox"><table><thead><tr><th>Measure</th><th>Selected</th><th>Peer average</th><th>Best among peers</th></tr></thead><tbody>' +
       '<tr>' + td("Measure", "Rank") + td("Selected", '<b>' + rankTxt + '</b>') + td("Peer average", "–") + td("Best among peers", bS && bS.score !== null ? esc(nm(full[0])) : "–") + '</tr>' +
-      '<tr>' + td("Measure", "Approved claims") + td("Selected", val(selHits) + lbl, "num") + td("Peer average", val(mean(full, hits)), "num") + td("Best among peers", bH ? val(hits(bH)) + '<small class="subl">' + esc(nm(bH)) + '</small>' : "–", "num") + '</tr>' +
+      '<tr>' + td("Measure", "Approved claims") + td("Selected", val(selHits) + lbl, "num") + td("Peer average", val(mean(full, hits)), "num") + td("Best among peers", bH && hits(bH) > 0 ? val(hits(bH)) + '<small class="subl">' + esc(nm(bH)) + '</small>' : "–", "num") + '</tr>' +
       '<tr>' + td("Measure", "Score") + td("Selected", val(selScore) + lbl, "num") + td("Peer average", val(mean(full, x => x.score)), "num") + td("Best among peers", bS && bS.score !== null ? val(bS.score) + '<small class="subl">' + esc(nm(bS)) + '</small>' : "–", "num") + '</tr>' +
       '</tbody></table></div></div>';
   } else $("cmpBox").innerHTML = "";
@@ -1126,9 +1141,9 @@ function render(){
 
 /* Events */
 ["fSkill","fSim","fMonth","fPeriod","fBand","fAct"].forEach(id => $(id).addEventListener("change", () => { pg = 1; render(); }));
-$("fTeam").addEventListener("change", () => { $("fPerson").value = ""; pg = 1; jumpToHighlight = true; render(); });
-$("fCoord").addEventListener("change", () => { $("fTeam").value = ""; $("fPerson").value = ""; pg = 1; jumpToHighlight = true; render(); });
-$("fPerson").addEventListener("change", () => { pg = 1; jumpToHighlight = true; render(); });
+$("fTeam").addEventListener("change", () => { $("fPerson").value = ""; if ($("fTeam").value) view = "teams"; pg = 1; jumpToHighlight = true; render(); });
+$("fCoord").addEventListener("change", () => { $("fTeam").value = ""; $("fPerson").value = ""; if ($("fCoord").value) view = "coords"; pg = 1; jumpToHighlight = true; render(); });
+$("fPerson").addEventListener("change", () => { if ($("fPerson").value) view = "people"; pg = 1; jumpToHighlight = true; render(); });
 $("moreBtn").addEventListener("click", () => { const open = $("moreFilters").hidden; $("moreFilters").hidden = !open; $("moreBtn").setAttribute("aria-expanded", open ? "true" : "false"); });
 document.querySelectorAll("#modeBar button").forEach(b => b.addEventListener("click", () => { mode = b.dataset.mode; pg = 1; jumpToHighlight = true; render(); }));
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 200); });
