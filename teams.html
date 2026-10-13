@@ -145,6 +145,10 @@ tbody tr.hl td b{color:var(--ink)}
 .cmphead b{color:var(--ink)}
 .cmp table{min-width:0}
 .cmp th,.cmp td{padding:7px 14px}
+.morebar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.tip{font-size:12.5px;color:var(--faint)}
+#moreFilters{margin-top:10px;padding-top:12px;border-top:1px solid var(--line-2)}
+.who small{display:block}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -356,28 +360,23 @@ footer b{color:var(--muted);font-weight:600}
       <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-filter"/></svg>Filters<span class="chip" id="activeChip" hidden></span></h2>
       <button class="linkbtn" id="resetBtn" type="button">Clear all</button>
     </div>
-    <div class="frow">
-      <span class="flabel">Who</span>
-      <div class="tfilters five">
-        <label class="f">Coordinator<select id="fCoord"></select></label>
-        <label class="f">Team leader<select id="fTeam"></select></label>
-        <label class="f">Counselor<select id="fPerson"></select></label>
-        <label class="f">Skill<select id="fSkill"></select></label>
-        <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
-      </div>
+    <div class="tfilters five main">
+      <label class="f">Coordinator<select id="fCoord"></select></label>
+      <label class="f">Team leader<select id="fTeam"></select></label>
+      <label class="f">Counselor<select id="fPerson"></select></label>
+      <label class="f">Skill<select id="fSkill"></select></label>
+      <label class="f">Search<input id="q" type="search" placeholder="Name or UID" autocomplete="off"></label>
     </div>
-    <div class="frow">
-      <span class="flabel">When</span>
-      <div class="tfilters">
-        <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option></select></label>
-        <label class="f">Payment month<select id="fMonth"></select></label>
-        <label class="f">Band<select id="fBand"><option value="">All</option><option value="ok">Top</option><option value="okl">Above median</option><option value="wait">Below median</option><option value="bad">Needs attention</option><option value="none">Not ranked yet</option></select></label>
-        <label class="f">Activity<select id="fAct"><option value="">All</option><option value="idle">No claims in last 7 days</option><option value="active">Active in last 7 days</option></select></label>
-      </div>
+    <div class="morebar">
+      <span class="tip">Tip: pick a coordinator, team leader or counselor to see how they rank among their peers.</span>
+      <button type="button" class="linkbtn" id="moreBtn" aria-expanded="false" aria-controls="moreFilters">More filters</button>
     </div>
-    <div class="frow">
-      <span class="flabel">Find</span>
-      <div class="tfilters one"><label class="f"><input id="q" type="search" placeholder="Search name or UID" autocomplete="off" aria-label="Search"></label></div>
+    <div class="tfilters five" id="moreFilters" hidden>
+      <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
+      <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option></select></label>
+      <label class="f">Payment month<select id="fMonth"></select></label>
+      <label class="f">Band<select id="fBand"><option value="">All</option><option value="ok">Top</option><option value="okl">Above median</option><option value="wait">Below median</option><option value="bad">Needs attention</option><option value="none">Not ranked yet</option></select></label>
+      <label class="f">Activity<select id="fAct"><option value="">All</option><option value="idle">No claims in last 7 days</option><option value="active">Active in last 7 days</option></select></label>
     </div>
   </section>
 
@@ -711,6 +710,7 @@ function compute(opts){
   const byUid = new Map(); for (const p of ROSTER) byUid.set(String(p.uid), p);
   const haveRoster = ROSTER.length > 0;
   const f = {month:$("fMonth").value, skill:$("fSkill").value, sim:$("fSim").value};
+  if (opts.allPeople){ f.skill = ""; f.sim = ""; }
   const personOk = p => (!f.skill || (p && p.skill === f.skill)) && (!f.sim || (p && (f.sim === "SIM") === (p.sim === "Yes")));
   const coords = new Map(), teams = new Map(), people = new Map(), coordName = new Map();
   for (const p of ROSTER) if (p.coord) coordName.set(normName(p.coord), p.coord);
@@ -889,14 +889,20 @@ function render(){
 
   $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Scores need the team list for skills and SIM; showing claims only.</div>';
 
-  // Coordinator and team dropdowns
-  const cSel = $("fCoord"), tSel = $("fTeam"), curC = cSel.value, curT = tSel.value;
-  const coordList = [...d.coords.values()].sort((a, b) => a.name.localeCompare(b.name));
-  cSel.innerHTML = '<option value="">All</option>' + coordList.map(c => '<option value="' + esc(c.key) + '">' + esc(c.name) + '</option>').join("");
-  cSel.value = d.coords.has(curC) ? curC : "";
-  const teamOpts = [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!cSel.value || t.coordKey === cSel.value)).sort((a, b) => a.name.localeCompare(b.name));
-  tSel.innerHTML = '<option value="">All</option>' + teamOpts.map(t => '<option value="' + esc(t.uid) + '">' + esc(t.name) + '</option>').join("");
-  tSel.value = teamOpts.some(t => t.uid === curT) ? curT : "";
+  // Dropdowns only offer options that exist within the other choices (with counts)
+  const d0 = cached("all", [dataStamp, $("fMonth").value, JSON.stringify(P.cur)].join("|"), () => compute(Object.assign({allPeople:true}, P.cur)));
+  const fillSel = (sel, items, keepVal) => {
+    const cur = sel.value;
+    if (cur && !items.some(it => it.v === cur)) items.push({v:cur, l:(keepVal && keepVal(cur)) || cur, n:0});
+    sel.innerHTML = '<option value="">All</option>' + items.map(it => '<option value="' + esc(it.v) + '"' + (it.n ? "" : " disabled") + '>' + esc(it.l) + ' (' + fmt(it.n) + ')</option>').join("");
+    sel.value = cur;
+  };
+  const cSel = $("fCoord"), tSel = $("fTeam");
+  const counselorsOf = (dd, fn) => [...dd.people.values()].filter(x => !x.isTL && x.active && fn(x)).length;
+  fillSel(cSel, [...d.coords.values()].map(c => ({v:c.key, l:c.name, n:counselorsOf(d, x => x.coordKey === c.key)}))
+    .filter(it => it.n || it.v === cSel.value).sort((a, b) => a.l.localeCompare(b.l)), v => (d0.coords.get(v) || {}).name);
+  fillSel(tSel, [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!cSel.value || t.coordKey === cSel.value))
+    .map(t => ({v:t.uid, l:t.name, n:counselorsOf(d, x => x.teamUid === t.uid)})).sort((a, b) => a.l.localeCompare(b.l)), v => (d0.teams.get(v) || {}).name);
   const sc = cSel.value, st = tSel.value;
   const inScope = p => (!sc || p.coordKey === sc) && (!st || p.teamUid === st);
   // Counselor dropdown (within the chosen coordinator / team)
@@ -904,6 +910,23 @@ function render(){
   const personOpts = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
   pSel.innerHTML = '<option value="">All</option>' + personOpts.map(p => '<option value="' + esc(p.uid) + '">' + esc(p.name) + ' (' + esc(p.uid) + ')</option>').join("");
   pSel.value = personOpts.some(p => p.uid === curP) ? curP : "";
+  // Skill, Counselor type and Payment month follow the chosen coordinator / team / counselor
+  const scope0 = x => !x.isTL && x.active && (!sc || x.coordKey === sc) && (!st || x.teamUid === st) && (!pSel.value || x.uid === pSel.value);
+  const simF = $("fSim").value, skillF = $("fSkill").value;
+  const typeOk = x => !simF || (simF === "SIM") === x.sim;
+  const skillCount = new Map();
+  for (const x of d0.people.values()) if (scope0(x) && typeOk(x)) skillCount.set(x.skill, (skillCount.get(x.skill) || 0) + 1);
+  fillSel($("fSkill"), [...skillCount.entries()].map(([k, n]) => ({v:k, l:k, n})).sort((a, b) => a.l.localeCompare(b.l)));
+  for (const o of $("fSim").options){
+    if (!o.value) continue;
+    if (!o.dataset.base) o.dataset.base = o.textContent;
+    const n = [...d0.people.values()].filter(x => scope0(x) && (!skillF || x.skill === skillF) && (o.value === "SIM") === x.sim).length;
+    o.textContent = o.dataset.base + " (" + fmt(n) + ")"; o.disabled = !n && $("fSim").value !== o.value;
+  }
+  const inPeople = new Set([...d0.people.values()].filter(x => scope0(x) && typeOk(x) && (!skillF || x.skill === skillF)).map(x => String(x.uid)));
+  const monthCount = new Map();
+  for (const r of ALL) if (inPeople.has(String(r.uid))) monthCount.set(r.month, (monthCount.get(r.month) || 0) + 1);
+  fillSel($("fMonth"), [...monthCount.entries()].filter(([m]) => m).map(([m, n]) => ({v:m, l:m, n})).sort((a, b) => String(a.v).localeCompare(String(b.v), undefined, {numeric:true})));
   const sp = pSel.value;
   const P1 = sp ? d.people.get(sp) : null, T1 = st ? d.teams.get(st) : null;
 
@@ -951,7 +974,7 @@ function render(){
   const idleN = peopleIn.filter(isIdle).length;
   $("oPeopleSub").textContent = fmt(peopleIn.filter(p => p.sim).length) + " with SIM, " + fmt(idleN) + " no claims in 7 days";
   $("zeroNote").innerHTML = tot.ok ? "" : '<div class="zero">No approved claims yet for this selection, so scores show "–". Rankings appear automatically as claims are approved.</div>';
-  $("periodNote").textContent = "▲▼ = rank change compared with " + P.prevLabel + ".";
+  $("periodNote").textContent = "";
 
   // Ranks within the list shown (peers or selection), now and in the previous period
   const A = orderedLists(d, "", ""), AP = orderedLists(dPrev, "", "");
@@ -980,7 +1003,10 @@ function render(){
       const t = d.teams.get(p.teamUid), idle = isIdle(p);
       return '<tr class="click' + (p._rank < 3 && p.score !== null ? " podium" : "") + (hl.people(p) ? " hl" : "") + '" data-person="' + esc(p.uid) + '" tabindex="0" title="Compare this counselor with their peers">' +
         td("Rank", rankWithMove(p._rank, p.score, movement(prevPeople, p.uid, p._rank, p.score))) +
-        td("Counselor", '<span class="who"><b>' + esc(p.name) + (idle ? '<span class="idle" title="No claims in the last 7 days">Idle 7d</span>' : '') + '</b><small>UID ' + esc(p.uid) + (t && !t.other ? ", team " + esc(t.name) : "") + '</small></span>') +
+        td("Counselor", '<span class="who"><b>' + esc(p.name) + (idle ? '<span class="idle" title="No claims in the last 7 days">Idle 7d</span>' : '') + '</b>' +
+          '<small>UID ' + esc(p.uid) + '</small>' +
+          '<small>TL: ' + esc(t && !t.other ? t.name : "–") + '</small>' +
+          '<small>Coordinator: ' + esc((d.coords.get(p.coordKey) || {}).name || "–") + '</small></span>') +
         td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") +
         td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
         td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : bandTag(p.score)) + '</tr>';
@@ -1091,6 +1117,10 @@ function render(){
     '<tr><td class="empty" colspan="3">No groups to show.</td></tr>';
 
   const nActive = ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].filter(id => $(id).value.trim()).length;
+  const nMore = ["fSim","fPeriod","fMonth","fBand","fAct"].filter(id => $(id).value).length;
+  $("moreBtn").textContent = "More filters" + (nMore ? " (" + nMore + " active)" : "");
+  const anyMove = $("tbody").querySelector(".move.up,.move.down,.move.new");
+  $("periodNote").textContent = anyMove ? "▲▼ shows rank change compared with " + P.prevLabel + "." : "";
   $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
 }
 
@@ -1099,6 +1129,7 @@ function render(){
 $("fTeam").addEventListener("change", () => { $("fPerson").value = ""; pg = 1; jumpToHighlight = true; render(); });
 $("fCoord").addEventListener("change", () => { $("fTeam").value = ""; $("fPerson").value = ""; pg = 1; jumpToHighlight = true; render(); });
 $("fPerson").addEventListener("change", () => { pg = 1; jumpToHighlight = true; render(); });
+$("moreBtn").addEventListener("click", () => { const open = $("moreFilters").hidden; $("moreFilters").hidden = !open; $("moreBtn").setAttribute("aria-expanded", open ? "true" : "false"); });
 document.querySelectorAll("#modeBar button").forEach(b => b.addEventListener("click", () => { mode = b.dataset.mode; pg = 1; jumpToHighlight = true; render(); }));
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 200); });
 $("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].forEach(id => $(id).value = ""); pg = 1; render(); });
