@@ -92,9 +92,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .mix .ok{background:var(--ok)} .mix .bad{background:var(--bad)} .mix .wait{background:var(--wait)}
 
 /* Claim types */
-.types{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.types{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
 .type{padding:10px 16px 11px;background:var(--card);border:1px solid var(--line);border-radius:6px}
-.type h3{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin:0;color:var(--muted)}
+.type h3{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin:0;color:var(--muted);min-width:0}
+.type .head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.em{font-size:15px;line-height:1}
+.astra{flex:none;font-size:11.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 7px;line-height:1.6;white-space:nowrap}
 .type h3 .ic{color:var(--muted)}
 .type .row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .type .big{font-family:var(--serif);font-size:22px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums lining-nums}
@@ -156,7 +159,7 @@ footer b{color:var(--muted);font-weight:600}
 
 @media (max-width: 980px){
   .stats{grid-template-columns:repeat(3,1fr)}
-  .types{grid-template-columns:1fr 1fr}
+  .types{grid-template-columns:repeat(2,minmax(0,1fr))}
   .filters{grid-template-columns:repeat(3,1fr)}
   .filters label.f:first-child{grid-column:1/-1}
 }
@@ -166,6 +169,7 @@ footer b{color:var(--muted);font-weight:600}
   .stats{grid-template-columns:1fr 1fr;gap:10px}
   .stat:first-child{grid-column:1/-1}
   .types{gap:10px}
+  .type .head{flex-direction:column;align-items:flex-start;gap:4px}
   .filters{grid-template-columns:1fr 1fr}
   .table-panel{background:none;border:none}
   .tablebox{overflow:visible}
@@ -333,10 +337,10 @@ function firedLabel(v){
 
 /* Claim types */
 const TYPES = [
-  {match:/arrow/i,        label:"LPUNEST Application", icon:"app"},
-  {match:/brahmast/i,     label:"Admission",           icon:"admission"},
-  {match:/akshaya/i,      label:"Mess",                icon:"mess"},
-  {match:/naga\s*pasha/i, label:"Hostel",              icon:"hostel"},
+  {match:/arrow/i,        label:"LPUNEST Application", astra:"Arrow",         emoji:"🎯", icon:"app"},
+  {match:/brahmast/i,     label:"Admission",           astra:"Brahmastra",    emoji:"🏹", icon:"admission"},
+  {match:/akshaya/i,      label:"Mess",                astra:"Akshaya Patra", emoji:"🍜", icon:"mess"},
+  {match:/naga\s*pasha/i, label:"Hostel",              astra:"Naga Pasha",    emoji:"🐍", icon:"hostel"},
 ];
 function claimLabel(c){ const t = TYPES.find(t => t.match.test(c || "")); return t ? t.label : (c || "–"); }
 
@@ -507,7 +511,7 @@ function apply(resetPage = true){
   $("types").innerHTML = TYPES.map(t => {
     let n = 0, h = 0;
     for (const r of VIEW){ if (t.match.test(r.claim)){ n++; if (r._res === "ok") h++; } }
-    return '<div class="type"><h3>' + icon(t.icon) + t.label + '</h3>' +
+    return '<div class="type"><div class="head"><h3>' + icon(t.icon) + t.label + '</h3><span class="astra">' + t.emoji + ' ' + t.astra + '</span></div>' +
            '<div class="row"><span class="big">' + fmt(n) + '</span><span class="rate">' + pct(h, n) + ' hit</span></div>' +
            '<div class="meter"><span style="width:' + (n ? h * 100 / n : 0) + '%"></span></div>' +
            '<div class="sub">' + fmt(h) + ' of ' + fmt(n) + ' claims verified as Hit</div></div>';
@@ -525,7 +529,7 @@ function cell(c, r){
   switch (c.key){
     case "name":  return '<span class="who"><b>' + esc(v || "–") + '</b><small>UID ' + esc(r.uid || "–") + '</small></span>';
     case "claim": { const t = TYPES.find(t => t.match.test(v || ""));
-                    return t ? '<span class="tag neutral" style="font-weight:500;color:var(--ink)">' + icon(t.icon) + esc(t.label) + '</span>' : esc(v || "–"); }
+                    return t ? '<span class="tag neutral" style="font-weight:500;color:var(--ink)" title="' + esc(t.label) + '"><span class="em" aria-hidden="true">' + t.emoji + '</span>' + esc(t.astra) + '</span>' : esc(v || "–"); }
     case "app":   return '<span class="mask">' + esc(v || "–") + '</span>';
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
                          (v ? '<span class="reason">' + esc(v) + '</span>' : "");
