@@ -110,6 +110,10 @@ th.sortable:hover{color:var(--ink)}
 th .arr{margin-left:4px;font-size:10px;color:var(--accent)}
 .medal{font-size:20px;line-height:1}
 tbody tr.podium td .who b{font-weight:700}
+tbody tr.hl td{background:var(--wait-bg)!important}
+tbody tr.hl td:first-child{border-left-color:var(--accent)!important}
+tbody tr.hl td b{color:var(--ink)}
+@media (max-width: 720px){ tbody tr.hl{border-left:4px solid var(--accent)!important} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -582,7 +586,7 @@ function assignTeams(rows){
    - Score = percentile of approved claims within the group (0-100).
    - Team leaders: team score = average of their counselors' scores. Coordinators: average of all their counselors. */
 const CATS = ["app", "adm", "post"];
-let view = "people", pg = 1;
+let view = "people", pg = 1, jumpToHighlight = false;
 const sortBy = {people:{key:"", dir:1}, teams:{key:"", dir:1}, coords:{key:"", dir:1}};   // "" = rank order
 const normName = s => String(s || "").toLowerCase().replace(/^\s*(dr|prof|mr|ms|mrs)\.?\s+/, "").replace(/[^a-z0-9]/g, "");
 const catOf = c => /arrow/i.test(c || "") ? "app" : /brahmast/i.test(c || "") ? "adm" : /(naga\s*pasha|akshaya)/i.test(c || "") ? "post" : "";
@@ -771,7 +775,7 @@ function render(){
 
   // Table for the current view
   const q = $("q").value.trim().toLowerCase();
-  let head = [], rows = [], toRow, sortVals = {};
+  let head = [], rows = [], toRow, sortVals = {}, hlKey = "";
   if (view === "people"){
     head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["score","Score"],["band","Band"]];
     rows = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p) && (!q || (p.name + " " + p.uid).toLowerCase().includes(q))).sort(d.byScore);
@@ -799,11 +803,13 @@ function render(){
   } else {
     head = [["rank","Rank"],["name","Coordinator"],["teams","Teams"],["hits","Hits"],["score","Score"],["band","Band"]];
     rows = [...d.coords.values()].sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
-    rows.forEach((c, i) => c._rank = i);                 // overall position among all coordinators
+    rows.forEach((c, i) => c._rank = i);
+    // All coordinators are listed; the one matching the Coordinator / Team leader filter is highlighted
     const teamCoord = st && d.teams.get(st) ? d.teams.get(st).coordKey : "";
-    rows = rows.filter(c => (!sc || c.key === sc) && (!teamCoord || c.key === teamCoord) && (!q || c.name.toLowerCase().includes(q)));
+    hlKey = sc || teamCoord;
+    rows = rows.filter(c => !q || c.name.toLowerCase().includes(q));
     sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, score: c => c.score ?? -1, band: c => c.score ?? -1};
-    toRow = (c, i) => '<tr class="click" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' + td("Rank", rankCell(c._rank, c.score)) +
+    toRow = (c, i) => '<tr class="click' + (c.key === hlKey ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' + td("Rank", rankCell(c._rank, c.score)) +
       td("Coordinator", '<b>' + esc(c.name) + '</b>') + td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors</small>', "num") +
       td("Hits", hitsCell(c.h), "num") + td("Score", scoreCell(c.score), "num") + td("Band", bandTag(c.score)) + '</tr>';
   }
@@ -817,6 +823,8 @@ function render(){
     });
   } else if (sv.key === "rank" && sv.dir === -1) rows.reverse();
   const size = pageSize(), pages = Math.max(1, Math.ceil(rows.length / size));
+  if (jumpToHighlight && hlKey){ const at = rows.findIndex(c => c.key === hlKey); if (at >= 0) pg = Math.floor(at / size) + 1; }
+  jumpToHighlight = false;
   pg = Math.min(Math.max(1, pg), pages);
   const start = (pg - 1) * size, items = rows.slice(start, start + size);
   $("thead").innerHTML = head.map(([k, label]) => {
@@ -844,12 +852,13 @@ function render(){
 }
 
 /* Events */
-["fSkill","fSim","fMonth","fTeam"].forEach(id => $(id).addEventListener("change", () => { pg = 1; render(); }));
-$("fCoord").addEventListener("change", () => { $("fTeam").value = ""; pg = 1; render(); });
+["fSkill","fSim","fMonth"].forEach(id => $(id).addEventListener("change", () => { pg = 1; render(); }));
+$("fTeam").addEventListener("change", () => { pg = 1; jumpToHighlight = true; render(); });
+$("fCoord").addEventListener("change", () => { $("fTeam").value = ""; pg = 1; jumpToHighlight = true; render(); });
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 200); });
 $("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fSkill","fSim","fMonth","q"].forEach(id => $(id).value = ""); pg = 1; render(); });
 $("refreshBtn").addEventListener("click", () => load(false));
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; $("q").value = ""; pg = 1; render(); }));
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; $("q").value = ""; pg = 1; jumpToHighlight = true; render(); }));
 function drill(tr){
   if (!tr) return;
   if (tr.dataset.team){ $("fCoord").value = tr.dataset.coord; render(); $("fTeam").value = tr.dataset.team; view = "people"; }
