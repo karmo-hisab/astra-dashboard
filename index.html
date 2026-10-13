@@ -132,7 +132,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .filterhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 .filterhead .section-title{margin:0}
 .chip{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:3px;background:var(--neutral-bg);color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:600;vertical-align:2px}
-.filters{display:grid;grid-template-columns:1.6fr repeat(6,minmax(0,1fr));gap:12px;align-items:end}
+.filters{display:grid;grid-template-columns:1.5fr repeat(7,minmax(0,1fr));gap:12px;align-items:end}
 label.f{display:flex;flex-direction:column;font-size:12.5px;font-weight:600;color:var(--muted);gap:4px}
 input,select{font-family:var(--sans);font-size:13.5px;padding:6px 9px;border:1px solid var(--line);border-radius:4px;background:var(--card);color:var(--ink);width:100%;min-width:0;height:34px}
 
@@ -293,6 +293,15 @@ footer b{color:var(--muted);font-weight:600}
       <label class="f">Hit or Miss
         <select id="fResult">
           <option value="">All</option><option value="ok">Hit</option><option value="bad">Miss</option><option value="wait">Pending</option>
+        </select>
+      </label>
+      <label class="f">Claim type
+        <select id="fType">
+          <option value="">All</option>
+          <option value="Arrow">🎯 Application</option>
+          <option value="Brahmastra">🏹 Admission</option>
+          <option value="Naga Pasha">🐍 Hostel</option>
+          <option value="Akshaya Patra">🍜 Mess</option>
         </select>
       </label>
       <label class="f">Payment month<select id="fMonth"></select></label>
@@ -561,10 +570,11 @@ function buildOptions(){
   }
 }
 
-const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fMonth","dFrom","dTo"];
+const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fMonth","dFrom","dTo"];
 function apply(resetPage = true){
   const q = $("q").value.trim().toLowerCase();
   const res = $("fResult").value;
+  const ty = TYPES.find(t => t.astra === $("fType").value);      // claim type filter
   const active = DROPDOWNS.map(f => ({key:f.key, val:$(f.id).value})).filter(f => f.val);
   /* Date range uses the claim submission date (Timestamp, column A) */
   const from = $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null;
@@ -574,6 +584,7 @@ function apply(resetPage = true){
     if (from !== null && r._ts < from) return false;
     if (to !== null && r._ts > to) return false;
     if (res && (res === "wait" ? (r._res === "ok" || r._res === "bad") : r._res !== res)) return false;
+    if (ty && !ty.match.test(r.claim || "")) return false;
     for (const f of active) if ((r[f.key] || "(blank)") !== f.val) return false;
     return true;
   });
@@ -657,7 +668,7 @@ function renderTable(){
 
 let t;
 $("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); });
-["fSarathi","fResult","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
+["fSarathi","fResult","fType","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
 $("fDrona").addEventListener("change", () => { buildOptions(); apply(); });  // team leader list follows the coordinator
 $("resetBtn").addEventListener("click", () => { FILTER_IDS.forEach(id => $(id).value = ""); buildOptions(); apply(); });
 $("refreshBtn").addEventListener("click", () => load(false));
