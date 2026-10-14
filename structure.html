@@ -631,6 +631,8 @@ async function gunzipBase64(b64){
    shown instantly for up to 30 minutes, and refreshed in the background once it is older than 5 minutes. */
 const SHARE_MS = 5 * 60000, KEEP_MS = 30 * 60000;
 let staleCopy = false;
+let forceFresh = false;                       // set by the Refresh button: ask the data service to rebuild from the sheets
+document.addEventListener("click", e => { if (e.target.closest("#refreshBtn")) forceFresh = true; }, true);
 function sharedGz(){
   try{
     const c = JSON.parse(sessionStorage.getItem("hk_data") || "null");
@@ -644,7 +646,8 @@ async function fetchClaims(useShared){
   staleCopy = false;
   let gz = useShared ? sharedGz() : null;
   if (!gz){
-    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken})});
+    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, fresh: forceFresh})});
+    forceFresh = false;
     if (!res.ok) throw new Error("service error (" + res.status + ")");
     const j = await res.json();
     if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
