@@ -1077,8 +1077,8 @@ function render(){
   const nPost = blocks.reduce((n, b) => n + b.cols.reduce((m, x) => m + x.members.filter(p => p.post).length, 0), 0);
   const tile = (icon, label, value, sub) => '<div class="sumtile"><svg class="ic" aria-hidden="true"><use href="#i-' + icon + '"/></svg><div><div class="sv">' + value + '</div><div class="sl">' + label + (sub ? '<span>' + sub + '</span>' : '') + '</div></div></div>';
   $("sumStrip").innerHTML =
-    tile("people", "Coordinators", fmt(blocks.length)) +
-    tile("leader", "Team leaders", fmt(nTeams)) +
+    tile("leader", "Coordinators", fmt(blocks.length)) +
+    tile("people", "Team leaders", fmt(nTeams)) +
     tile("headset", "Counselors", fmt(nPeople), "(" + fmt(nSim) + " SIM, " + fmt(nPeople - nSim - nPost) + " Normal" + (nPost ? ", " + fmt(nPost) + " post-admission" : "") + ")");
   $("treeCount").textContent = "";
   const anyHits = counselors.some(p => p.ok > 0);
