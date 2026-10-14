@@ -275,14 +275,13 @@ tbody tr.hl td b{color:var(--ink)}
 .cskills{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px}
 .skchip{font-size:11px;font-weight:600;color:var(--muted);background:var(--neutral-bg);border:1px solid var(--line);border-radius:999px;padding:0 8px}
 .skchip b{color:var(--ink)}
-.sumstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:-6px 0 16px}
-.sumtile{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
-.sumtile .ic{width:22px;height:22px;color:var(--accent);flex:none}
-.sumtile .sv{font-family:var(--serif);font-size:22px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums lining-nums}
-.sumtile .sv small{font-family:var(--sans);font-size:15px;color:var(--faint);font-weight:400}
-.sumtile .sl{font-size:12.5px;color:var(--muted);font-weight:600}
-.sumtile .sl span{display:block;font-weight:400;color:var(--faint);font-size:11.5px}
-@media (max-width: 720px){ .sumstrip{grid-template-columns:1fr 1fr;gap:8px} }
+.sumstrip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.sumtile{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:8px;padding:14px 18px}
+.sumtile .ic{width:30px;height:30px;color:var(--accent);flex:none}
+.sumtile .sv{font-family:var(--serif);font-size:32px;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums lining-nums}
+.sumtile .sl{font-size:14.5px;color:var(--ink);font-weight:700;margin-top:2px}
+.sumtile .sl span{display:block;font-weight:600;color:var(--muted);font-size:13px;margin-top:1px}
+@media (max-width: 720px){ .sumstrip{grid-template-columns:1fr 1fr;gap:8px} .sumtile:last-child{grid-column:1/-1} .sumtile .sv{font-size:26px} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -508,6 +507,8 @@ footer b{color:var(--muted);font-weight:600}
   <div id="notice"></div>
   <div id="rosterWarn"></div>
 
+  <section class="sumstrip" id="sumStrip" aria-label="Summary for the current filters"></section>
+
   <section class="panel filterpanel" aria-label="Filters">
     <div class="filterhead">
       <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-filter"/></svg>Filters<span class="chip" id="activeChip" hidden></span></h2>
@@ -522,8 +523,6 @@ footer b{color:var(--muted);font-weight:600}
       <select id="fMonth" hidden aria-hidden="true" tabindex="-1"></select>
     </div>
   </section>
-
-  <section class="sumstrip" id="sumStrip" aria-label="Summary for the current filters"></section>
 
   <div class="treebar">
     <span class="resultbar" id="treeCount"></span>
@@ -1076,8 +1075,7 @@ function render(){
   $("sumStrip").innerHTML =
     tile("grid", "Coordinators", fmt(blocks.length)) +
     tile("admission", "Team leaders", fmt(nTeams)) +
-    tile("user", "Counselors", fmt(nPeople)) +
-    tile("total", "SIM / Normal", fmt(nSim) + ' <small>/</small> ' + fmt(nPeople - nSim - nPost), nPost ? fmt(nPost) + " post-admission" : "");
+    tile("user", "Counselors", fmt(nPeople), "(" + fmt(nSim) + " SIM, " + fmt(nPeople - nSim - nPost) + " Normal" + (nPost ? ", " + fmt(nPost) + " post-admission" : "") + ")");
   $("treeCount").textContent = "";
   const anyHits = counselors.some(p => p.ok > 0);
   $("zeroNote").innerHTML = anyHits ? "" : '<div class="zero">No approved claims yet, so everyone shows "Not ranked". Colours and ranks appear as claims are approved.</div>';
