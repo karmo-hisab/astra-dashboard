@@ -533,7 +533,7 @@ function statusClass(v){
   const m = s.match(/step\s*1\s*:?\s*(.*?)[,\s]*step\s*2\s*:?\s*(.*)$/);
   if (!m){                                                        // final status written as one value, e.g. "Approved"
     if (/^(approved|hit|💯|hit 💯)$/.test(s)) return "ok";
-    if (/(to be evaluated|pending|clash|quality assurance|proof required)/.test(s)) return "wait";
+    if (/(to be evaluated|pending|clash|quality assurance|proof required|proof submitted)/.test(s)) return "wait";
     return "bad";
   }
   const s1 = m[1].replace(/[,.\s]+$/, "").trim(), s2 = m[2].replace(/[,.\s]+$/, "").trim();
@@ -544,7 +544,7 @@ function statusClass(v){
   if (!s1Forward) return "bad";                                   // rejected at Step 1
   /* Step 2 decides: Approved = Hit; Proof Required or not yet checked = Pending; anything else = Miss */
   if (s2 === "approved") return "ok";
-  if (!s2 || s2 === s1 || /to be evaluated|pending|proof required|clash|quality assurance/.test(s2)) return "wait";
+  if (!s2 || s2 === s1 || /to be evaluated|pending|proof required|proof submitted|clash|quality assurance/.test(s2)) return "wait";
   return "bad";
 }
 const RES_LABEL = {ok:"Hit", bad:"Miss", wait:"Pending"};
