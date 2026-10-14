@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>
+  (function(){ try{ var th = localStorage.getItem("hk_theme"); if (th === "light" || th === "dark") document.documentElement.setAttribute("data-theme", th); }catch(e){} })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Application Follow-up: Karmo Ka HisabKitab</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#1B2545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HisabKitab">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#14234B; --navy-2:#1E3264;
+  --ink:#1A2233; --paper:#F3F5F8; --card:#FFFFFF; --line:#DCE1E9; --line-2:#EDF0F4; --muted:#4F5B70; --faint:#7A8599;
+  --accent:#B5121B;               /* institutional crimson, used sparingly */
+  --ok:#1E6B45;  --ok-bg:#F1F8F4;
+  --bad:#A3271D; --bad-bg:#FBF2F1;
+  --wait:#8A5A00;--wait-bg:#FDF8EC;
+  --neutral:#5B6578; --neutral-bg:#F0F2F5;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3","Segoe UI",Roboto,Arial,sans-serif;
+  box-sizing:border-box;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --navy:#0B1530; --navy-2:#13214A;
+    --ink:#E3E7EF; --paper:#0E1424; --card:#151C30; --line:#2A3350; --line-2:#1F2740; --muted:#A7B0C3; --faint:#7D879E;
+    --accent:#E0585F;
+    --ok:#6CCB98; --ok-bg:#132620; --bad:#EE8A80; --bad-bg:#2C1719; --wait:#E6BC5C; --wait-bg:#2A2412;
+    --neutral:#9AA3B6; --neutral-bg:#1D2439;
+  }
+}
+:root[data-theme="dark"]{
+  --navy:#0B1530; --navy-2:#13214A;
+  --ink:#E3E7EF; --paper:#0E1424; --card:#151C30; --line:#2A3350; --line-2:#1F2740; --muted:#A7B0C3; --faint:#7D879E;
+  --accent:#E0585F;
+  --ok:#6CCB98; --ok-bg:#132620; --bad:#EE8A80; --bad-bg:#2C1719; --wait:#E6BC5C; --wait-bg:#2A2412;
+  --neutral:#9AA3B6; --neutral-bg:#1D2439;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45}
+[hidden]{display:none!important}
+/* Sign-in gate */
+.gate{display:none;min-height:calc(100vh - 140px);align-items:center;justify-content:center;padding:28px 16px}
+body.locked .gate{display:flex}
+body.locked .wrap, body.locked .needs-auth{display:none!important}
+.gatecard{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:30px 28px;text-align:center;border-top:3px solid var(--accent)}
+.gatecard img{width:56px;height:56px;border-radius:10px}
+.gatecard h2{font-family:var(--serif);font-size:22px;margin:12px 0 4px}
+.gatecard p{color:var(--muted);margin:0 0 18px;font-size:14px}
+#gBtn{display:flex;justify-content:center;min-height:44px}
+.gatemsg{margin-top:14px;font-size:13px;color:var(--bad);min-height:18px}
+.gatefoot{margin-top:18px;font-size:12px;color:var(--faint)}
+.who-me{color:#C3CBE0;font-size:12.5px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-3px}
+.ic.lg{width:18px;height:18px}
+
+.frow{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line-2)}
+.frow:first-of-type{border-top:none;padding-top:2px}
+.flabel{flex:none;width:52px;padding-top:20px;font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.cfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
+.cfilters .span2{grid-column:span 2}
+@media (max-width: 720px){ .frow{flex-direction:column;gap:6px} .flabel{padding-top:0} .cfilters{grid-template-columns:1fr 1fr} .cfilters .span2{grid-column:1/-1} }
+/* Livelier filter panel */
+.filterpanel.catchy{border-top:3px solid var(--accent);background:linear-gradient(180deg, var(--neutral-bg) 0, var(--card) 70px)}
+.flabel{display:flex;align-items:center;gap:6px;width:72px}
+.flabel .ic{width:15px;height:15px;color:var(--accent)}
+.has-value{border-color:var(--accent)!important;background:var(--wait-bg)!important;font-weight:600}
+.activestrip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.aslabel{font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);margin-right:4px}
+.achip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--accent);color:var(--ink);border-radius:999px;padding:2px 4px 2px 11px;font-size:12.5px;font-weight:600}
+.achip button{border:none;background:none;padding:0 6px;font-size:12px;color:var(--accent);cursor:pointer}
+@media (max-width: 720px){ .flabel{width:auto} }
+/* Left menu */
+:root{--navw:220px}
+html.nav-mini{--navw:64px}
+body{padding-left:var(--navw);transition:padding-left .15s}
+body.locked{padding-left:0}
+.sidenav{position:fixed;left:0;top:0;bottom:0;width:var(--navw);background:var(--navy);border-right:1px solid rgba(255,255,255,.08);z-index:30;display:flex;flex-direction:column;justify-content:space-between;padding:84px 10px 14px;transition:width .15s}
+.sidenav nav{display:flex;flex-direction:column;gap:4px}
+.sidenav a{display:flex;align-items:center;gap:12px;color:#C3CBE0;text-decoration:none;font-weight:600;font-size:14px;padding:10px 12px;border-radius:6px;white-space:nowrap;overflow:hidden}
+.sidenav a:hover{background:rgba(255,255,255,.07);color:#fff}
+.sidenav a[aria-current="page"]{background:#fff;color:var(--navy)}
+.sidenav a .ic{flex:none}
+.sidenav .collapse{display:flex;align-items:center;gap:10px;background:none;border:1px solid rgba(255,255,255,.18);color:#C3CBE0;padding:8px 12px;white-space:nowrap;overflow:hidden}
+.sidenav .collapse:hover{color:#fff;border-color:#fff}
+html.nav-mini .sidenav span{display:none}
+html.nav-mini .sidenav a, html.nav-mini .sidenav .collapse{justify-content:center;padding-left:0;padding-right:0}
+html.nav-mini .sidenav .collapse .ic{transform:rotate(180deg)}
+.topbar .menubtn{display:none;background:none;border:none;color:#fff;padding:4px}
+.navshade{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:25}
+@media (max-width: 720px){
+  body{padding-left:0}
+  .topbar .menubtn{display:inline-flex}
+  .sidenav{width:220px;transform:translateX(-100%);transition:transform .2s;padding-top:20px}
+  .sidenav.open{transform:none}
+  html.nav-mini .sidenav span{display:inline}
+  .sidenav .collapse{display:none}
+}
+.stats4{grid-template-columns:repeat(4,1fr)!important}
+.tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
+.tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
+.viewbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px;gap:3px}
+.seg button{border:none;background:none;padding:6px 16px;border-radius:4px;font-weight:600;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--navy-2);color:#fff}
+:root[data-theme="dark"] .seg button[aria-selected="true"]{background:#E3E7EF;color:#0E1424}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .seg button[aria-selected="true"]{background:#E3E7EF;color:#0E1424} }
+.table-panel{margin-bottom:18px}
+.left-tag{display:inline-block;margin-left:6px;font-size:11px;font-weight:600;color:var(--faint);border:1px solid var(--line);border-radius:3px;padding:0 5px;vertical-align:1px}
+.rank{font-family:var(--serif);font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--neutral-bg)}
+.bandtag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:3px;padding:1px 8px;white-space:nowrap;border:1px solid currentColor}
+.bandtag.ok{color:var(--ok);background:var(--ok-bg)}
+.bandtag.okl{color:#2F7F86;background:rgba(47,127,134,.10)}
+.bandtag.wait{color:var(--wait);background:var(--wait-bg)}
+.bandtag.bad{color:var(--bad);background:var(--bad-bg)}
+.bandtag.neutral{color:var(--faint);background:transparent}
+:root[data-theme="dark"] .bandtag.okl{color:#6FC7CE}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .bandtag.okl{color:#6FC7CE} }
+.score{font-family:var(--serif);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums lining-nums}
+.subl{display:block;color:var(--faint);font-size:11.5px;font-weight:400;white-space:nowrap}
+.simtag{display:inline-block;font-size:11px;font-weight:700;border-radius:3px;padding:0 6px;color:var(--faint);border:1px solid var(--line);margin-left:4px;vertical-align:1px}
+.simtag.on{color:var(--navy-2);border-color:var(--navy-2)}
+.simtag.post{color:var(--accent);border-color:var(--accent)}
+:root[data-theme="dark"] .simtag.on{color:#9DB8FF;border-color:#9DB8FF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .simtag.on{color:#9DB8FF;border-color:#9DB8FF} }
+.more{margin-bottom:14px}
+.more summary{cursor:pointer;padding:11px 16px;font-family:var(--serif);font-weight:600;font-size:15px}
+.morebody{padding:0 16px 14px;font-size:13.5px;color:var(--muted);line-height:1.6}
+.morebody b{color:var(--ink)} .morebody ul{margin:6px 0;padding-left:20px}
+.more .tablebox{border-top:1px solid var(--line)}
+.bands{display:flex;flex-wrap:wrap;gap:6px}
+.zero{font-size:13px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:6px;padding:9px 14px;margin-bottom:10px}
+@media (max-width: 980px){ .tfilters{grid-template-columns:repeat(2,minmax(0,1fr))} .stats4{grid-template-columns:1fr 1fr!important} }
+@media (max-width: 720px){ .tfilters,.tfilters.one{grid-template-columns:1fr 1fr} .tfilters.one label{grid-column:1/-1} .frow{flex-direction:column;gap:6px} .flabel{padding-top:0} .seg{width:100%} .seg button{flex:1;padding:7px 6px} }
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+th .arr{margin-left:4px;font-size:10px;color:var(--accent)}
+.medal{font-size:20px;line-height:1}
+tbody tr.podium td .who b{font-weight:700}
+tbody tr.hl td{background:var(--wait-bg)!important}
+tbody tr.hl td:first-child{border-left-color:var(--accent)!important}
+tbody tr.hl td b{color:var(--ink)}
+@media (max-width: 720px){ tbody tr.hl{border-left:4px solid var(--accent)!important} }
+.frow{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line-2)}
+.frow:first-of-type{border-top:none;padding-top:2px}
+.flabel{flex:none;width:52px;padding-top:20px;font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.rankbox{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px}
+.move{font-size:11px;font-weight:700;line-height:1}
+.move.up{color:var(--ok)} .move.down{color:var(--bad)} .move.same{color:var(--faint)} .move.new{color:#2F7F86}
+.spark{display:inline-flex;flex-direction:column;color:var(--muted)}
+.spark.up{color:var(--ok)} .spark.down{color:var(--bad)}
+.idle{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--wait);border:1px solid currentColor;border-radius:3px;padding:0 5px;vertical-align:1px}
+.idletxt{color:var(--wait);font-weight:600}
+.more .tablebox + .tablebox{margin-top:0}
+.tfilters.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width: 980px){ .tfilters.five{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width: 720px){ .tfilters.five{grid-template-columns:1fr 1fr} }
+.modebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 10px;font-size:13px;color:var(--muted)}
+.modebar button{border-radius:999px;padding:4px 12px;font-size:12.5px}
+.modebar button[aria-pressed="true"]{background:var(--navy-2);border-color:var(--navy-2);color:#fff}
+:root[data-theme="dark"] .modebar button[aria-pressed="true"]{background:#E3E7EF;color:#0E1424;border-color:#E3E7EF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .modebar button[aria-pressed="true"]{background:#E3E7EF;color:#0E1424;border-color:#E3E7EF} }
+.cmp{margin-bottom:12px;border-left:3px solid var(--accent)}
+.cmphead{padding:10px 14px;font-size:13.5px;color:var(--muted)}
+.cmphead b{color:var(--ink)}
+.cmp table{min-width:0}
+.cmp th,.cmp td{padding:7px 14px}
+.morebar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.tip{font-size:12.5px;color:var(--faint)}
+#moreFilters{margin-top:10px;padding-top:12px;border-top:1px solid var(--line-2)}
+.who small{display:block}
+.rank.none{color:var(--faint);font-weight:400}
+/* Application Follow-up page */
+.stats6{grid-template-columns:repeat(6,1fr)!important}
+.viewopts{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:10px}
+.f.inline{min-width:220px}
+.f.inline.grow{flex:1;max-width:420px}
+.pbar{display:inline-flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:90px}
+.pbar .pv{font-weight:700;color:var(--c)}
+.pbar .pt{display:block;width:90px;height:5px;border-radius:3px;background:var(--line-2);overflow:hidden}
+.pbar .pt span{display:block;height:100%;background:var(--c)}
+.pbar.g{--c:var(--ok)} .pbar.y{--c:var(--wait)} .pbar.r{--c:var(--bad)} .pbar.n{--c:var(--faint)}
+.tagx{display:inline-block;font-size:11.5px;font-weight:700;border-radius:3px;padding:1px 8px;border:1px solid currentColor;white-space:nowrap}
+.tagx.ok{color:var(--ok);background:var(--ok-bg)} .tagx.hot{color:#2F7F86;background:rgba(47,127,134,.10)}
+.tagx.wait{color:var(--wait);background:var(--wait-bg)} .tagx.bad{color:var(--bad);background:var(--bad-bg)}
+:root[data-theme="dark"] .tagx.hot{color:#6FC7CE}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tagx.hot{color:#6FC7CE} }
+tbody tr.st0 td:first-child{border-left-color:#2F7F86}
+tbody tr.st3 td:first-child{border-left-color:var(--ok)}
+.mini{font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;border:1px solid var(--line);color:var(--faint)}
+.mini.diff{color:var(--bad);border-color:var(--bad)}
+.pg{font-weight:600}
+@media (max-width: 1100px){ .stats6{grid-template-columns:repeat(3,1fr)!important} }
+@media (max-width: 720px){ .stats6{grid-template-columns:1fr 1fr!important} .f.inline,.f.inline.grow{min-width:0;max-width:none;flex:1 1 100%} }
+/* Page tabs */
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
+.tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
+.tabs a:hover{color:#fff}
+.tabs a[aria-current="page"]{background:#fff;color:var(--navy)}
+/* Top bar */
+.topbar{background:var(--navy);color:#fff;padding-top:env(safe-area-inset-top,0px);border-bottom:3px solid var(--accent)}
+.topbar .in{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:14px}
+.brand img{width:40px;height:40px;border-radius:6px;flex:none;border:1px solid rgba(255,255,255,.15)}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(20px,2.6vw,26px);line-height:1.1;margin:0;letter-spacing:.1px}
+h1 span{display:block;font-family:var(--sans);font-size:13px;font-weight:400;color:#C3CBE0;margin-top:3px;letter-spacing:.2px}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:#C3CBE0;padding:0 6px}
+.status i{width:7px;height:7px;border-radius:50%;background:#5BC48B;display:inline-block}
+.status.loading i{background:#E6BC5C}
+.topbar button{display:inline-flex;align-items:center;gap:6px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+.topbar button:hover{background:rgba(255,255,255,.08);border-color:#fff}
+button{font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border-radius:4px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 14px}
+button:hover{border-color:var(--navy-2)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4C7BD9;outline-offset:2px}
+.linkbtn{border:none;background:none;color:var(--accent);padding:2px 0;font-weight:600}
+.linkbtn:hover{text-decoration:underline}
+
+.wrap{max-width:1280px;margin:0 auto;padding:20px 20px 32px}
+.section-title{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-size:17px;font-weight:600;margin:0 0 10px;color:var(--ink)}
+.section-title .ic{color:var(--accent)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px}
+
+/* KPI strip */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+.stat{padding:10px 16px 11px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.stat h2{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin:0;color:var(--muted);letter-spacing:.2px}
+.stat.ok h2 .ic{color:var(--ok)} .stat.bad h2 .ic{color:var(--bad)} .stat.wait h2 .ic{color:var(--wait)} .stat.tot h2 .ic{color:var(--muted)} .stat.fire h2 .ic{color:var(--neutral)}
+.stat .big{font-family:var(--serif);font-size:25px;font-weight:700;line-height:1.15;margin-top:2px;font-variant-numeric:tabular-nums lining-nums}
+.stat .sub{font-size:12px;color:var(--faint)}
+.stat.ok{box-shadow:inset 0 3px 0 var(--ok)} .stat.bad{box-shadow:inset 0 3px 0 var(--bad)}
+.stat.wait{box-shadow:inset 0 3px 0 var(--wait)} .stat.tot{box-shadow:inset 0 3px 0 var(--navy-2)} .stat.fire{box-shadow:inset 0 3px 0 var(--neutral)}
+.mix{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--line-2);margin-top:6px}
+.mix span{display:block;height:100%}
+.mix .ok{background:var(--ok)} .mix .bad{background:var(--bad)} .mix .wait{background:var(--wait)}
+
+/* Claim types */
+.types{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.type{padding:10px 16px 11px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.type h3{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin:0;color:var(--muted);min-width:0}
+.type .head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.em{font-size:15px;line-height:1}
+.astra{flex:none;font-size:11.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 7px;line-height:1.6;white-space:nowrap}
+.type h3 .ic{color:var(--muted)}
+.type .row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.type .big{font-family:var(--serif);font-size:22px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums lining-nums}
+.type .rate{font-size:12.5px;color:var(--ok);font-weight:600}
+.type .sub{font-size:12px;color:var(--faint);margin-top:2px}
+.meter{height:4px;border-radius:2px;background:var(--line-2);margin-top:6px;overflow:hidden}
+.stat h2 .ic,.type h3 .ic{width:20px;height:20px}
+.meter span{display:block;height:100%;background:var(--ok)}
+
+/* Filters */
+.filterpanel{padding:14px 18px 16px;margin-bottom:22px}
+.filterhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.filterhead .section-title{margin:0}
+.chip{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:3px;background:var(--neutral-bg);color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:600;vertical-align:2px}
+.filters{display:grid;grid-template-columns:1.5fr repeat(7,minmax(0,1fr));gap:12px;align-items:end}
+label.f{display:flex;flex-direction:column;font-size:12.5px;font-weight:600;color:var(--muted);gap:4px}
+input,select{font-family:var(--sans);font-size:13.5px;padding:6px 9px;border:1px solid var(--line);border-radius:4px;background:var(--card);color:var(--ink);width:100%;min-width:0;height:34px}
+
+/* Table */
+.tablehead{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.tablehead .section-title{margin:0}
+.resultbar{font-size:13px;color:var(--muted)}
+.tablebox{overflow-x:auto}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1000px}
+th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--line-2);vertical-align:middle;font-size:13px}
+th{position:sticky;top:0;background:var(--neutral-bg);font-weight:600;font-size:12.5px;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none;z-index:1;border-bottom:1px solid var(--line)}
+th:hover{color:var(--ink)}
+th .arr{color:var(--navy-2);margin-left:4px;font-size:10px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr td:first-child{border-left:3px solid transparent}
+tbody tr.row-ok td{background:var(--ok-bg)}     tbody tr.row-ok td:first-child{border-left-color:var(--ok)}
+tbody tr.row-bad td{background:var(--bad-bg)}   tbody tr.row-bad td:first-child{border-left-color:var(--bad)}
+tbody tr.row-wait td{background:var(--wait-bg)} tbody tr.row-wait td:first-child{border-left-color:var(--wait)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.who b{display:block;font-weight:600;font-size:13.5px}
+.who small{color:var(--faint);font-size:12px}
+.mask{font-variant-numeric:tabular-nums;letter-spacing:.4px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.tag.ok{color:var(--ok)} .tag.bad{color:var(--bad)} .tag.wait{color:var(--wait)} .tag.neutral{color:var(--neutral)}
+.reason{display:block;color:var(--muted);font-size:12px;margin-top:2px;max-width:300px}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.pager div{display:flex;gap:8px}
+
+.notice{padding:14px 16px;border-radius:6px;margin-bottom:18px;font-size:14px;border:1px solid var(--line)}
+.notice.err{background:var(--bad-bg);color:var(--bad);border-color:currentColor}
+.notice.load{background:var(--card);color:var(--muted)}
+.bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:30%;background:var(--navy-2);animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+@media (prefers-reduced-motion: reduce){.bar i{animation:none;width:100%}}
+.help{padding:14px 18px;margin-bottom:18px;position:relative;border-left:3px solid var(--navy-2)}
+.help h3{font-family:var(--serif);font-size:16px;margin:0 0 6px}
+.help ol{margin:0;padding-left:20px}
+.help li{margin:3px 0}
+.help .close{position:absolute;top:10px;right:10px;padding:2px 9px}
+footer{border-top:1px solid var(--line);margin-top:26px;padding-top:14px;font-size:12.5px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+footer b{color:var(--muted);font-weight:600}
+
+@media (max-width: 980px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .types{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters{grid-template-columns:repeat(3,1fr)}
+  .filters label.f:first-child{grid-column:1/-1}
+}
+@media (max-width: 720px){
+  .who-me{display:none!important}
+  .topbar .in{padding:12px 16px}
+  .wrap{padding:16px 14px 28px}
+  .stats{grid-template-columns:1fr 1fr;gap:10px}
+  .stat:first-child{grid-column:1/-1}
+  .types{gap:10px}
+  .type .head{flex-direction:column;align-items:flex-start;gap:4px}
+  .filters{grid-template-columns:1fr 1fr}
+  .table-panel{background:none;border:none}
+  .tablebox{overflow:visible}
+  table{min-width:0}
+  thead{display:none}
+  tbody tr{display:block;border:1px solid var(--line);border-radius:6px;margin-bottom:10px;overflow:hidden;background:var(--card)}
+  tbody tr td{display:grid;grid-template-columns:40% 1fr;gap:8px;border:none;padding:5px 14px}
+  tbody tr td:first-child{border-left:none;padding-top:11px}
+  tbody tr.row-ok{border-left:3px solid var(--ok)} tbody tr.row-bad{border-left:3px solid var(--bad)} tbody tr.row-wait{border-left:3px solid var(--wait)}
+  td::before{content:attr(data-label);color:var(--faint);font-size:12.5px}
+  .sorthint{display:none}
+  .pager{border-top:none;padding:6px 2px}
+}
+</style>
+<script>
+  /* Google's sign-in library may finish loading before the page code; start it whenever both are ready */
+  window.__gisLoaded = false;
+  function __onGis(){ window.__gisLoaded = true; if (typeof window.initGoogle === "function") window.initGoogle(); }
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="__onGis()"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-total" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+    <symbol id="i-hit" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.9-4.3-1.6-7.5-5.3-7.5-9.9V6z"/><path d="M8.8 12.2l2.3 2.3 4.2-4.4"/></symbol>
+    <symbol id="i-miss" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.9-4.3-1.6-7.5-5.3-7.5-9.9V6z"/><path d="M9.6 9.8l4.8 4.8M14.4 9.8l-4.8 4.8"/></symbol>
+    <symbol id="i-pending" viewBox="0 0 24 24"><path d="M6.5 3h11M6.5 21h11"/><path d="M8 3v2.8c0 1.6.8 3 2.1 3.9L12 11l1.9-1.3C15.2 8.8 16 7.4 16 5.8V3"/><path d="M8 21v-2.8c0-1.6.8-3 2.1-3.9L12 13l1.9 1.3c1.3.9 2.1 2.3 2.1 3.9V21"/></symbol>
+    <symbol id="i-fired" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></symbol>
+    <symbol id="i-notfired" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></symbol>
+    <symbol id="i-app" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-admission" viewBox="0 0 24 24"><path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6 11.5V16c3.3 2.3 8.7 2.3 12 0v-4.5M22 9.5V15"/></symbol>
+    <symbol id="i-mess" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"/><path d="M17 21V3c-2.2 0-4 2.5-4 6v4h4"/></symbol>
+    <symbol id="i-hostel" viewBox="0 0 24 24"><path d="M2.5 21h19"/><path d="M4.5 21V9.5L12 4l7.5 5.5V21"/><path d="M8 12h2.5M13.5 12h2.5"/><path d="M10 21v-4.5h4V21"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></symbol>
+    <symbol id="i-auto" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.7L4 8"/><path d="M4 3v5h5M4 13a8 8 0 0 0 14.3 4.7L20 16"/><path d="M20 21v-5h-5"/></symbol>
+    <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18M3 14h18M9 9v11"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  </defs>
+</svg>
+<!--PREVIEW_BANNER-->
+<aside class="sidenav needs-auth" id="sidenav" aria-label="Pages">
+  <nav>
+    <!-- Add new pages here: one line each -->
+    <a href="structure.html" data-page="structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
+    <a href="./" data-page="index" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
+    <a href="teams.html" data-page="teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
+    <a href="apps.html" data-page="apps" title="Application Follow-up"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg><span>Application Follow-up</span></a>
+  </nav>
+  <button type="button" class="collapse" id="navCollapse" aria-label="Collapse menu"><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg><span>Collapse</span></button>
+</aside>
+<div class="navshade" id="navShade" hidden></div>
+<div class="topbar"><div class="in">
+  <div class="brand">
+    <button type="button" class="menubtn needs-auth" id="menuBtn" aria-label="Open menu" aria-controls="sidenav" aria-expanded="false"><svg class="ic lg" aria-hidden="true"><use href="#i-menu"/></svg></button>
+    <img src="icon-192.png" alt="" onerror="this.style.display='none'">
+    <h1>Karmo Ka HisabKitab<span>Application Follow-up</span></h1>
+  </div>
+  <div class="meta">
+    <span class="status loading needs-auth" id="updated"><i></i>Loading…</span>
+    <button id="themeBtn" type="button" title="Change theme" aria-label="Change theme"></button>
+    <button id="installBtn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-install"/></svg>Install app</button>
+    <span class="who-me needs-auth" id="userEmail"></span>
+    <button id="signOutBtn" class="needs-auth" type="button">Sign out</button>
+    <button id="refreshBtn" class="needs-auth" type="button"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Refresh</button>
+  </div>
+</div></div>
+<div class="gate" id="gate">
+  <div class="gatecard">
+    <img src="icon-192.png" alt="" onerror="this.style.display='none'">
+    <h2>Karmo Ka HisabKitab</h2>
+    <p>Sign in with your <b>@lpu.co.in</b> Google account to view Astra claims.</p>
+    <div id="gBtn"></div>
+    <div class="gatemsg" id="gateMsg" role="alert"></div>
+    <div class="gatefoot">For LPU internal use only.</div>
+  </div>
+</div>
+<div class="wrap">
+  <div id="installHelp" class="panel help" hidden></div>
+  <div id="notice"></div>
+  <div id="myNote"></div>
+
+  <section class="stats stats6" aria-label="Summary for the current filters">
+    <div class="stat tot"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Assigned</h2><div class="big" id="kAssigned">–</div><div class="sub">applications</div></div>
+    <div class="stat wait"><h2><svg class="ic" aria-hidden="true"><use href="#i-pending"/></svg>Result awaited</h2><div class="big" id="kAwaited">–</div><div class="sub" id="kAwaitedSub">&nbsp;</div></div>
+    <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Eligible</h2><div class="big" id="kEligible">–</div><div class="sub" id="kEligibleSub">&nbsp;</div></div>
+    <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-admission"/></svg>Enrolled</h2><div class="big" id="kEnrolled">–</div><div class="sub">admissions</div></div>
+    <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>Admission %</h2><div class="big" id="kAdm">–</div><div class="sub">enrolled ÷ assigned</div></div>
+    <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>Eligible → Enrolled</h2><div class="big" id="kConv">–</div><div class="sub">enrolled ÷ eligible</div></div>
+  </section>
+
+  <section class="panel filterpanel" aria-label="Filters">
+    <div class="filterhead">
+      <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-filter"/></svg>Filters<span class="chip" id="activeChip" hidden></span></h2>
+      <button class="linkbtn" id="resetBtn" type="button">Clear all</button>
+    </div>
+    <div class="frow">
+      <span class="flabel"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg>Who</span>
+      <div class="cfilters">
+        <label class="f">Coordinator<select id="fCoord"></select></label>
+        <label class="f">Team leader<select id="fTeam"></select></label>
+        <label class="f">TL skill<select id="fTskill"></select></label>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel"><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg>What</span>
+      <div class="cfilters">
+        <label class="f">Program skill<select id="fPskill"></select></label>
+        <label class="f">Phase<select id="fPhase"></select></label>
+        <label class="f">Form name<select id="fForm"></select></label>
+      </div>
+    </div>
+    <div class="frow">
+      <span class="flabel"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>When</span>
+      <div class="cfilters">
+        <label class="f">Assigned from<input id="dFrom" type="date"></label>
+        <label class="f">Assigned to<input id="dTo" type="date"></label>
+      </div>
+    </div>
+  </section>
+
+  <div class="viewbar">
+    <div class="seg" role="tablist" aria-label="View">
+      <button type="button" role="tab" data-view="summary" aria-selected="true">Summary</button>
+      <button type="button" role="tab" data-view="list" aria-selected="false">Follow-up list</button>
+    </div>
+    <span class="resultbar" id="viewCount"></span>
+  </div>
+  <div class="viewopts" id="summaryOnly">
+    <label class="f inline">Group by
+      <select id="groupBy">
+        <option value="coord">Coordinator</option><option value="tl">Team leader</option><option value="tskill">TL skill</option>
+        <option value="pskill">Program skill</option><option value="phase">Phase</option><option value="form">Form name</option>
+      </select>
+    </label>
+    <span class="tip">Select a row to drill down: coordinator → team leaders → follow-up list.</span>
+  </div>
+  <div class="viewopts" id="listOnly" hidden>
+    <label class="f inline">Follow-up focus
+      <select id="fFocus">
+        <option value="">All applications</option><option value="hot">Eligible, not enrolled</option><option value="awaited">Result awaited</option>
+        <option value="noelig">Not eligible</option><option value="enrolled">Enrolled</option>
+      </select>
+    </label>
+    <label class="f inline grow">Search<input id="q" type="search" placeholder="Application no. or program" autocomplete="off"></label>
+  </div>
+
+  <section class="panel table-panel">
+    <div class="tablebox"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="pager"><span id="pageInfo"></span><div><button id="prevBtn" type="button">Previous</button><button id="nextBtn" type="button">Next</button></div></div>
+  </section>
+
+  <footer>
+    <span><b>For LPU internal use only.</b> Access is limited to @lpu.co.in accounts. Please don't share screenshots outside LPU.</span>
+    <span>Applications from the assignment sheet; coordinators and skills from the duty list.</span>
+  </footer>
+</div>
+
+
+<!--PREVIEW_SCRIPT-->
+<script>
+/* ================== SETTINGS ================== */
+/* Only signed-in @lpu.co.in accounts receive data. The Google Sheet stays private. */
+const CLIENT_ID = "417974248161-sp1ocl4mgqb1lk7haj8ft3vs5unh7pqg.apps.googleusercontent.com";
+const API_URL   = "https://script.google.com/macros/s/AKfycbwrIMxy6N874vreI4gv83OndtlEsfYKWwqIaWs4sdTwtxnTUObiv7BpEQNVTpeqd1Cc/exec";
+const DOMAIN    = "lpu.co.in";
+/* Entries per page in the Claim register: 5 on phones, 10 on larger screens */
+const pageSize = () => window.matchMedia("(max-width: 720px)").matches ? 5 : 10;
+const REFRESH_MINUTES = 10;
+
+/* ============================================== */
+
+const $ = id => document.getElementById(id);
+let ALL = [];
+
+/* Final status from column V, e.g. "Step1: Approved, Step2: To be evaluated"
+   Hit = Step 1 AND Step 2 both Approved; Pending = still being evaluated; Miss = everything else */
+function statusClass(v){
+  const s = (v || "").replace(/\s+/g, " ").trim().toLowerCase();
+  if (!s) return "wait";
+  const m = s.match(/step\s*1\s*:?\s*(.*?)[,\s]*step\s*2\s*:?\s*(.*)$/);
+  const s1 = m ? m[1].replace(/[,.\s]+$/, "").trim() : s;
+  const s2 = m ? m[2].replace(/[,.\s]+$/, "").trim() : "";
+  if (s1 === "approved" && s2 === "approved") return "ok";
+  if (!m && /^(approved|hit|💯|hit 💯)$/.test(s)) return "ok";      // final status written as a single word, e.g. "Approved"
+  if (/(to be evaluated|pending|clash|quality assurance)/.test(s)) return "wait";
+  return "bad";
+}
+const RES_LABEL = {ok:"Hit", bad:"Miss", wait:"Pending"};
+const RES_ICON = {ok:"hit", bad:"miss", wait:"pending"};
+const icon = (name, cls) => '<svg class="ic' + (cls ? " " + cls : "") + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
+/* Astra ID fired: "Used" = fired; "Unused" / "Astra not fired till now" = not fired */
+function isFired(v){ return (v || "").trim().toLowerCase() === "used"; }
+function firedLabel(v){
+  const s = (v || "").trim().toLowerCase();
+  if (s === "used") return "Used";
+  if (s === "unused") return "Unused";
+  return v ? "Not fired yet" : "–";
+}
+
+/* Claim types */
+const TYPES = [
+  {match:/arrow/i,        label:"LPUNEST Application", astra:"Arrow",         emoji:"🎯", icon:"app"},
+  {match:/brahmast/i,     label:"Admission",           astra:"Brahmastra",    emoji:"🏹", icon:"admission"},
+  {match:/naga\s*pasha/i, label:"Hostel",              astra:"Naga Pasha",    emoji:"🐍", icon:"hostel"},
+  {match:/akshaya/i,      label:"Mess",                astra:"Akshaya Patra", emoji:"🍜", icon:"mess"},
+];
+function claimLabel(c){ const t = TYPES.find(t => t.match.test(c || "")); return t ? t.label : (c || "–"); }
+
+/* Masks application numbers on screen, e.g. C26906642 -> C269•••42 */
+function maskApp(v){
+  const s = String(v || "").trim();
+  if (s.length <= 6) return s ? s.slice(0, 2) + "•••" : "–";
+  return s.slice(0, 4) + "•".repeat(Math.min(s.length - 6, 4)) + s.slice(-2);
+}
+
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function showNotice(kind, html){ $("notice").innerHTML = html ? '<div class="notice ' + kind + '">' + html + '</div>' : ""; }
+const fmt = n => Number(n).toLocaleString("en-IN");
+const pct = (a, b) => b ? Math.round(a * 100 / b) + "%" : "–";
+
+/* ---------- Sign-in (Google, LPU accounts only) ---------- */
+let idToken = null;
+function jwtPayload(t){
+  try{
+    const p = t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(decodeURIComponent(escape(atob(p))));
+  }catch(_){ return null; }
+}
+function tokenOk(t){ const p = t && jwtPayload(t); return !!(p && p.hd === DOMAIN && p.exp * 1000 > Date.now() + 60000); }
+function saveToken(t){ try{ localStorage.setItem("hk_token", t); }catch(_){} }
+function storedToken(){ try{ return localStorage.getItem("hk_token"); }catch(_){ return null; } }
+function clearToken(){ idToken = null; try{ localStorage.removeItem("hk_token"); }catch(_){} }
+
+function showGate(msg){
+  document.body.classList.add("locked");
+  $("gateMsg").textContent = msg || "";
+  if (window.google && google.accounts && google.accounts.id) google.accounts.id.prompt();
+}
+function signedIn(token){
+  idToken = token;
+  const p = jwtPayload(token);
+  $("userEmail").textContent = p && p.email ? p.email : "";
+  document.body.classList.remove("locked");
+  $("gateMsg").textContent = "";
+  load(false);
+}
+function onCredential(resp){
+  const p = jwtPayload(resp.credential);
+  if (!p || p.hd !== DOMAIN){
+    $("gateMsg").textContent = "Only @lpu.co.in accounts can open this page" + (p && p.email ? " (" + p.email + " isn't allowed)." : ".");
+    return;
+  }
+  saveToken(resp.credential);
+  signedIn(resp.credential);
+}
+function initGoogle(){
+  if (!(window.google && google.accounts && google.accounts.id)){
+    $("gateMsg").textContent = "Couldn't load Google sign-in. Check your internet connection and reload the page.";
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID, callback: onCredential, hd: DOMAIN,
+    auto_select: true, cancel_on_tap_outside: false, itp_support: true, use_fedcm_for_prompt: true
+  });
+  google.accounts.id.renderButton($("gBtn"), {theme:"filled_blue", size:"large", shape:"rectangular", text:"signin_with", width:280});
+  if (document.body.classList.contains("locked")) google.accounts.id.prompt();
+}
+
+/* ---------- Data from the secure service ---------- */
+async function gunzipBase64(b64){
+  if (!("DecompressionStream" in window)) throw new Error("Please update your browser (Chrome, Edge or Safari 16.4+) to view the dashboard.");
+  const bin = atob(b64), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return await new Response(stream).text();
+}
+/* Data downloaded on one page is reused by the other page for 5 minutes (same browser tab only) */
+const SHARE_MS = 5 * 60000;
+function sharedGz(){
+  try{ const c = JSON.parse(sessionStorage.getItem("hk_data") || "null"); return c && Date.now() - c.at < SHARE_MS ? c.gz : null; }catch(_){ return null; }
+}
+async function fetchClaims(useShared){
+  if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
+  let gz = useShared ? sharedGz() : null;
+  if (!gz){
+    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken})});
+    if (!res.ok) throw new Error("service error (" + res.status + ")");
+    const j = await res.json();
+    if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
+    gz = j.gz;
+    try{ sessionStorage.setItem("hk_data", JSON.stringify({at: Date.now(), gz})); }catch(_){}
+  }
+  const data = JSON.parse(await gunzipBase64(gz));
+  const F = {}; data.fields.forEach((f, i) => F[f] = i);
+  const D = data.dict;
+  const rows = data.rows.map(r => ({
+    _ts: r[F.ts], name: r[F.name], uid: r[F.uid], claim: D.claim[r[F.claim]], app: r[F.app], astra: r[F.astra],
+    paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
+    fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]]
+  }));
+  const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
+    skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
+  return {rows, updated: data.updated, roster};
+}
+
+function setUpdated(text, loading){
+  $("updated").className = "status" + (loading ? " loading" : "");
+  $("updated").innerHTML = "<i></i>" + esc(text);
+}
+
+async function loadClaimsNotUsed(isBackground){
+  if (!isBackground && !ALL.length) showNotice("load", "Loading claims…<div class='bar'><i></i></div>");
+  setUpdated("Updating…", true);
+  $("refreshBtn").disabled = true;
+  try{
+    const {rows, updated} = await fetchClaims(!isBackground && !ALL.length);
+    const fresh = [];
+    for (const o of rows){
+      if (!o.name && !o.app && !o._ts) continue;
+      o._res = statusClass(o.final);
+      o._search = [o.name, o.uid, o.app, o.astra].join(" ").toLowerCase();
+      fresh.push(o);
+    }
+    if (isBackground && ALL.length && fresh.length < ALL.length * 0.9) return; // keep old data if fetch looks incomplete
+    assignTeams(fresh);
+    ALL = fresh;
+    buildOptions();
+    apply(false);
+    showNotice("", "");
+    setUpdated("Data as of " + updated, false);
+  }catch(e){
+    setUpdated("Not updated", false);
+    if (e.auth){ clearToken(); showGate("Your sign-in has expired. Please sign in again."); return; }
+    if (!ALL.length || !isBackground){
+      showNotice("err", "<b>Couldn't load the claims data.</b><br>Select Refresh to try again. (" + esc(e.message) + ")");
+    }
+  }finally{ $("refreshBtn").disabled = false; }
+}
+
+/* Team structure: Dronacharya (coordinator) -> Sarathi (team leader) -> counselors.
+   A blank Sarathi means the claim was made by the team leader, so it belongs to their own team. */
+function uidOf(text){ const m = String(text || "").match(/(\d{3,})\s*$/); return m ? m[1] : ""; }
+function assignTeams(rows){
+  const names = new Map();
+  for (const r of rows) if (r.sarathi){
+    const u = uidOf(r.sarathi) || r.sarathi;
+    if (!names.has(u)) names.set(u, r.sarathi.replace(/\s*:\s*\d+\s*$/, "").trim());
+  }
+  for (const r of rows){
+    r._isTL = !r.sarathi;
+    r._team = r._isTL ? (r.uid || r.name) : (uidOf(r.sarathi) || r.sarathi);
+    if (!names.has(r._team)) names.set(r._team, r.name || r._team);
+  }
+  for (const r of rows) r._teamLabel = names.get(r._team) + (/^\d+$/.test(r._team) ? " : " + r._team : "");
+}
+
+/* ================== APPLICATION FOLLOW-UP PAGE ================== */
+/* Applications assigned to team leaders (from the assignment sheet), with
+   Summary: application-to-admission % by coordinator / team leader / skill / phase / form, and
+   Follow-up list: each team leader's applications to plan follow-ups. */
+let APPS = [], ROSTER = [], myUid = "", myApplied = false;
+let view = "summary", groupBy = "coord", pg = 1;
+const sortS = {key: "", dir: -1}, sortL = {key: "", dir: 1};
+const DAYMS = 864e5;
+const td = (label, html, cls) => '<td' + (cls ? ' class="' + cls + '"' : '') + ' data-label="' + label + '"><div>' + html + '</div></td>';
+const normS = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const uidIn = t => { const m = String(t || "").match(/(\d{4,})\s*$/) || String(t || "").match(/(\d{4,})/); return m ? m[1] : ""; };
+const yes = v => /^(y|yes|true|1|eligible|enrolled)\b/i.test(String(v || "").trim());
+const dateTxt = ms => ms ? new Date(ms).toLocaleDateString("en-IN", {day:"2-digit", month:"short", year:"numeric"}) : "–";
+const pctA = (a, b) => b ? Math.round(a * 1000 / b) / 10 : null;
+const pctTxt = v => v === null ? "–" : v + "%";
+
+/* ---------- Data ---------- */
+function sharedApps(){ try{ const c = JSON.parse(sessionStorage.getItem("hk_apps") || "null"); return c && Date.now() - c.at < 5 * 60000 ? c : null; }catch(_){ return null; } }
+async function fetchApps(useShared){
+  if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
+  const sh = useShared ? sharedApps() : null;
+  let gz = sh ? sh.gz : null, me = sh ? sh.me || "" : "";
+  if (!gz){
+    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, what: "apps"})});
+    if (!res.ok) throw new Error("service error (" + res.status + ")");
+    const j = await res.json();
+    if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
+    gz = j.gz; me = j.me || "";                                     // me = signed-in person's UID, matched on the server
+    try{ sessionStorage.setItem("hk_apps", JSON.stringify({at: Date.now(), gz, me})); }catch(_){}
+  }
+  const data = JSON.parse(await gunzipBase64(gz));
+  data.me = me;
+  return data;
+}
+function prepare(data){
+  const F = {}; data.fields.forEach((f, i) => F[f] = i);
+  const D = data.dict, RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  ROSTER = (data.roster || []).map(r => ({uid:String(r[RF.uid]), name:r[RF.name], role:r[RF.role], coord:r[RF.coord], skill:r[RF.skill], active:r[RF.active] === 1}));
+  const byUid = new Map(ROSTER.map(p => [p.uid, p])), byName = new Map();
+  for (const p of ROSTER) if (/team\s*leader/i.test(p.role || "")) byName.set(normS(p.name), p);
+  const dv = (k, r) => F[k] === undefined ? "" : (D[k] ? D[k][r[F[k]]] : r[F[k]]) ?? "";
+  return data.rows.map(r => {
+    const tlText = dv("tl", r), u = uidIn(tlText);
+    const rec = (u && byUid.get(u)) || byName.get(normS(String(tlText).split(/[-:|(]/)[0])) || null;
+    const tlName = rec ? rec.name : (String(tlText).replace(/[-\s]*TL[-\s]*(DC[-\s]*)?\d*\s*$/i, "").replace(/[._]/g, " ").trim() || "(Unassigned)");
+    const a = {
+      form: dv("form", r), app: dv("app", r), pay: F.pay !== undefined ? r[F.pay] : 0, tlText,
+      tlKey: rec ? rec.uid : (u || tlName), tlName, tlUid: rec ? rec.uid : u,
+      coord: rec && rec.coord ? rec.coord : "(Not in team list)", tlSkill: rec ? (rec.skill || "") : "",
+      assigned: F.assigned !== undefined ? r[F.assigned] : 0, schol: dv("schol", r), phase: dv("phase", r) || "(No phase)",
+      program: dv("program", r), pskill: dv("pskill", r) || "(No program skill)", type: dv("type", r),
+      eligible: yes(dv("elig", r)), eligText: dv("elig", r), enrolled: yes(dv("enrol", r)), enrolDate: F.enrolDate !== undefined ? r[F.enrolDate] : 0
+    };
+    a.awaited = !String(a.schol).trim();
+    a.mismatch = !!(a.tlSkill && a.pskill && normS(a.tlSkill) !== normS(a.pskill));
+    a.stage = a.enrolled ? 3 : a.eligible ? 0 : a.awaited ? 1 : 2;        // follow-up priority: eligible first
+    a._search = (a.app + " " + a.program).toLowerCase();
+    return a;
+  });
+}
+async function load(isBackground){
+  if (!isBackground && !APPS.length) showNotice("load", "Loading assigned applications…<div class='bar'><i></i></div>");
+  setUpdated("Updating…", true); $("refreshBtn").disabled = true;
+  try{
+    const data = await fetchApps(!isBackground && !APPS.length);
+    const fresh = prepare(data);
+    if (isBackground && APPS.length && fresh.length < APPS.length * 0.9) return;
+    APPS = fresh;
+    if (!myApplied){                                   // a team leader opens on their own applications
+      myApplied = true;
+      const p = jwtPayload(idToken), u = data.me || (p && p.email ? uidIn(String(p.email).split("@")[0]) : "");
+      if (u && APPS.some(a => a.tlKey === u)){ myUid = u; $("fTeam").dataset.pending = u; view = "list"; }
+    }
+    showNotice("", ""); render();
+    setUpdated("Data as of " + data.updated, false);
+  }catch(e){
+    setUpdated("Not updated", false);
+    if (e.auth){ clearToken(); showGate("Your sign-in has expired. Please sign in again."); return; }
+    if (!APPS.length || !isBackground) showNotice("err", "<b>Couldn't load the assigned applications.</b><br>Select Refresh to try again. (" + esc(e.message) + ")");
+  }finally{ $("refreshBtn").disabled = false; }
+}
+
+/* ---------- Filters (only relevant options, with counts) ---------- */
+const FL = [
+  {id:"fCoord",  key:"coord"},
+  {id:"fTeam",   key:"tlKey", label:a => a.tlName + (a.tlUid ? " (" + a.tlUid + ")" : "")},
+  {id:"fTskill", key:"tlSkill", blank:"(No TL skill)"},
+  {id:"fPskill", key:"pskill"},
+  {id:"fPhase",  key:"phase"},
+  {id:"fForm",   key:"form"}
+];
+const FOCUS = {hot: a => a.eligible && !a.enrolled, awaited: a => a.awaited && !a.enrolled, noelig: a => !a.eligible && !a.awaited && !a.enrolled, enrolled: a => a.enrolled};
+function readF(){
+  return {drop: Object.fromEntries(FL.map(f => [f.id, $(f.id).value])),
+    from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
+    to: $("dTo").value ? new Date($("dTo").value + "T23:59:59").getTime() : null};
+}
+function passes(a, f, skips){
+  for (const d of FL) if (!skips.includes(d.id) && f.drop[d.id] && String(a[d.key] || d.blank || "") !== f.drop[d.id]) return false;
+  if (!skips.includes("date") && f.from !== null && !(a.assigned >= f.from)) return false;
+  if (!skips.includes("date") && f.to !== null && !(a.assigned <= f.to)) return false;
+  return true;
+}
+function buildFilters(f){
+  for (const d of FL){
+    const sel = $(d.id), cur = sel.dataset.pending || sel.value, opts = new Map();
+    const skip = d.id === "fCoord" ? ["fCoord", "fTeam"] : [d.id];       // coordinator list ignores the team leader choice
+    for (const a of APPS){
+      if (!passes(a, f, skip)) continue;
+      const v = String(a[d.key] || d.blank || "");
+      if (!opts.has(v)) opts.set(v, {l: d.label ? d.label(a) : v, n: 0});
+      opts.get(v).n++;
+    }
+    if (cur && !opts.has(cur)) opts.set(cur, {l: cur, n: 0});
+    const vals = [...opts.keys()].sort((x, y) => String(opts.get(x).l).localeCompare(String(opts.get(y).l), undefined, {numeric:true}));
+    sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '"' + (opts.get(v).n ? "" : " disabled") + '>' + esc(opts.get(v).l) + ' (' + fmt(opts.get(v).n) + ')</option>').join("");
+    sel.value = cur; delete sel.dataset.pending;
+  }
+}
+
+/* ---------- Render ---------- */
+const stageTag = a => a.enrolled ? '<span class="tagx ok">Enrolled</span>' : a.eligible ? '<span class="tagx hot">Eligible</span>' : a.awaited ? '<span class="tagx wait">Result awaited</span>' : '<span class="tagx bad">Not eligible</span>';
+function render(){
+  if (!APPS.length){ $("tbody").innerHTML = '<tr><td class="empty">No assigned applications found yet.</td></tr>'; return; }
+  const f = readF(); buildFilters(f); const g = readF();
+  const base = APPS.filter(a => passes(a, g, []));
+  // KPI cards
+  const n = base.length, aw = base.filter(a => a.awaited).length, el = base.filter(a => a.eligible).length, en = base.filter(a => a.enrolled).length;
+  const overall = pctA(en, n);
+  $("kAssigned").textContent = fmt(n); $("kAwaited").textContent = fmt(aw); $("kAwaitedSub").textContent = pctTxt(pctA(aw, n)) + " of assigned";
+  $("kEligible").textContent = fmt(el); $("kEligibleSub").textContent = pctTxt(pctA(el, n)) + " of assigned";
+  $("kEnrolled").textContent = fmt(en); $("kAdm").textContent = pctTxt(overall); $("kConv").textContent = pctTxt(pctA(en, el));
+  $("myNote").innerHTML = myUid && $("fTeam").value === myUid ? '<div class="zero">Showing <b>your</b> assigned applications. Choose <b>All</b> in Team leader to see everyone.</div>' : "";
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view ? "true" : "false"));
+  $("summaryOnly").hidden = view !== "summary"; $("listOnly").hidden = view !== "list";
+
+  let head = [], rows = [], toRow;
+  const S = view === "summary" ? sortS : sortL;
+  if (view === "summary"){
+    const keyOf = {coord:a => a.coord, tl:a => a.tlKey, tskill:a => a.tlSkill || "(No TL skill)", pskill:a => a.pskill, phase:a => a.phase, form:a => a.form || "(No form)"}[groupBy];
+    const labelOf = {tl:a => a.tlName + (a.tlUid ? '<small class="subl">UID ' + esc(a.tlUid) + ', ' + esc(a.coord) + '</small>' : "")}[groupBy];
+    const m = new Map();
+    for (const a of base){ const k = keyOf(a); if (!m.has(k)) m.set(k, {k, label: labelOf ? labelOf(a) : esc(k), n:0, aw:0, el:0, en:0}); const x = m.get(k); x.n++; if (a.awaited) x.aw++; if (a.eligible) x.el++; if (a.enrolled) x.en++; }
+    rows = [...m.values()]; rows.forEach(x => { x.adm = pctA(x.en, x.n); x.conv = pctA(x.en, x.el); });
+    const title = {coord:"Coordinator", tl:"Team leader", tskill:"TL skill", pskill:"Program skill", phase:"Phase", form:"Form name"}[groupBy];
+    head = [["name", title], ["n", "Assigned"], ["aw", "Result awaited"], ["el", "Eligible"], ["en", "Enrolled"], ["adm", "Admission %"], ["conv", "Eligible → Enrolled"]];
+    const get = {name:x => x.k, n:x => x.n, aw:x => x.aw, el:x => x.el, en:x => x.en, adm:x => x.adm ?? -1, conv:x => x.conv ?? -1};
+    const key = S.key || "adm", dir = S.key ? S.dir : -1;
+    rows.sort((x, y) => { const p = get[key](x), q = get[key](y); return (typeof p === "number" ? p - q : String(p).localeCompare(String(q))) * dir || y.n - x.n; });
+    const cls = v => v === null || overall === null ? "n" : v >= overall ? "g" : v >= overall * 0.8 ? "y" : "r";
+    toRow = x => '<tr class="click" data-k="' + esc(x.k) + '" tabindex="0" title="Drill down">' + td(title, '<b>' + x.label + '</b>') + td("Assigned", fmt(x.n), "num") + td("Result awaited", fmt(x.aw), "num") +
+      td("Eligible", fmt(x.el), "num") + td("Enrolled", fmt(x.en), "num") +
+      td("Admission %", '<span class="pbar ' + cls(x.adm) + '"><span class="pv">' + pctTxt(x.adm) + '</span><span class="pt"><span style="width:' + Math.min(100, x.adm || 0) + '%"></span></span></span>', "num") +
+      td("Eligible → Enrolled", pctTxt(x.conv), "num") + '</tr>';
+    $("viewCount").textContent = fmt(rows.length) + " " + title.toLowerCase() + (rows.length === 1 ? "" : "s") + ", overall admission " + pctTxt(overall);
+  } else {
+    const q = $("q").value.trim().toLowerCase(), fo = FOCUS[$("fFocus").value];
+    rows = base.filter(a => (!q || a._search.includes(q)) && (!fo || fo(a)));
+    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["assigned", "Assigned on"], ["phase", "Phase"], ["schol", "Result"], ["stage", "Status"]];
+    const get = {app:a => a.app, program:a => a.program, tl:a => a.tlName, assigned:a => a.assigned || 0, phase:a => a.phase, schol:a => a.awaited ? "" : a.schol, stage:a => a.stage};
+    if (S.key) rows.sort((x, y) => { const p = get[S.key](x), q2 = get[S.key](y); return (typeof p === "number" ? p - q2 : String(p).localeCompare(String(q2), undefined, {numeric:true})) * S.dir; });
+    else rows.sort((x, y) => x.stage - y.stage || (x.assigned || 0) - (y.assigned || 0));   // eligible first, oldest first
+    const now = Date.now();
+    toRow = a => '<tr class="st' + a.stage + '">' +
+      td("Application", '<span class="who"><b>' + esc(a.app) + '</b><small>' + esc(a.form) + '</small></span>') +
+      td("Program", '<span class="who"><b class="pg">' + esc(a.program || "–") + '</b><small>' + esc(a.pskill) + (a.mismatch ? ' <span class="mini diff" title="Team leader skill: ' + esc(a.tlSkill) + '">Skill mismatch</span>' : '') + (a.type ? ", " + esc(a.type) : "") + '</small></span>') +
+      td("Team leader", '<span class="who"><b>' + esc(a.tlName) + '</b><small>' + esc(a.coord) + '</small></span>') +
+      td("Assigned on", dateTxt(a.assigned) + (a.assigned ? '<small class="subl">' + Math.max(0, Math.floor((now - a.assigned) / DAYMS)) + ' days ago</small>' : ""), "num") +
+      td("Phase", esc(a.phase)) +
+      td("Result", a.awaited ? '<span class="tagx wait">Awaited</span>' : esc(a.schol)) +
+      td("Status", stageTag(a) + (a.enrolled && a.enrolDate ? '<small class="subl">' + dateTxt(a.enrolDate) + '</small>' : "") + '<small class="subl">Paid ' + dateTxt(a.pay) + '</small>') + '</tr>';
+    $("viewCount").textContent = fmt(rows.length) + " application" + (rows.length === 1 ? "" : "s");
+  }
+  const size = pageSize(), pages = Math.max(1, Math.ceil(rows.length / size));
+  pg = Math.min(Math.max(1, pg), pages);
+  const start = (pg - 1) * size, items = rows.slice(start, start + size);
+  $("thead").innerHTML = head.map(([k, label]) => { const on = S.key === k; return '<th scope="col" class="sortable" tabindex="0" data-key="' + k + '">' + label + '<span class="arr">' + (on ? (S.dir === 1 ? "▲" : "▼") : "") + '</span></th>'; }).join("");
+  $("tbody").innerHTML = items.map(toRow).join("") || '<tr><td class="empty" colspan="' + head.length + '">Nothing matches these filters.</td></tr>';
+  $("pageInfo").textContent = rows.length ? "Showing " + fmt(start + 1) + "–" + fmt(start + items.length) + " of " + fmt(rows.length) : "";
+  $("prevBtn").disabled = pg <= 1; $("nextBtn").disabled = pg >= pages;
+  const nActive = [...FL.map(d => d.id), "dFrom", "dTo"].filter(id => $(id).value).length + (view === "list" ? ["q", "fFocus"].filter(id => $(id).value.trim()).length : 0);
+  $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
+}
+
+/* ---------- Events ---------- */
+[...FL.map(d => d.id), "dFrom", "dTo", "fFocus"].forEach(id => $(id).addEventListener("change", () => {
+  if (id === "fCoord"){ const f = readF(); if (f.drop.fTeam && !APPS.some(a => passes(a, f, []))) $("fTeam").value = ""; }
+  pg = 1; render();
+}));
+let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 250); });
+$("groupBy").addEventListener("change", () => { groupBy = $("groupBy").value; sortS.key = ""; pg = 1; render(); });
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; pg = 1; render(); }));
+$("resetBtn").addEventListener("click", () => { [...FL.map(d => d.id), "dFrom", "dTo", "q", "fFocus"].forEach(id => $(id).value = ""); pg = 1; render(); });
+$("refreshBtn").addEventListener("click", () => load(false));
+$("prevBtn").addEventListener("click", () => { pg--; render(); });
+$("nextBtn").addEventListener("click", () => { pg++; render(); });
+function sortClick(k){ const S = view === "summary" ? sortS : sortL; if (S.key === k) S.dir = -S.dir; else { S.key = k; S.dir = (k === "name" || k === "app" || k === "program" || k === "tl" || k === "phase" || k === "schol") ? 1 : -1; } pg = 1; render(); }
+$("thead").addEventListener("click", e => { const th = e.target.closest("th[data-key]"); if (th) sortClick(th.dataset.key); });
+$("thead").addEventListener("keydown", e => { const th = e.target.closest("th[data-key]"); if (th && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); sortClick(th.dataset.key); } });
+/* Summary drill-down: coordinator -> their team leaders -> follow-up list */
+function drill(tr){
+  if (!tr || view !== "summary") return;
+  const k = tr.dataset.k;
+  const map = {coord:"fCoord", tl:"fTeam", tskill:"fTskill", pskill:"fPskill", phase:"fPhase", form:"fForm"};
+  const sel = $(map[groupBy]); sel.dataset.pending = k;
+  if (groupBy === "coord"){ groupBy = "tl"; $("groupBy").value = "tl"; }
+  else if (groupBy === "tl") view = "list";
+  else { groupBy = "tl"; $("groupBy").value = "tl"; }
+  sortS.key = ""; pg = 1; render();
+}
+$("tbody").addEventListener("click", e => drill(e.target.closest("tr.click")));
+$("tbody").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ const tr = e.target.closest("tr.click"); if (tr){ e.preventDefault(); drill(tr); } } });
+
+/* Installable app */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).catch(() => {}));
+}
+let installPrompt = null;
+const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+if (standalone) $("installBtn").hidden = true;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; });
+function installSteps(){
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  if (ios) return ["Open this page in <b>Safari</b> (not Chrome).", "Tap the <b>Share</b> button (square with an arrow).", "Tap <b>Add to Home Screen</b>, then <b>Add</b>."];
+  if (/Android/i.test(ua)) return ["Open this page in <b>Chrome</b>.", "Tap the <b>⋮</b> menu at the top right.", "Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>."];
+  return ["Use <b>Chrome</b> or <b>Edge</b>.", "Click the install icon at the right end of the address bar,",
+          "or open the browser menu and choose <b>Cast, save and share → Install page</b> (Chrome) or <b>Apps → Install this site as an app</b> (Edge)."];
+}
+$("installBtn").addEventListener("click", async () => {
+  if (installPrompt){
+    installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    installPrompt = null;
+    if (choice && choice.outcome === "accepted") $("installBtn").hidden = true;
+    return;
+  }
+  const box = $("installHelp");
+  box.innerHTML = '<button class="close" type="button" aria-label="Close">✕</button><h3>Install Karmo Ka HisabKitab</h3><ol>' +
+    installSteps().map(x => '<li>' + x + '</li>').join("") + '</ol>';
+  box.hidden = false;
+  box.querySelector(".close").addEventListener("click", () => { box.hidden = true; });
+  box.scrollIntoView({behavior:"smooth", block:"start"});
+});
+window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; $("installHelp").hidden = true; });
+
+/* Left menu: highlight the current page, collapse (remembered), slide-out on phones */
+(function(){
+  const page = (location.pathname.split("/").pop() || "index.html").replace(".html", "") || "index";
+  document.querySelectorAll("#sidenav a[data-page]").forEach(a => { if (a.dataset.page === page) a.setAttribute("aria-current", "page"); });
+  try{ if (localStorage.getItem("hk_nav") === "mini") document.documentElement.classList.add("nav-mini"); }catch(_){}
+  $("navCollapse").addEventListener("click", () => {
+    const mini = document.documentElement.classList.toggle("nav-mini");
+    try{ localStorage.setItem("hk_nav", mini ? "mini" : "full"); }catch(_){}
+  });
+  const open = v => { $("sidenav").classList.toggle("open", v); $("navShade").hidden = !v; $("menuBtn").setAttribute("aria-expanded", v ? "true" : "false"); };
+  $("menuBtn").addEventListener("click", () => open(!$("sidenav").classList.contains("open")));
+  $("navShade").addEventListener("click", () => open(false));
+})();
+
+/* Theme: Auto (follows device) -> Light -> Dark */
+const THEMES = {auto:{icon:"auto", label:"Auto"}, light:{icon:"sun", label:"Light"}, dark:{icon:"moon", label:"Dark"}};
+function currentTheme(){ try{ const t = localStorage.getItem("hk_theme"); return THEMES[t] ? t : "auto"; }catch(_){ return "auto"; } }
+function applyTheme(t){
+  if (t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+  try{ localStorage.setItem("hk_theme", t); }catch(_){}
+  $("themeBtn").innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-' + THEMES[t].icon + '"/></svg>' + THEMES[t].label;
+  $("themeBtn").title = "Theme: " + THEMES[t].label + " (select to change)";
+}
+$("themeBtn").addEventListener("click", () => {
+  const order = ["auto", "light", "dark"];
+  applyTheme(order[(order.indexOf(currentTheme()) + 1) % order.length]);
+});
+applyTheme(currentTheme());
+
+window.matchMedia("(max-width: 720px)").addEventListener("change", () => { pg = 1; render(); });
+
+$("signOutBtn").addEventListener("click", () => {
+  clearToken();
+  try{ sessionStorage.removeItem("hk_data"); }catch(_){}
+  APPS = [];
+  try{ sessionStorage.removeItem("hk_apps"); }catch(_){}
+  if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+  showGate("You have signed out.");
+});
+
+if (window.__gisLoaded && window.google) initGoogle();
+const saved = storedToken();
+if (tokenOk(saved)) signedIn(saved); else { clearToken(); document.body.classList.add("locked"); }
+setInterval(() => { if (idToken) load(true); }, REFRESH_MINUTES * 60000 + Math.floor(Math.random() * 120000));
+</script>
+</body>
+</html>
