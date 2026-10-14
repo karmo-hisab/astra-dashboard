@@ -7,7 +7,7 @@
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Karmo Ka HisabKitab: Astra Claims</title>
+<title>Astra Claim Status: Karmo Ka HisabKitab</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -84,6 +84,32 @@ body.locked .wrap, body.locked .needs-auth{display:none!important}
 .achip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--accent);color:var(--ink);border-radius:999px;padding:2px 4px 2px 11px;font-size:12.5px;font-weight:600}
 .achip button{border:none;background:none;padding:0 6px;font-size:12px;color:var(--accent);cursor:pointer}
 @media (max-width: 720px){ .flabel{width:auto} }
+/* Left menu */
+:root{--navw:220px}
+html.nav-mini{--navw:64px}
+body{padding-left:var(--navw);transition:padding-left .15s}
+body.locked{padding-left:0}
+.sidenav{position:fixed;left:0;top:0;bottom:0;width:var(--navw);background:var(--navy);border-right:1px solid rgba(255,255,255,.08);z-index:30;display:flex;flex-direction:column;justify-content:space-between;padding:84px 10px 14px;transition:width .15s}
+.sidenav nav{display:flex;flex-direction:column;gap:4px}
+.sidenav a{display:flex;align-items:center;gap:12px;color:#C3CBE0;text-decoration:none;font-weight:600;font-size:14px;padding:10px 12px;border-radius:6px;white-space:nowrap;overflow:hidden}
+.sidenav a:hover{background:rgba(255,255,255,.07);color:#fff}
+.sidenav a[aria-current="page"]{background:#fff;color:var(--navy)}
+.sidenav a .ic{flex:none}
+.sidenav .collapse{display:flex;align-items:center;gap:10px;background:none;border:1px solid rgba(255,255,255,.18);color:#C3CBE0;padding:8px 12px;white-space:nowrap;overflow:hidden}
+.sidenav .collapse:hover{color:#fff;border-color:#fff}
+html.nav-mini .sidenav span{display:none}
+html.nav-mini .sidenav a, html.nav-mini .sidenav .collapse{justify-content:center;padding-left:0;padding-right:0}
+html.nav-mini .sidenav .collapse .ic{transform:rotate(180deg)}
+.topbar .menubtn{display:none;background:none;border:none;color:#fff;padding:4px}
+.navshade{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:25}
+@media (max-width: 720px){
+  body{padding-left:0}
+  .topbar .menubtn{display:inline-flex}
+  .sidenav{width:220px;transform:translateX(-100%);transition:transform .2s;padding-top:20px}
+  .sidenav.open{transform:none}
+  html.nav-mini .sidenav span{display:inline}
+  .sidenav .collapse{display:none}
+}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -247,6 +273,9 @@ footer b{color:var(--muted);font-weight:600}
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol>
     <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/></symbol>
     <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.7L4 8"/><path d="M4 3v5h5M4 13a8 8 0 0 0 14.3 4.7L20 16"/><path d="M20 21v-5h-5"/></symbol>
     <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></symbol>
     <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
@@ -256,12 +285,22 @@ footer b{color:var(--muted);font-weight:600}
   </defs>
 </svg>
 <!--PREVIEW_BANNER-->
+<aside class="sidenav needs-auth" id="sidenav" aria-label="Pages">
+  <nav>
+    <!-- Add new pages here: one line each -->
+    <a href="structure.html" data-page="structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
+    <a href="./" data-page="index" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
+    <a href="teams.html" data-page="teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
+  </nav>
+  <button type="button" class="collapse" id="navCollapse" aria-label="Collapse menu"><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg><span>Collapse</span></button>
+</aside>
+<div class="navshade" id="navShade" hidden></div>
 <div class="topbar"><div class="in">
   <div class="brand">
+    <button type="button" class="menubtn needs-auth" id="menuBtn" aria-label="Open menu" aria-controls="sidenav" aria-expanded="false"><svg class="ic lg" aria-hidden="true"><use href="#i-menu"/></svg></button>
     <img src="icon-192.png" alt="" onerror="this.style.display='none'">
-    <h1>Karmo Ka HisabKitab<span>Astra Claims Verification Dashboard</span></h1>
+    <h1>Karmo Ka HisabKitab<span>Astra Claim Status</span></h1>
   </div>
-  <nav class="tabs needs-auth" aria-label="Pages"><a href="./" aria-current="page">Claims</a><a href="teams.html">Teams</a></nav>
   <div class="meta">
     <span class="status loading needs-auth" id="updated"><i></i>Loading…</span>
     <button id="themeBtn" type="button" title="Change theme" aria-label="Change theme"></button>
@@ -804,6 +843,20 @@ $("installBtn").addEventListener("click", async () => {
   box.scrollIntoView({behavior:"smooth", block:"start"});
 });
 window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; $("installHelp").hidden = true; });
+
+/* Left menu: highlight the current page, collapse (remembered), slide-out on phones */
+(function(){
+  const page = (location.pathname.split("/").pop() || "index.html").replace(".html", "") || "index";
+  document.querySelectorAll("#sidenav a[data-page]").forEach(a => { if (a.dataset.page === page) a.setAttribute("aria-current", "page"); });
+  try{ if (localStorage.getItem("hk_nav") === "mini") document.documentElement.classList.add("nav-mini"); }catch(_){}
+  $("navCollapse").addEventListener("click", () => {
+    const mini = document.documentElement.classList.toggle("nav-mini");
+    try{ localStorage.setItem("hk_nav", mini ? "mini" : "full"); }catch(_){}
+  });
+  const open = v => { $("sidenav").classList.toggle("open", v); $("navShade").hidden = !v; $("menuBtn").setAttribute("aria-expanded", v ? "true" : "false"); };
+  $("menuBtn").addEventListener("click", () => open(!$("sidenav").classList.contains("open")));
+  $("navShade").addEventListener("click", () => open(false));
+})();
 
 /* Theme: Auto (follows device) -> Light -> Dark */
 const THEMES = {auto:{icon:"auto", label:"Auto"}, light:{icon:"sun", label:"Light"}, dark:{icon:"moon", label:"Dark"}};

@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>
+  (function(){ try{ var th = localStorage.getItem("hk_theme"); if (th === "light" || th === "dark") document.documentElement.setAttribute("data-theme", th); }catch(e){} })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Team Structure: Karmo Ka HisabKitab</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#1B2545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HisabKitab">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#14234B; --navy-2:#1E3264;
+  --ink:#1A2233; --paper:#F3F5F8; --card:#FFFFFF; --line:#DCE1E9; --line-2:#EDF0F4; --muted:#4F5B70; --faint:#7A8599;
+  --accent:#B5121B;               /* institutional crimson, used sparingly */
+  --ok:#1E6B45;  --ok-bg:#F1F8F4;
+  --bad:#A3271D; --bad-bg:#FBF2F1;
+  --wait:#8A5A00;--wait-bg:#FDF8EC;
+  --neutral:#5B6578; --neutral-bg:#F0F2F5;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3","Segoe UI",Roboto,Arial,sans-serif;
+  box-sizing:border-box;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --navy:#0B1530; --navy-2:#13214A;
+    --ink:#E3E7EF; --paper:#0E1424; --card:#151C30; --line:#2A3350; --line-2:#1F2740; --muted:#A7B0C3; --faint:#7D879E;
+    --accent:#E0585F;
+    --ok:#6CCB98; --ok-bg:#132620; --bad:#EE8A80; --bad-bg:#2C1719; --wait:#E6BC5C; --wait-bg:#2A2412;
+    --neutral:#9AA3B6; --neutral-bg:#1D2439;
+  }
+}
+:root[data-theme="dark"]{
+  --navy:#0B1530; --navy-2:#13214A;
+  --ink:#E3E7EF; --paper:#0E1424; --card:#151C30; --line:#2A3350; --line-2:#1F2740; --muted:#A7B0C3; --faint:#7D879E;
+  --accent:#E0585F;
+  --ok:#6CCB98; --ok-bg:#132620; --bad:#EE8A80; --bad-bg:#2C1719; --wait:#E6BC5C; --wait-bg:#2A2412;
+  --neutral:#9AA3B6; --neutral-bg:#1D2439;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45}
+[hidden]{display:none!important}
+/* Sign-in gate */
+.gate{display:none;min-height:calc(100vh - 140px);align-items:center;justify-content:center;padding:28px 16px}
+body.locked .gate{display:flex}
+body.locked .wrap, body.locked .needs-auth{display:none!important}
+.gatecard{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:30px 28px;text-align:center;border-top:3px solid var(--accent)}
+.gatecard img{width:56px;height:56px;border-radius:10px}
+.gatecard h2{font-family:var(--serif);font-size:22px;margin:12px 0 4px}
+.gatecard p{color:var(--muted);margin:0 0 18px;font-size:14px}
+#gBtn{display:flex;justify-content:center;min-height:44px}
+.gatemsg{margin-top:14px;font-size:13px;color:var(--bad);min-height:18px}
+.gatefoot{margin-top:18px;font-size:12px;color:var(--faint)}
+.who-me{color:#C3CBE0;font-size:12.5px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-3px}
+.ic.lg{width:18px;height:18px}
+
+.frow{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line-2)}
+.frow:first-of-type{border-top:none;padding-top:2px}
+.flabel{flex:none;width:52px;padding-top:20px;font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.cfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
+.cfilters .span2{grid-column:span 2}
+@media (max-width: 720px){ .frow{flex-direction:column;gap:6px} .flabel{padding-top:0} .cfilters{grid-template-columns:1fr 1fr} .cfilters .span2{grid-column:1/-1} }
+/* Livelier filter panel */
+.filterpanel.catchy{border-top:3px solid var(--accent);background:linear-gradient(180deg, var(--neutral-bg) 0, var(--card) 70px)}
+.flabel{display:flex;align-items:center;gap:6px;width:72px}
+.flabel .ic{width:15px;height:15px;color:var(--accent)}
+.has-value{border-color:var(--accent)!important;background:var(--wait-bg)!important;font-weight:600}
+.activestrip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.aslabel{font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);margin-right:4px}
+.achip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--accent);color:var(--ink);border-radius:999px;padding:2px 4px 2px 11px;font-size:12.5px;font-weight:600}
+.achip button{border:none;background:none;padding:0 6px;font-size:12px;color:var(--accent);cursor:pointer}
+@media (max-width: 720px){ .flabel{width:auto} }
+/* Left menu */
+:root{--navw:220px}
+html.nav-mini{--navw:64px}
+body{padding-left:var(--navw);transition:padding-left .15s}
+body.locked{padding-left:0}
+.sidenav{position:fixed;left:0;top:0;bottom:0;width:var(--navw);background:var(--navy);border-right:1px solid rgba(255,255,255,.08);z-index:30;display:flex;flex-direction:column;justify-content:space-between;padding:84px 10px 14px;transition:width .15s}
+.sidenav nav{display:flex;flex-direction:column;gap:4px}
+.sidenav a{display:flex;align-items:center;gap:12px;color:#C3CBE0;text-decoration:none;font-weight:600;font-size:14px;padding:10px 12px;border-radius:6px;white-space:nowrap;overflow:hidden}
+.sidenav a:hover{background:rgba(255,255,255,.07);color:#fff}
+.sidenav a[aria-current="page"]{background:#fff;color:var(--navy)}
+.sidenav a .ic{flex:none}
+.sidenav .collapse{display:flex;align-items:center;gap:10px;background:none;border:1px solid rgba(255,255,255,.18);color:#C3CBE0;padding:8px 12px;white-space:nowrap;overflow:hidden}
+.sidenav .collapse:hover{color:#fff;border-color:#fff}
+html.nav-mini .sidenav span{display:none}
+html.nav-mini .sidenav a, html.nav-mini .sidenav .collapse{justify-content:center;padding-left:0;padding-right:0}
+html.nav-mini .sidenav .collapse .ic{transform:rotate(180deg)}
+.topbar .menubtn{display:none;background:none;border:none;color:#fff;padding:4px}
+.navshade{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:25}
+@media (max-width: 720px){
+  body{padding-left:0}
+  .topbar .menubtn{display:inline-flex}
+  .sidenav{width:220px;transform:translateX(-100%);transition:transform .2s;padding-top:20px}
+  .sidenav.open{transform:none}
+  html.nav-mini .sidenav span{display:inline}
+  .sidenav .collapse{display:none}
+}
+.stats4{grid-template-columns:repeat(4,1fr)!important}
+.tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
+.tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
+.viewbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px;gap:3px}
+.seg button{border:none;background:none;padding:6px 16px;border-radius:4px;font-weight:600;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--navy-2);color:#fff}
+:root[data-theme="dark"] .seg button[aria-selected="true"]{background:#E3E7EF;color:#0E1424}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .seg button[aria-selected="true"]{background:#E3E7EF;color:#0E1424} }
+.table-panel{margin-bottom:18px}
+.left-tag{display:inline-block;margin-left:6px;font-size:11px;font-weight:600;color:var(--faint);border:1px solid var(--line);border-radius:3px;padding:0 5px;vertical-align:1px}
+.rank{font-family:var(--serif);font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--neutral-bg)}
+.bandtag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:3px;padding:1px 8px;white-space:nowrap;border:1px solid currentColor}
+.bandtag.ok{color:var(--ok);background:var(--ok-bg)}
+.bandtag.okl{color:#2F7F86;background:rgba(47,127,134,.10)}
+.bandtag.wait{color:var(--wait);background:var(--wait-bg)}
+.bandtag.bad{color:var(--bad);background:var(--bad-bg)}
+.bandtag.neutral{color:var(--faint);background:transparent}
+:root[data-theme="dark"] .bandtag.okl{color:#6FC7CE}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .bandtag.okl{color:#6FC7CE} }
+.score{font-family:var(--serif);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums lining-nums}
+.subl{display:block;color:var(--faint);font-size:11.5px;font-weight:400;white-space:nowrap}
+.simtag{display:inline-block;font-size:11px;font-weight:700;border-radius:3px;padding:0 6px;color:var(--faint);border:1px solid var(--line);margin-left:4px;vertical-align:1px}
+.simtag.on{color:var(--navy-2);border-color:var(--navy-2)}
+.simtag.post{color:var(--accent);border-color:var(--accent)}
+:root[data-theme="dark"] .simtag.on{color:#9DB8FF;border-color:#9DB8FF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .simtag.on{color:#9DB8FF;border-color:#9DB8FF} }
+.more{margin-bottom:14px}
+.more summary{cursor:pointer;padding:11px 16px;font-family:var(--serif);font-weight:600;font-size:15px}
+.morebody{padding:0 16px 14px;font-size:13.5px;color:var(--muted);line-height:1.6}
+.morebody b{color:var(--ink)} .morebody ul{margin:6px 0;padding-left:20px}
+.more .tablebox{border-top:1px solid var(--line)}
+.bands{display:flex;flex-wrap:wrap;gap:6px}
+.zero{font-size:13px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:6px;padding:9px 14px;margin-bottom:10px}
+@media (max-width: 980px){ .tfilters{grid-template-columns:repeat(2,minmax(0,1fr))} .stats4{grid-template-columns:1fr 1fr!important} }
+@media (max-width: 720px){ .tfilters,.tfilters.one{grid-template-columns:1fr 1fr} .tfilters.one label{grid-column:1/-1} .frow{flex-direction:column;gap:6px} .flabel{padding-top:0} .seg{width:100%} .seg button{flex:1;padding:7px 6px} }
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+th .arr{margin-left:4px;font-size:10px;color:var(--accent)}
+.medal{font-size:20px;line-height:1}
+tbody tr.podium td .who b{font-weight:700}
+tbody tr.hl td{background:var(--wait-bg)!important}
+tbody tr.hl td:first-child{border-left-color:var(--accent)!important}
+tbody tr.hl td b{color:var(--ink)}
+@media (max-width: 720px){ tbody tr.hl{border-left:4px solid var(--accent)!important} }
+.frow{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line-2)}
+.frow:first-of-type{border-top:none;padding-top:2px}
+.flabel{flex:none;width:52px;padding-top:20px;font-size:11.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.rankbox{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px}
+.move{font-size:11px;font-weight:700;line-height:1}
+.move.up{color:var(--ok)} .move.down{color:var(--bad)} .move.same{color:var(--faint)} .move.new{color:#2F7F86}
+.spark{display:inline-flex;flex-direction:column;color:var(--muted)}
+.spark.up{color:var(--ok)} .spark.down{color:var(--bad)}
+.idle{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:var(--wait);border:1px solid currentColor;border-radius:3px;padding:0 5px;vertical-align:1px}
+.idletxt{color:var(--wait);font-weight:600}
+.more .tablebox + .tablebox{margin-top:0}
+.tfilters.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width: 980px){ .tfilters.five{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width: 720px){ .tfilters.five{grid-template-columns:1fr 1fr} }
+.modebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 10px;font-size:13px;color:var(--muted)}
+.modebar button{border-radius:999px;padding:4px 12px;font-size:12.5px}
+.modebar button[aria-pressed="true"]{background:var(--navy-2);border-color:var(--navy-2);color:#fff}
+:root[data-theme="dark"] .modebar button[aria-pressed="true"]{background:#E3E7EF;color:#0E1424;border-color:#E3E7EF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .modebar button[aria-pressed="true"]{background:#E3E7EF;color:#0E1424;border-color:#E3E7EF} }
+.cmp{margin-bottom:12px;border-left:3px solid var(--accent)}
+.cmphead{padding:10px 14px;font-size:13.5px;color:var(--muted)}
+.cmphead b{color:var(--ink)}
+.cmp table{min-width:0}
+.cmp th,.cmp td{padding:7px 14px}
+.morebar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.tip{font-size:12.5px;color:var(--faint)}
+#moreFilters{margin-top:10px;padding-top:12px;border-top:1px solid var(--line-2)}
+.who small{display:block}
+.rank.none{color:var(--faint);font-weight:400}
+/* Structure page */
+.sfilters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:end}
+.treebar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.treebtns{display:flex;gap:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12.5px;color:var(--muted);margin-bottom:14px}
+.lg-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.lg-note{color:var(--faint);flex-basis:100%}
+.g{--c:var(--ok)} .y{--c:var(--wait)} .r{--c:var(--bad)} .n{--c:var(--faint)}
+.lg-dot.g,.lg-dot.y,.lg-dot.r,.lg-dot.n{background:var(--c)}
+
+.org{background:var(--card);border:1px solid var(--line);border-radius:8px;margin-bottom:14px;overflow:hidden}
+.chead{width:100%;display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:none;border:none;border-left:4px solid var(--c);border-radius:0;padding:12px 16px;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.chead:hover{background:var(--neutral-bg)}
+.chev{transition:transform .15s;color:var(--muted)}
+.org.open .chev{transform:rotate(-90deg)}
+.cname{font-family:var(--serif);font-size:17px;font-weight:700}
+.csub{font-size:12.5px;color:var(--muted)}
+.cstats{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px;color:var(--muted)}
+.rb{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;border:1px solid var(--c);color:var(--c);background:var(--card);white-space:nowrap}
+.rb::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+.stat-i{white-space:nowrap}
+.stat-i b{color:var(--ink)}
+
+.obody{padding:6px 16px 16px;border-top:1px solid var(--line-2)}
+.tlrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;position:relative;margin-top:16px;padding-top:18px;border-top:2px solid var(--line)}
+.tlcol{position:relative}
+.tlcol::before{content:"";position:absolute;top:-20px;left:22px;width:2px;height:20px;background:var(--line)}
+.tlcard{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:6px;padding:9px 12px;background:var(--card)}
+.tlname{font-weight:700;font-size:14px;color:var(--ink)}
+.tlsub{font-size:12px;color:var(--faint)}
+.tlstats{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}
+.flag{font-size:10.5px;font-weight:700;color:var(--wait);border:1px solid currentColor;border-radius:3px;padding:0 5px}
+.clist{list-style:none;margin:0 0 0 22px;padding:6px 0 0 14px;border-left:2px solid var(--line)}
+.clist li{position:relative;display:flex;align-items:flex-start;gap:8px;padding:5px 8px;margin:3px 0;border-radius:5px;font-size:13px}
+.clist li::before{content:"";position:absolute;left:-14px;top:50%;width:12px;height:2px;background:var(--line)}
+.clist li:hover{background:var(--neutral-bg)}
+.cdot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--c);margin-top:5px}
+.cbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cn{color:var(--ink);font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.cmeta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.cr{font-size:11.5px;font-weight:700;color:var(--c);white-space:nowrap}
+.ch{font-size:11.5px;color:var(--faint);white-space:nowrap}
+.mini{font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;border:1px solid var(--line);color:var(--faint)}
+.mini.sim{color:var(--navy-2);border-color:var(--navy-2)}
+.mini.idle{color:var(--wait);border-color:var(--wait)}
+:root[data-theme="dark"] .mini.sim{color:#9DB8FF;border-color:#9DB8FF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .mini.sim{color:#9DB8FF;border-color:#9DB8FF} }
+.match{background:var(--wait-bg)!important;outline:2px solid var(--accent);outline-offset:-2px}
+.empty-tree{padding:30px;text-align:center;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:8px}
+@media (max-width: 980px){ .sfilters{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width: 720px){ .sfilters{grid-template-columns:1fr 1fr} .cstats{margin-left:0;width:100%} .tlrow{grid-template-columns:1fr} }
+/* Page tabs */
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
+.tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
+.tabs a:hover{color:#fff}
+.tabs a[aria-current="page"]{background:#fff;color:var(--navy)}
+/* Top bar */
+.topbar{background:var(--navy);color:#fff;padding-top:env(safe-area-inset-top,0px);border-bottom:3px solid var(--accent)}
+.topbar .in{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:14px}
+.brand img{width:40px;height:40px;border-radius:6px;flex:none;border:1px solid rgba(255,255,255,.15)}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(20px,2.6vw,26px);line-height:1.1;margin:0;letter-spacing:.1px}
+h1 span{display:block;font-family:var(--sans);font-size:13px;font-weight:400;color:#C3CBE0;margin-top:3px;letter-spacing:.2px}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:#C3CBE0;padding:0 6px}
+.status i{width:7px;height:7px;border-radius:50%;background:#5BC48B;display:inline-block}
+.status.loading i{background:#E6BC5C}
+.topbar button{display:inline-flex;align-items:center;gap:6px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+.topbar button:hover{background:rgba(255,255,255,.08);border-color:#fff}
+button{font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;border-radius:4px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 14px}
+button:hover{border-color:var(--navy-2)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #4C7BD9;outline-offset:2px}
+.linkbtn{border:none;background:none;color:var(--accent);padding:2px 0;font-weight:600}
+.linkbtn:hover{text-decoration:underline}
+
+.wrap{max-width:1280px;margin:0 auto;padding:20px 20px 32px}
+.section-title{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-size:17px;font-weight:600;margin:0 0 10px;color:var(--ink)}
+.section-title .ic{color:var(--accent)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px}
+
+/* KPI strip */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+.stat{padding:10px 16px 11px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.stat h2{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin:0;color:var(--muted);letter-spacing:.2px}
+.stat.ok h2 .ic{color:var(--ok)} .stat.bad h2 .ic{color:var(--bad)} .stat.wait h2 .ic{color:var(--wait)} .stat.tot h2 .ic{color:var(--muted)} .stat.fire h2 .ic{color:var(--neutral)}
+.stat .big{font-family:var(--serif);font-size:25px;font-weight:700;line-height:1.15;margin-top:2px;font-variant-numeric:tabular-nums lining-nums}
+.stat .sub{font-size:12px;color:var(--faint)}
+.stat.ok{box-shadow:inset 0 3px 0 var(--ok)} .stat.bad{box-shadow:inset 0 3px 0 var(--bad)}
+.stat.wait{box-shadow:inset 0 3px 0 var(--wait)} .stat.tot{box-shadow:inset 0 3px 0 var(--navy-2)} .stat.fire{box-shadow:inset 0 3px 0 var(--neutral)}
+.mix{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--line-2);margin-top:6px}
+.mix span{display:block;height:100%}
+.mix .ok{background:var(--ok)} .mix .bad{background:var(--bad)} .mix .wait{background:var(--wait)}
+
+/* Claim types */
+.types{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.type{padding:10px 16px 11px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.type h3{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin:0;color:var(--muted);min-width:0}
+.type .head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.em{font-size:15px;line-height:1}
+.astra{flex:none;font-size:11.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 7px;line-height:1.6;white-space:nowrap}
+.type h3 .ic{color:var(--muted)}
+.type .row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.type .big{font-family:var(--serif);font-size:22px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums lining-nums}
+.type .rate{font-size:12.5px;color:var(--ok);font-weight:600}
+.type .sub{font-size:12px;color:var(--faint);margin-top:2px}
+.meter{height:4px;border-radius:2px;background:var(--line-2);margin-top:6px;overflow:hidden}
+.stat h2 .ic,.type h3 .ic{width:20px;height:20px}
+.meter span{display:block;height:100%;background:var(--ok)}
+
+/* Filters */
+.filterpanel{padding:14px 18px 16px;margin-bottom:22px}
+.filterhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.filterhead .section-title{margin:0}
+.chip{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:3px;background:var(--neutral-bg);color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:600;vertical-align:2px}
+.filters{display:grid;grid-template-columns:1.5fr repeat(7,minmax(0,1fr));gap:12px;align-items:end}
+label.f{display:flex;flex-direction:column;font-size:12.5px;font-weight:600;color:var(--muted);gap:4px}
+input,select{font-family:var(--sans);font-size:13.5px;padding:6px 9px;border:1px solid var(--line);border-radius:4px;background:var(--card);color:var(--ink);width:100%;min-width:0;height:34px}
+
+/* Table */
+.tablehead{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.tablehead .section-title{margin:0}
+.resultbar{font-size:13px;color:var(--muted)}
+.tablebox{overflow-x:auto}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1000px}
+th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--line-2);vertical-align:middle;font-size:13px}
+th{position:sticky;top:0;background:var(--neutral-bg);font-weight:600;font-size:12.5px;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none;z-index:1;border-bottom:1px solid var(--line)}
+th:hover{color:var(--ink)}
+th .arr{color:var(--navy-2);margin-left:4px;font-size:10px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr td:first-child{border-left:3px solid transparent}
+tbody tr.row-ok td{background:var(--ok-bg)}     tbody tr.row-ok td:first-child{border-left-color:var(--ok)}
+tbody tr.row-bad td{background:var(--bad-bg)}   tbody tr.row-bad td:first-child{border-left-color:var(--bad)}
+tbody tr.row-wait td{background:var(--wait-bg)} tbody tr.row-wait td:first-child{border-left-color:var(--wait)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.who b{display:block;font-weight:600;font-size:13.5px}
+.who small{color:var(--faint);font-size:12px}
+.mask{font-variant-numeric:tabular-nums;letter-spacing:.4px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.tag.ok{color:var(--ok)} .tag.bad{color:var(--bad)} .tag.wait{color:var(--wait)} .tag.neutral{color:var(--neutral)}
+.reason{display:block;color:var(--muted);font-size:12px;margin-top:2px;max-width:300px}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.pager div{display:flex;gap:8px}
+
+.notice{padding:14px 16px;border-radius:6px;margin-bottom:18px;font-size:14px;border:1px solid var(--line)}
+.notice.err{background:var(--bad-bg);color:var(--bad);border-color:currentColor}
+.notice.load{background:var(--card);color:var(--muted)}
+.bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:30%;background:var(--navy-2);animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+@media (prefers-reduced-motion: reduce){.bar i{animation:none;width:100%}}
+.help{padding:14px 18px;margin-bottom:18px;position:relative;border-left:3px solid var(--navy-2)}
+.help h3{font-family:var(--serif);font-size:16px;margin:0 0 6px}
+.help ol{margin:0;padding-left:20px}
+.help li{margin:3px 0}
+.help .close{position:absolute;top:10px;right:10px;padding:2px 9px}
+footer{border-top:1px solid var(--line);margin-top:26px;padding-top:14px;font-size:12.5px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+footer b{color:var(--muted);font-weight:600}
+
+@media (max-width: 980px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .types{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters{grid-template-columns:repeat(3,1fr)}
+  .filters label.f:first-child{grid-column:1/-1}
+}
+@media (max-width: 720px){
+  .who-me{display:none!important}
+  .topbar .in{padding:12px 16px}
+  .wrap{padding:16px 14px 28px}
+  .stats{grid-template-columns:1fr 1fr;gap:10px}
+  .stat:first-child{grid-column:1/-1}
+  .types{gap:10px}
+  .type .head{flex-direction:column;align-items:flex-start;gap:4px}
+  .filters{grid-template-columns:1fr 1fr}
+  .table-panel{background:none;border:none}
+  .tablebox{overflow:visible}
+  table{min-width:0}
+  thead{display:none}
+  tbody tr{display:block;border:1px solid var(--line);border-radius:6px;margin-bottom:10px;overflow:hidden;background:var(--card)}
+  tbody tr td{display:grid;grid-template-columns:40% 1fr;gap:8px;border:none;padding:5px 14px}
+  tbody tr td:first-child{border-left:none;padding-top:11px}
+  tbody tr.row-ok{border-left:3px solid var(--ok)} tbody tr.row-bad{border-left:3px solid var(--bad)} tbody tr.row-wait{border-left:3px solid var(--wait)}
+  td::before{content:attr(data-label);color:var(--faint);font-size:12.5px}
+  .sorthint{display:none}
+  .pager{border-top:none;padding:6px 2px}
+}
+</style>
+<script>
+  /* Google's sign-in library may finish loading before the page code; start it whenever both are ready */
+  window.__gisLoaded = false;
+  function __onGis(){ window.__gisLoaded = true; if (typeof window.initGoogle === "function") window.initGoogle(); }
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="__onGis()"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-total" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+    <symbol id="i-hit" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.9-4.3-1.6-7.5-5.3-7.5-9.9V6z"/><path d="M8.8 12.2l2.3 2.3 4.2-4.4"/></symbol>
+    <symbol id="i-miss" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.9-4.3-1.6-7.5-5.3-7.5-9.9V6z"/><path d="M9.6 9.8l4.8 4.8M14.4 9.8l-4.8 4.8"/></symbol>
+    <symbol id="i-pending" viewBox="0 0 24 24"><path d="M6.5 3h11M6.5 21h11"/><path d="M8 3v2.8c0 1.6.8 3 2.1 3.9L12 11l1.9-1.3C15.2 8.8 16 7.4 16 5.8V3"/><path d="M8 21v-2.8c0-1.6.8-3 2.1-3.9L12 13l1.9 1.3c1.3.9 2.1 2.3 2.1 3.9V21"/></symbol>
+    <symbol id="i-fired" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></symbol>
+    <symbol id="i-notfired" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></symbol>
+    <symbol id="i-app" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-admission" viewBox="0 0 24 24"><path d="M2 9.5L12 5l10 4.5L12 14z"/><path d="M6 11.5V16c3.3 2.3 8.7 2.3 12 0v-4.5M22 9.5V15"/></symbol>
+    <symbol id="i-mess" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"/><path d="M17 21V3c-2.2 0-4 2.5-4 6v4h4"/></symbol>
+    <symbol id="i-hostel" viewBox="0 0 24 24"><path d="M2.5 21h19"/><path d="M4.5 21V9.5L12 4l7.5 5.5V21"/><path d="M8 12h2.5M13.5 12h2.5"/><path d="M10 21v-4.5h4V21"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></symbol>
+    <symbol id="i-auto" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.7L4 8"/><path d="M4 3v5h5M4 13a8 8 0 0 0 14.3 4.7L20 16"/><path d="M20 21v-5h-5"/></symbol>
+    <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18M3 14h18M9 9v11"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  </defs>
+</svg>
+<!--PREVIEW_BANNER-->
+<aside class="sidenav needs-auth" id="sidenav" aria-label="Pages">
+  <nav>
+    <!-- Add new pages here: one line each -->
+    <a href="structure.html" data-page="structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
+    <a href="./" data-page="index" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
+    <a href="teams.html" data-page="teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
+  </nav>
+  <button type="button" class="collapse" id="navCollapse" aria-label="Collapse menu"><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg><span>Collapse</span></button>
+</aside>
+<div class="navshade" id="navShade" hidden></div>
+<div class="topbar"><div class="in">
+  <div class="brand">
+    <button type="button" class="menubtn needs-auth" id="menuBtn" aria-label="Open menu" aria-controls="sidenav" aria-expanded="false"><svg class="ic lg" aria-hidden="true"><use href="#i-menu"/></svg></button>
+    <img src="icon-192.png" alt="" onerror="this.style.display='none'">
+    <h1>Karmo Ka HisabKitab<span>Team Structure</span></h1>
+  </div>
+  <div class="meta">
+    <span class="status loading needs-auth" id="updated"><i></i>Loading…</span>
+    <button id="themeBtn" type="button" title="Change theme" aria-label="Change theme"></button>
+    <button id="installBtn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-install"/></svg>Install app</button>
+    <span class="who-me needs-auth" id="userEmail"></span>
+    <button id="signOutBtn" class="needs-auth" type="button">Sign out</button>
+    <button id="refreshBtn" class="needs-auth" type="button"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Refresh</button>
+  </div>
+</div></div>
+<div class="gate" id="gate">
+  <div class="gatecard">
+    <img src="icon-192.png" alt="" onerror="this.style.display='none'">
+    <h2>Karmo Ka HisabKitab</h2>
+    <p>Sign in with your <b>@lpu.co.in</b> Google account to view Astra claims.</p>
+    <div id="gBtn"></div>
+    <div class="gatemsg" id="gateMsg" role="alert"></div>
+    <div class="gatefoot">For LPU internal use only.</div>
+  </div>
+</div>
+<div class="wrap">
+  <div id="installHelp" class="panel help" hidden></div>
+  <div id="notice"></div>
+  <div id="rosterWarn"></div>
+
+  <section class="panel filterpanel" aria-label="Filters">
+    <div class="filterhead">
+      <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-filter"/></svg>Filters<span class="chip" id="activeChip" hidden></span></h2>
+      <button class="linkbtn" id="resetBtn" type="button">Clear all</button>
+    </div>
+    <div class="sfilters">
+      <label class="f">Skill<select id="fSkill"></select></label>
+      <label class="f">Coordinator<select id="fCoord"></select></label>
+      <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
+      <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option></select></label>
+      <label class="f">Search<input id="q" type="search" placeholder="Find a name or UID" autocomplete="off"></label>
+      <select id="fMonth" hidden aria-hidden="true" tabindex="-1"></select>
+    </div>
+  </section>
+
+  <div class="treebar">
+    <span class="resultbar" id="treeCount"></span>
+    <div class="treebtns">
+      <button type="button" id="expandAll">Expand all</button>
+      <button type="button" id="collapseAll">Collapse all</button>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i class="lg-dot g"></i>Top / Above median</span>
+    <span><i class="lg-dot y"></i>Below median</span>
+    <span><i class="lg-dot r"></i>Needs attention</span>
+    <span><i class="lg-dot n"></i>Not ranked yet</span>
+    <span class="lg-note">Rank badges compare each person with their peers: coordinators with coordinators, team leaders within their skill, counselors within their skill and SIM/Normal group.</span>
+  </div>
+  <div id="zeroNote"></div>
+
+  <section id="tree" aria-label="Team structure"></section>
+
+  <footer>
+    <span><b>For LPU internal use only.</b> Access is limited to @lpu.co.in accounts. Please don't share screenshots outside LPU.</span>
+    <span>Structure from the duty list (TL Bifurcation). Ranks follow the Teams page scoring.</span>
+  </footer>
+</div>
+
+
+<!--PREVIEW_SCRIPT-->
+<script>
+/* ================== SETTINGS ================== */
+/* Only signed-in @lpu.co.in accounts receive data. The Google Sheet stays private. */
+const CLIENT_ID = "417974248161-sp1ocl4mgqb1lk7haj8ft3vs5unh7pqg.apps.googleusercontent.com";
+const API_URL   = "https://script.google.com/macros/s/AKfycbwrIMxy6N874vreI4gv83OndtlEsfYKWwqIaWs4sdTwtxnTUObiv7BpEQNVTpeqd1Cc/exec";
+const DOMAIN    = "lpu.co.in";
+/* Entries per page in the Claim register: 5 on phones, 10 on larger screens */
+const pageSize = () => window.matchMedia("(max-width: 720px)").matches ? 5 : 10;
+const REFRESH_MINUTES = 10;
+
+/* ============================================== */
+
+const $ = id => document.getElementById(id);
+let ALL = [], ROSTER = [];
+
+/* Final status from column V, e.g. "Step1: Approved, Step2: To be evaluated"
+   Hit = Step 1 AND Step 2 both Approved; Pending = still being evaluated; Miss = everything else */
+function statusClass(v){
+  const s = (v || "").replace(/\s+/g, " ").trim().toLowerCase();
+  if (!s) return "wait";
+  const m = s.match(/step\s*1\s*:?\s*(.*?)[,\s]*step\s*2\s*:?\s*(.*)$/);
+  const s1 = m ? m[1].replace(/[,.\s]+$/, "").trim() : s;
+  const s2 = m ? m[2].replace(/[,.\s]+$/, "").trim() : "";
+  if (s1 === "approved" && s2 === "approved") return "ok";
+  if (!m && /^(approved|hit|💯|hit 💯)$/.test(s)) return "ok";      // final status written as a single word, e.g. "Approved"
+  if (/(to be evaluated|pending|clash|quality assurance)/.test(s)) return "wait";
+  return "bad";
+}
+const RES_LABEL = {ok:"Hit", bad:"Miss", wait:"Pending"};
+const RES_ICON = {ok:"hit", bad:"miss", wait:"pending"};
+const icon = (name, cls) => '<svg class="ic' + (cls ? " " + cls : "") + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
+/* Astra ID fired: "Used" = fired; "Unused" / "Astra not fired till now" = not fired */
+function isFired(v){ return (v || "").trim().toLowerCase() === "used"; }
+function firedLabel(v){
+  const s = (v || "").trim().toLowerCase();
+  if (s === "used") return "Used";
+  if (s === "unused") return "Unused";
+  return v ? "Not fired yet" : "–";
+}
+
+/* Claim types */
+const TYPES = [
+  {match:/arrow/i,        label:"LPUNEST Application", astra:"Arrow",         emoji:"🎯", icon:"app"},
+  {match:/brahmast/i,     label:"Admission",           astra:"Brahmastra",    emoji:"🏹", icon:"admission"},
+  {match:/naga\s*pasha/i, label:"Hostel",              astra:"Naga Pasha",    emoji:"🐍", icon:"hostel"},
+  {match:/akshaya/i,      label:"Mess",                astra:"Akshaya Patra", emoji:"🍜", icon:"mess"},
+];
+function claimLabel(c){ const t = TYPES.find(t => t.match.test(c || "")); return t ? t.label : (c || "–"); }
+
+/* Masks application numbers on screen, e.g. C26906642 -> C269•••42 */
+function maskApp(v){
+  const s = String(v || "").trim();
+  if (s.length <= 6) return s ? s.slice(0, 2) + "•••" : "–";
+  return s.slice(0, 4) + "•".repeat(Math.min(s.length - 6, 4)) + s.slice(-2);
+}
+
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function showNotice(kind, html){ $("notice").innerHTML = html ? '<div class="notice ' + kind + '">' + html + '</div>' : ""; }
+const fmt = n => Number(n).toLocaleString("en-IN");
+const pct = (a, b) => b ? Math.round(a * 100 / b) + "%" : "–";
+
+/* ---------- Sign-in (Google, LPU accounts only) ---------- */
+let idToken = null;
+function jwtPayload(t){
+  try{
+    const p = t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(decodeURIComponent(escape(atob(p))));
+  }catch(_){ return null; }
+}
+function tokenOk(t){ const p = t && jwtPayload(t); return !!(p && p.hd === DOMAIN && p.exp * 1000 > Date.now() + 60000); }
+function saveToken(t){ try{ localStorage.setItem("hk_token", t); }catch(_){} }
+function storedToken(){ try{ return localStorage.getItem("hk_token"); }catch(_){ return null; } }
+function clearToken(){ idToken = null; try{ localStorage.removeItem("hk_token"); }catch(_){} }
+
+function showGate(msg){
+  document.body.classList.add("locked");
+  $("gateMsg").textContent = msg || "";
+  if (window.google && google.accounts && google.accounts.id) google.accounts.id.prompt();
+}
+function signedIn(token){
+  idToken = token;
+  const p = jwtPayload(token);
+  $("userEmail").textContent = p && p.email ? p.email : "";
+  document.body.classList.remove("locked");
+  $("gateMsg").textContent = "";
+  load(false);
+}
+function onCredential(resp){
+  const p = jwtPayload(resp.credential);
+  if (!p || p.hd !== DOMAIN){
+    $("gateMsg").textContent = "Only @lpu.co.in accounts can open this page" + (p && p.email ? " (" + p.email + " isn't allowed)." : ".");
+    return;
+  }
+  saveToken(resp.credential);
+  signedIn(resp.credential);
+}
+function initGoogle(){
+  if (!(window.google && google.accounts && google.accounts.id)){
+    $("gateMsg").textContent = "Couldn't load Google sign-in. Check your internet connection and reload the page.";
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID, callback: onCredential, hd: DOMAIN,
+    auto_select: true, cancel_on_tap_outside: false, itp_support: true, use_fedcm_for_prompt: true
+  });
+  google.accounts.id.renderButton($("gBtn"), {theme:"filled_blue", size:"large", shape:"rectangular", text:"signin_with", width:280});
+  if (document.body.classList.contains("locked")) google.accounts.id.prompt();
+}
+
+/* ---------- Data from the secure service ---------- */
+async function gunzipBase64(b64){
+  if (!("DecompressionStream" in window)) throw new Error("Please update your browser (Chrome, Edge or Safari 16.4+) to view the dashboard.");
+  const bin = atob(b64), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return await new Response(stream).text();
+}
+/* Data downloaded on one page is reused by the other page for 5 minutes (same browser tab only) */
+const SHARE_MS = 5 * 60000;
+function sharedGz(){
+  try{ const c = JSON.parse(sessionStorage.getItem("hk_data") || "null"); return c && Date.now() - c.at < SHARE_MS ? c.gz : null; }catch(_){ return null; }
+}
+async function fetchClaims(useShared){
+  if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
+  let gz = useShared ? sharedGz() : null;
+  if (!gz){
+    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken})});
+    if (!res.ok) throw new Error("service error (" + res.status + ")");
+    const j = await res.json();
+    if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
+    gz = j.gz;
+    try{ sessionStorage.setItem("hk_data", JSON.stringify({at: Date.now(), gz})); }catch(_){}
+  }
+  const data = JSON.parse(await gunzipBase64(gz));
+  const F = {}; data.fields.forEach((f, i) => F[f] = i);
+  const D = data.dict;
+  const rows = data.rows.map(r => ({
+    _ts: r[F.ts], name: r[F.name], uid: r[F.uid], claim: D.claim[r[F.claim]], app: r[F.app], astra: r[F.astra],
+    paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
+    fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]]
+  }));
+  const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
+    skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
+  return {rows, updated: data.updated, roster};
+}
+
+function setUpdated(text, loading){
+  $("updated").className = "status" + (loading ? " loading" : "");
+  $("updated").innerHTML = "<i></i>" + esc(text);
+}
+
+async function load(isBackground){
+  if (!isBackground && !ALL.length) showNotice("load", "Loading claims…<div class='bar'><i></i></div>");
+  setUpdated("Updating…", true);
+  $("refreshBtn").disabled = true;
+  try{
+    const {rows, updated, roster} = await fetchClaims(!isBackground && !ALL.length);
+    const fresh = [];
+    for (const o of rows){
+      if (!o.name && !o.app && !o._ts) continue;
+      o._res = statusClass(o.final);
+      o._search = [o.name, o.uid, o.app, o.astra].join(" ").toLowerCase();
+      fresh.push(o);
+    }
+    if (isBackground && ALL.length && fresh.length < ALL.length * 0.9) return; // keep old data if fetch looks incomplete
+    assignTeams(fresh);
+    ALL = fresh;
+    ROSTER = roster || [];
+    buildOptions();
+    render();
+    showNotice("", "");
+    setUpdated("Data as of " + updated, false);
+  }catch(e){
+    setUpdated("Not updated", false);
+    if (e.auth){ clearToken(); showGate("Your sign-in has expired. Please sign in again."); return; }
+    if (!ALL.length || !isBackground){
+      showNotice("err", "<b>Couldn't load the claims data.</b><br>Select Refresh to try again. (" + esc(e.message) + ")");
+    }
+  }finally{ $("refreshBtn").disabled = false; }
+}
+
+/* Team structure: Dronacharya (coordinator) -> Sarathi (team leader) -> counselors.
+   A blank Sarathi means the claim was made by the team leader, so it belongs to their own team. */
+function uidOf(text){ const m = String(text || "").match(/(\d{3,})\s*$/); return m ? m[1] : ""; }
+function assignTeams(rows){
+  const names = new Map();
+  for (const r of rows) if (r.sarathi){
+    const u = uidOf(r.sarathi) || r.sarathi;
+    if (!names.has(u)) names.set(u, r.sarathi.replace(/\s*:\s*\d+\s*$/, "").trim());
+  }
+  for (const r of rows){
+    r._isTL = !r.sarathi;
+    r._team = r._isTL ? (r.uid || r.name) : (uidOf(r.sarathi) || r.sarathi);
+    if (!names.has(r._team)) names.set(r._team, r.name || r._team);
+  }
+  for (const r of rows) r._teamLabel = names.get(r._team) + (/^\d+$/.test(r._team) ? " : " + r._team : "");
+}
+
+/* ================== TEAMS PAGE ================== */
+/* Performance = approved claims (Hits), all claim types counted equally, compared only within a peer group:
+   - Counselors: same Skill + same type (SIM / Normal). If alone in that group, compared with everyone in the same Skill.
+   - Post-admission team (Skill contains "Post Admission"): compared only with each other.
+   - Score = percentile of approved claims within the group (0-100).
+   - Team leaders: team score = average of their counselors' scores. Coordinators: average of all their counselors. */
+const CATS = ["app", "adm", "post"];
+let view = "people", pg = 1, jumpToHighlight = false, mode = "peers";   // "peers" = compare with peers, "only" = only this selection
+const sortBy = {people:{key:"", dir:1}, teams:{key:"", dir:1}, coords:{key:"", dir:1}};   // "" = rank order
+const normName = s => String(s || "").toLowerCase().replace(/^\s*(dr|prof|mr|ms|mrs)\.?\s+/, "").replace(/[^a-z0-9]/g, "");
+const catOf = c => /arrow/i.test(c || "") ? "app" : /brahmast/i.test(c || "") ? "adm" : /(naga\s*pasha|akshaya)/i.test(c || "") ? "post" : "";
+const isTLRole = r => /team\s*leader/i.test(r || "");
+const isCounselorRole = r => /counsel/i.test(r || "");
+const isCoordRole = r => /coordinator|dronacharya/i.test(r || "");
+const isPostSkill = s => /post\s*-?\s*adm/i.test(s || "");
+const OTHER = "other:", NOSKILL = "(No skill listed)";
+
+function buildOptions(){
+  const fill = (id, vals) => {
+    const el = $(id), cur = el.value;
+    const list = [...new Set(vals.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
+    el.innerHTML = '<option value="">All</option>' + list.map(v => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join("");
+    if (list.includes(cur)) el.value = cur;
+  };
+  fill("fMonth", ALL.map(r => r.month));
+  fill("fSkill", ROSTER.filter(p => p.active).map(p => p.skill));
+}
+
+const blank = () => ({claims:0, ok:0, bad:0, wait:0, h:{app:0, adm:0, post:0}});
+function add(s, r){
+  s.claims++;
+  if (r._res === "ok"){ s.ok++; const c = catOf(r.claim); if (c) s.h[c]++; }
+  else if (r._res === "bad") s.bad++; else s.wait++;
+}
+function pctl(v, arr){ let below = 0, eq = 0; for (const x of arr){ if (x < v) below++; else if (x === v) eq++; } return Math.round((below + eq / 2) * 100 / arr.length); }
+function quart(arr, q){ if (!arr.length) return 0; const p = (arr.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p); return Math.round(arr[lo] + (arr[hi] - arr[lo]) * (p - lo)); }
+function band(s){
+  if (s === null || s === undefined) return {key:"neutral", label:"Not ranked"};
+  if (s >= 75) return {key:"ok", label:"Top"};
+  if (s >= 50) return {key:"okl", label:"Above median"};
+  if (s >= 25) return {key:"wait", label:"Below median"};
+  return {key:"bad", label:"Needs attention"};
+}
+const avg = l => { const v = l.filter(x => x !== null && x !== undefined); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null; };
+
+/* ---- Time helpers ---- */
+const DAY = 864e5, WEEK = 7 * DAY;
+const mondayOf = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); const wd = (d.getDay() + 6) % 7; return d.getTime() - wd * DAY; };
+/* Current and previous window for the Period filter */
+function periodWindow(kind){
+  const now = Date.now(), d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  if (kind === "week"){ const m = mondayOf(now); return {cur:{from:m, to:null}, prev:{from:m - WEEK, to:m}, prevLabel:"last week"}; }
+  if (kind === "month"){
+    const m = new Date(d0.getFullYear(), d0.getMonth(), 1).getTime(), pm = new Date(d0.getFullYear(), d0.getMonth() - 1, 1).getTime();
+    return {cur:{from:m, to:null}, prev:{from:pm, to:m}, prevLabel:"last month"};
+  }
+  if (kind === "30d") return {cur:{from:now - 30 * DAY, to:null}, prev:{from:now - 60 * DAY, to:now - 30 * DAY}, prevLabel:"previous 30 days"};
+  return {cur:{from:null, to:null}, prev:{from:null, to:now - 7 * DAY}, prevLabel:"7 days ago"};   // whole session vs a week ago
+}
+const TREND_WEEKS = 8;
+const weekIndex = (t, start) => { const i = Math.floor((t - start) / WEEK); return i >= 0 && i < TREND_WEEKS ? i : -1; };
+
+function compute(opts){
+  opts = opts || {};
+  const trendStart = mondayOf(Date.now()) - (TREND_WEEKS - 1) * WEEK;
+  const byUid = new Map(); for (const p of ROSTER) byUid.set(String(p.uid), p);
+  const haveRoster = ROSTER.length > 0;
+  const f = {month:$("fMonth").value, skill:$("fSkill").value, sim:$("fSim").value};
+  if (opts.allPeople){ f.skill = ""; f.sim = ""; }
+  const personOk = p => (!f.skill || (p && p.skill === f.skill)) && (!f.sim || (p && (f.sim === "SIM") === (p.sim === "Yes")));
+  const coords = new Map(), teams = new Map(), people = new Map(), coordName = new Map();
+  for (const p of ROSTER) if (p.coord) coordName.set(normName(p.coord), p.coord);
+  const coordOf = n => { const k = normName(n) || "(none)"; if (!coordName.has(k)) coordName.set(k, n || "(No coordinator)"); return k; };
+  const getCoord = k => { if (!coords.has(k)) coords.set(k, Object.assign(blank(), {key:k})); return coords.get(k); };
+  const tlSet = new Set(ROSTER.filter(p => p.active && isTLRole(p.role)).map(p => String(p.uid)));
+  // Team leader lookup by name, for rows where "Team Leader UID" is blank (names used by two team leaders are skipped)
+  const tlByName = new Map(), dupNames = new Set();
+  for (const p of ROSTER) if (p.active && isTLRole(p.role)){
+    const k = normName(p.name); if (!k) continue;
+    if (tlByName.has(k) && tlByName.get(k) !== String(p.uid)) dupNames.add(k); else tlByName.set(k, String(p.uid));
+  }
+  const tlOf = p => {
+    if (!p) return "";
+    const u = String(p.tlUid || "").trim();
+    if (tlSet.has(u)) return u;
+    const k = normName(p.tlName);
+    return k && !dupNames.has(k) && tlByName.has(k) ? tlByName.get(k) : "";
+  };
+  const getTeam = (uid, label, ck) => {
+    if (!teams.has(uid)){
+      const other = uid.startsWith(OTHER), tl = byUid.get(uid);
+      teams.set(uid, Object.assign(blank(), {uid, other, name: other ? "Other (not on current team list)" : ((tl && tl.name) || label || uid),
+        skill: tl ? (tl.skill || NOSKILL) : "", coordKey: (!other && tl && tlSet.has(uid)) ? coordOf(tl.coord) : ck}));
+    }
+    return teams.get(uid);
+  };
+  const teamFor = (r, ck) => {
+    const t = String(r._team);
+    if (!haveRoster || tlSet.has(t)) return t;
+    const cp = byUid.get(String(r.uid));
+    const tu = cp && cp.active ? tlOf(cp) : "";
+    return tu || OTHER + ck;
+  };
+  const getPerson = (uid, name) => {
+    if (!people.has(uid)){
+      const p = byUid.get(String(uid));
+      people.set(uid, Object.assign(blank(), {uid, name: (p && p.name) || name || uid,
+        active: haveRoster ? !!(p && p.active) : true, isTL: !!(p && isTLRole(p.role)),
+        skill: (p && p.skill) || NOSKILL, sim: !!(p && p.sim === "Yes"),
+        teamUid: (p && !isTLRole(p.role)) ? tlOf(p) : "", coordKey: p ? coordOf(p.coord) : ""}));
+    }
+    return people.get(uid);
+  };
+
+  for (const r of ALL){
+    if (!opts.ignoreMonth && f.month && r.month !== f.month) continue;
+    if (opts.from !== null && opts.from !== undefined && r._ts < opts.from) continue;
+    if (opts.to !== null && opts.to !== undefined && r._ts >= opts.to) continue;
+    const p = byUid.get(String(r.uid));
+    if ((f.skill || f.sim) && !personOk(p)) continue;
+    const ck = coordOf(r.drona); add(getCoord(ck), r);
+    const t = getTeam(teamFor(r, ck), r._teamLabel ? r._teamLabel.replace(/\s*:\s*\d+\s*$/, "") : "", ck); add(t, r);
+    const person = getPerson(String(r.uid), r.name); add(person, r);
+    if (!person.teamUid){ person.teamUid = t.uid; person.coordKey = t.coordKey; }
+    if (opts.weeks && r._res === "ok"){                       // weekly Hits for the trend line
+      const wi = weekIndex(r._ts, trendStart);
+      if (wi >= 0){ for (const x of [t, getCoord(ck)]){ x.wk = x.wk || new Array(TREND_WEEKS).fill(0); x.wk[wi]++; } }
+    }
+  }
+  for (const p of ROSTER){
+    if (!p.active || !personOk(p) || isCoordRole(p.role)) continue;
+    const ck = coordOf(p.coord);
+    if (isTLRole(p.role)){ getCoord(ck); getTeam(String(p.uid), p.name, ck); getPerson(String(p.uid), p.name); continue; }
+    // Team members: anyone assigned to a current team leader (any role), plus counselors without a team
+    const tu = tlOf(p);
+    if (!tu && !isCounselorRole(p.role)) continue;
+    getCoord(ck);
+    if (tu) getTeam(tu, p.tlName, ck);
+    getPerson(String(p.uid), p.name);
+  }
+  for (const c of coords.values()) c.name = coordName.get(c.key) || c.key;
+  for (const t of teams.values()){ const c = coords.get(t.coordKey); t.coordName = c ? c.name : ""; }
+
+  // Peer groups
+  const groups = new Map(), skillGroups = new Map();
+  const total = p => p.h.app + p.h.adm + p.h.post;
+  const keyOf = p => p.isTL ? "TL|" + p.skill : isPostSkill(p.skill) ? "POST|" + p.skill : p.skill + "|" + (p.sim ? "SIM" : "Normal");
+  const labelOf = k => { const [a, b] = k.split("|"); return a === "TL" ? "Team leaders: " + b : a === "POST" ? b + " (post-admission team)" : a + " (" + b + ")"; };
+  const push = (map, key, label, p) => { if (!map.has(key)) map.set(key, {key, label, members:[], totals:[]}); const g = map.get(key); g.members.push(p); g.totals.push(total(p)); };
+  for (const p of people.values()){
+    p.group = keyOf(p); p.post = p.group.startsWith("POST|");
+    if (!p.active) continue;
+    push(groups, p.group, labelOf(p.group), p);
+    if (!p.isTL && !p.post) push(skillGroups, "ALL|" + p.skill, p.skill + " (SIM + Normal)", p);
+  }
+  for (const g of [...groups.values(), ...skillGroups.values()]) g.totals.sort((a, b) => a - b);
+  for (const p of people.values()){
+    let g = groups.get(p.group); p.wider = false;
+    if (g && g.members.length < 2 && !p.isTL && !p.post){        // alone in Skill + type: compare with the whole skill
+      const sg = skillGroups.get("ALL|" + p.skill);
+      if (sg && sg.members.length >= 2){ g = sg; p.wider = true; }
+    }
+    p.cmp = g; p.groupSize = g ? g.members.length : 0;
+    p.noHits = !!g && g.members.length >= 2 && g.totals[g.totals.length - 1] === 0;   // nobody in the group has an approved claim yet
+    p.score = (!g || g.members.length < 2 || p.noHits) ? null : pctl(total(p), g.totals);
+  }
+  const byScore = (a, b) => ((b.score ?? -1) - (a.score ?? -1)) || total(b) - total(a) || String(a.name).localeCompare(String(b.name));
+  for (const g of [...groups.values(), ...skillGroups.values()]) [...g.members].sort(byScore).forEach((p, i) => { if (p.cmp === g) p.groupRank = i + 1; });
+
+  // Tree scores
+  const current = [...people.values()].filter(p => !p.isTL && p.active);
+  for (const t of teams.values()){ const m = current.filter(p => p.teamUid === t.uid); t.counselors = m.length; t.score = avg(m.map(p => p.score)); }
+  for (const c of coords.values()){
+    const m = current.filter(p => p.coordKey === c.key); c.counselors = m.length; c.score = avg(m.map(p => p.score));
+    c.teamCount = [...teams.values()].filter(t => !t.other && t.coordKey === c.key && tlSet.has(t.uid)).length;
+  }
+  return {coords, teams, people, groups, haveRoster, byScore, tlSet};
+}
+
+const td = (label, html, cls) => '<td' + (cls ? ' class="' + cls + '"' : '') + ' data-label="' + label + '"><div>' + html + '</div></td>';
+/* Top three get medals (only when they have a real score) */
+const MEDALS = ["🥇", "🥈", "🥉"];
+const rankCell = (i, score) => (score === null || score === undefined)
+  ? '<span class="rank none" title="Not ranked yet: no approved claims to compare">–</span>'
+  : i < 3 ? '<span class="medal" title="Rank ' + (i + 1) + '">' + MEDALS[i] + '</span>'
+  : '<span class="rank">' + (i + 1) + '</span>';
+const bandTag = s => { const b = band(s); return '<span class="bandtag ' + b.key + '">' + (s === null || s === undefined ? "Not ranked yet" : b.label) + '</span>'; };
+const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="color:var(--faint)">–</span>' : '<span class="score">' + s + '</span>') + (sub ? '<small class="subl">' + sub + '</small>' : '');
+const ord = n => { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+const hitsCell = h => fmt(h.app + h.adm + h.post) + '<small class="subl">App ' + fmt(h.app) + ', Adm ' + fmt(h.adm) + ', Post ' + fmt(h.post) + '</small>';
+
+/* Rank cell: medal for the top three (only with a real score), plus movement versus the previous period */
+const moveTag = m => m === null || m === undefined ? "" :
+  m === "new" ? '<small class="move new" title="Newly ranked this period">new</small>' :
+  m > 0 ? '<small class="move up" title="Up ' + m + ' since the previous period">▲' + m + '</small>' :
+  m < 0 ? '<small class="move down" title="Down ' + (-m) + ' since the previous period">▼' + (-m) + '</small>' :
+  '<small class="move same" title="Same rank as the previous period">–</small>';
+const rankWithMove = (i, score, move) => '<span class="rankbox">' + rankCell(i, score) + moveTag(move) + '</span>';
+
+/* Small 8-week line of Hits */
+function spark(wk){
+  wk = wk || new Array(TREND_WEEKS).fill(0);
+  const W = 96, H = 26, max = Math.max(1, ...wk), step = W / (wk.length - 1);
+  const pts = wk.map((v, i) => [Math.round(i * step * 10) / 10, Math.round((H - 3 - (v / max) * (H - 6)) * 10) / 10]);
+  const last = wk[wk.length - 1], prev = wk[wk.length - 2], dir = last > prev ? "up" : last < prev ? "down" : "flat";
+  return '<span class="spark ' + dir + '" title="Hits per week, last ' + wk.length + ' weeks: ' + wk.join(", ") + '">' +
+    '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' +
+    '<polyline points="' + pts.map(p => p.join(",")).join(" ") + '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<circle cx="' + pts[pts.length - 1][0] + '" cy="' + pts[pts.length - 1][1] + '" r="2.4" fill="currentColor"/></svg>' +
+    '<small class="subl">this week ' + fmt(last) + '</small></span>';
+}
+
+/* Results that only change when filters or data change are kept, so paging and sorting stay instant */
+const memo = {};
+function cached(name, key, fn){ if (!memo[name] || memo[name].key !== key) memo[name] = {key, val: fn()}; return memo[name].val; }
+let dataStamp = 0, lastAllRef = null;
+
+/* Ordered lists used for ranks (same rules for this period and the previous one) */
+function orderedLists(d, sc, st){
+  const inScope = p => (!sc || p.coordKey === sc) && (!st || p.teamUid === st);
+  const people = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p)).sort(d.byScore);
+  const teams = [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!sc || t.coordKey === sc))
+    .sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
+  const coords = [...d.coords.values()].sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
+  return {people, teams, coords};
+}
+const rankMap = (list, keyFn) => { const m = new Map(); list.forEach((x, i) => m.set(keyFn(x), {i, scored: x.score !== null && x.score !== undefined})); return m; };
+function movement(prevMap, key, i, score){
+  if (score === null || score === undefined) return null;
+  const p = prevMap.get(key);
+  if (!p || !p.scored) return "new";
+  return p.i - i;
+}
+
+
+/* ================== STRUCTURE PAGE ================== */
+/* Coordinator -> Team leader -> Counselor, drawn as an org chart.
+   Colours and ranks use the same peer scoring as the Teams page:
+   coordinators vs coordinators, team leaders within their skill, counselors within skill + SIM/Normal. */
+const expanded = new Set();
+let autoOpen = true;
+const colorOf = s => { const b = band(s).key; return b === "ok" || b === "okl" ? "g" : b === "wait" ? "y" : b === "bad" ? "r" : "n"; };
+const rankBadge = (i, n, s, suffix) => (s === null || s === undefined)
+  ? '<span class="rb n" title="Not ranked yet">Not ranked</span>'
+  : '<span class="rb ' + colorOf(s) + '" title="' + band(s).label + ', score ' + s + '">' + (i < 3 ? MEDALS[i] + " " : "#") + (i + 1) + ' of ' + n + (suffix ? " " + suffix : "") + '</span>';
+
+function render(){
+  if (!ALL.length && !ROSTER.length) return;
+  if (ALL !== lastAllRef){ lastAllRef = ALL; dataStamp++; }
+  const P = periodWindow($("fPeriod").value);
+  const d = cached("cur", [dataStamp, $("fSkill").value, $("fSim").value, JSON.stringify(P.cur)].join("|"), () => compute(P.cur));
+  const lastClaim = cached("last", String(dataStamp), () => { const m = new Map(); for (const r of ALL){ const u = String(r.uid); if (!m.has(u) || m.get(u) < r._ts) m.set(u, r._ts); } return m; });
+  const isIdle = p => !(lastClaim.get(String(p.uid)) >= Date.now() - 7 * DAY);
+  $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>The structure needs the team list.</div>';
+
+  // Coordinator dropdown: only coordinators with people in the chosen skill / type (with counts)
+  const cSel = $("fCoord"), curC = cSel.value;
+  const counselors = [...d.people.values()].filter(p => !p.isTL && p.active);
+  const coordItems = [...d.coords.values()].map(c => ({v:c.key, l:c.name, n:counselors.filter(p => p.coordKey === c.key).length + [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && t.coordKey === c.key).length}))
+    .filter(it => it.n || it.v === curC).sort((a, b) => a.l.localeCompare(b.l));
+  cSel.innerHTML = '<option value="">All</option>' + coordItems.map(it => '<option value="' + esc(it.v) + '">' + esc(it.l) + '</option>').join("");
+  cSel.value = coordItems.some(it => it.v === curC) ? curC : "";
+
+  // Ranks: coordinators overall, team leaders within skill, counselors within their peer group
+  const coordsRanked = [...d.coords.values()].filter(c => c.score !== null && c.score !== undefined).sort((a, b) => b.score - a.score || b.ok - a.ok);
+  const cRank = new Map(coordsRanked.map((c, i) => [c.key, i]));
+  const realTeams = [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid));
+  const tRank = new Map(), tN = new Map();
+  const bySkill = new Map();
+  for (const t of realTeams){ if (!bySkill.has(t.skill)) bySkill.set(t.skill, []); bySkill.get(t.skill).push(t); }
+  for (const [k, list] of bySkill){
+    const scored = list.filter(t => t.score !== null && t.score !== undefined).sort((a, b) => b.score - a.score || b.ok - a.ok);
+    scored.forEach((t, i) => { tRank.set(t.uid, i); tN.set(t.uid, scored.length); });
+  }
+
+  // Search: highlight matches and show only branches that contain them
+  const q = $("q").value.trim().toLowerCase();
+  const hit = (name, uid) => !!q && (String(name) + " " + String(uid || "")).toLowerCase().includes(q);
+  const sc = cSel.value;
+  const blocks = [];
+  for (const c of [...d.coords.values()]){
+    if (sc && c.key !== sc) continue;
+    const teams = realTeams.filter(t => t.coordKey === c.key).sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
+    const cols = teams.map(t => ({t, members: counselors.filter(p => p.teamUid === t.uid).sort(d.byScore)}));
+    const loose = counselors.filter(p => p.coordKey === c.key && !teams.some(t => t.uid === p.teamUid));
+    if (loose.length) cols.push({t:null, members: loose.sort(d.byScore)});
+    if (!cols.length) continue;
+    const anyHit = q && (hit(c.name) || cols.some(col => (col.t && hit(col.t.name, col.t.uid)) || col.members.some(p => hit(p.name, p.uid))));
+    if (q && !anyHit) continue;
+    blocks.push({c, cols, anyHit});
+  }
+  blocks.sort((a, b) => ((cRank.has(a.c.key) ? cRank.get(a.c.key) : 999) - (cRank.has(b.c.key) ? cRank.get(b.c.key) : 999)) || a.c.name.localeCompare(b.c.name));
+  if (autoOpen && blocks.length <= 3) blocks.forEach(b => expanded.add(b.c.key));
+  if (q) blocks.forEach(b => expanded.add(b.c.key));
+
+  const nTeams = blocks.reduce((n, b) => n + b.cols.filter(x => x.t).length, 0), nPeople = blocks.reduce((n, b) => n + b.cols.reduce((m, x) => m + x.members.length, 0), 0);
+  $("treeCount").textContent = fmt(blocks.length) + " coordinator" + (blocks.length === 1 ? "" : "s") + ", " + fmt(nTeams) + " teams, " + fmt(nPeople) + " counselors";
+  const anyHits = counselors.some(p => p.ok > 0);
+  $("zeroNote").innerHTML = anyHits ? "" : '<div class="zero">No approved claims yet, so everyone shows "Not ranked". Colours and ranks appear as claims are approved.</div>';
+
+  $("tree").innerHTML = blocks.map(({c, cols}) => {
+    const open = expanded.has(c.key);
+    const idleN = cols.reduce((n, x) => n + x.members.filter(isIdle).length, 0);
+    const cR = cRank.has(c.key) ? cRank.get(c.key) : null;
+    const head = '<button type="button" class="chead ' + colorOf(c.score) + (hit(c.name) ? " match" : "") + '" data-coord="' + esc(c.key) + '" aria-expanded="' + open + '">' +
+      '<svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
+      '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">Coordinator, ' + fmt(cols.filter(x => x.t).length) + ' teams, ' + fmt(cols.reduce((n, x) => n + x.members.length, 0)) + ' counselors</span></span>' +
+      '<span class="cstats">' + (cR === null ? rankBadge(0, 0, null) : rankBadge(cR, coordsRanked.length, c.score)) +
+      '<span class="stat-i">Score <b>' + (c.score ?? "–") + '</b></span><span class="stat-i"><b>' + fmt(c.ok) + '</b> hits</span>' +
+      (idleN ? '<span class="mini idle">' + fmt(idleN) + ' idle 7d</span>' : '') + '</span></button>';
+    if (!open) return '<article class="org">' + head + '</article>';
+    const tlCols = cols.map(({t, members}) => {
+      const card = t
+        ? '<div class="tlcard ' + colorOf(t.score) + (hit(t.name, t.uid) ? " match" : "") + '">' +
+            '<div class="tlname">' + esc(t.name) + '</div><div class="tlsub">UID ' + esc(t.uid) + ', ' + esc(t.skill || "–") + '</div>' +
+            '<div class="tlstats">' + (tRank.has(t.uid) ? rankBadge(tRank.get(t.uid), tN.get(t.uid), t.score, "in skill") : rankBadge(0, 0, null)) +
+            '<span class="stat-i">Team score <b>' + (t.score ?? "–") + '</b></span><span class="stat-i"><b>' + fmt(t.ok) + '</b> hits</span>' +
+            '<span class="stat-i"><b>' + fmt(members.length) + '</b> counselors</span>' + (members.length < 3 ? '<span class="flag" title="Fewer than 3 counselors">Small team</span>' : '') + '</div></div>'
+        : '<div class="tlcard n"><div class="tlname">No team leader</div><div class="tlsub">Counselors not assigned to a current team leader</div></div>';
+      const list = members.map(p => '<li class="' + colorOf(p.score) + (hit(p.name, p.uid) ? " match" : "") + '" title="' + esc(p.name) + ', UID ' + esc(p.uid) + (p.score !== null ? ", score " + p.score : "") + '">' +
+          '<span class="cdot"></span><span class="cbody"><span class="cn">' + esc(p.name) + '</span><span class="cmeta">' +
+          '<span class="cr">' + (p.score === null ? "Not ranked" : (p.groupRank <= 3 ? MEDALS[p.groupRank - 1] + " " : "") + p.groupRank + " of " + p.groupSize) + '</span>' +
+          '<span class="ch">' + fmt(p.h.app + p.h.adm + p.h.post) + ' hits</span>' +
+          (p.post ? '<span class="mini">Post-adm</span>' : p.sim ? '<span class="mini sim">SIM</span>' : '') + (isIdle(p) ? '<span class="mini idle">Idle</span>' : '') +
+          '</span></span></li>').join("") || '<li class="n"><span class="cn" style="color:var(--faint)">No counselors listed</span></li>';
+      return '<div class="tlcol">' + card + '<ul class="clist">' + list + '</ul></div>';
+    }).join("");
+    return '<article class="org open">' + head + '<div class="obody"><div class="tlrow">' + tlCols + '</div></div></article>';
+  }).join("") || '<div class="empty-tree">Nothing matches these filters.</div>';
+
+  const nActive = ["fSkill","fCoord","fSim","fPeriod","q"].filter(id => $(id).value.trim()).length;
+  $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
+  if (q){ const m = document.querySelector("#tree .match"); if (m && render._lastQ !== q) m.scrollIntoView({behavior:"smooth", block:"center"}); }
+  render._lastQ = q;
+}
+
+/* Events */
+["fSkill","fSim","fPeriod"].forEach(id => $(id).addEventListener("change", () => { autoOpen = true; render(); }));
+$("fCoord").addEventListener("change", () => { autoOpen = true; render(); });
+let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(render, 250); });
+$("resetBtn").addEventListener("click", () => { ["fSkill","fCoord","fSim","fPeriod","q"].forEach(id => $(id).value = ""); expanded.clear(); autoOpen = true; render(); });
+$("refreshBtn").addEventListener("click", () => load(false));
+$("tree").addEventListener("click", e => {
+  const h = e.target.closest(".chead"); if (!h) return;
+  const k = h.dataset.coord; autoOpen = false;
+  if (expanded.has(k)) expanded.delete(k); else expanded.add(k);
+  render();
+});
+$("expandAll").addEventListener("click", () => { document.querySelectorAll("#tree .chead").forEach(h => expanded.add(h.dataset.coord)); autoOpen = false; render(); });
+$("collapseAll").addEventListener("click", () => { expanded.clear(); autoOpen = false; render(); });
+
+/* Installable app */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).catch(() => {}));
+}
+let installPrompt = null;
+const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+if (standalone) $("installBtn").hidden = true;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; });
+function installSteps(){
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  if (ios) return ["Open this page in <b>Safari</b> (not Chrome).", "Tap the <b>Share</b> button (square with an arrow).", "Tap <b>Add to Home Screen</b>, then <b>Add</b>."];
+  if (/Android/i.test(ua)) return ["Open this page in <b>Chrome</b>.", "Tap the <b>⋮</b> menu at the top right.", "Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>."];
+  return ["Use <b>Chrome</b> or <b>Edge</b>.", "Click the install icon at the right end of the address bar,",
+          "or open the browser menu and choose <b>Cast, save and share → Install page</b> (Chrome) or <b>Apps → Install this site as an app</b> (Edge)."];
+}
+$("installBtn").addEventListener("click", async () => {
+  if (installPrompt){
+    installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    installPrompt = null;
+    if (choice && choice.outcome === "accepted") $("installBtn").hidden = true;
+    return;
+  }
+  const box = $("installHelp");
+  box.innerHTML = '<button class="close" type="button" aria-label="Close">✕</button><h3>Install Karmo Ka HisabKitab</h3><ol>' +
+    installSteps().map(x => '<li>' + x + '</li>').join("") + '</ol>';
+  box.hidden = false;
+  box.querySelector(".close").addEventListener("click", () => { box.hidden = true; });
+  box.scrollIntoView({behavior:"smooth", block:"start"});
+});
+window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; $("installHelp").hidden = true; });
+
+/* Left menu: highlight the current page, collapse (remembered), slide-out on phones */
+(function(){
+  const page = (location.pathname.split("/").pop() || "index.html").replace(".html", "") || "index";
+  document.querySelectorAll("#sidenav a[data-page]").forEach(a => { if (a.dataset.page === page) a.setAttribute("aria-current", "page"); });
+  try{ if (localStorage.getItem("hk_nav") === "mini") document.documentElement.classList.add("nav-mini"); }catch(_){}
+  $("navCollapse").addEventListener("click", () => {
+    const mini = document.documentElement.classList.toggle("nav-mini");
+    try{ localStorage.setItem("hk_nav", mini ? "mini" : "full"); }catch(_){}
+  });
+  const open = v => { $("sidenav").classList.toggle("open", v); $("navShade").hidden = !v; $("menuBtn").setAttribute("aria-expanded", v ? "true" : "false"); };
+  $("menuBtn").addEventListener("click", () => open(!$("sidenav").classList.contains("open")));
+  $("navShade").addEventListener("click", () => open(false));
+})();
+
+/* Theme: Auto (follows device) -> Light -> Dark */
+const THEMES = {auto:{icon:"auto", label:"Auto"}, light:{icon:"sun", label:"Light"}, dark:{icon:"moon", label:"Dark"}};
+function currentTheme(){ try{ const t = localStorage.getItem("hk_theme"); return THEMES[t] ? t : "auto"; }catch(_){ return "auto"; } }
+function applyTheme(t){
+  if (t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+  try{ localStorage.setItem("hk_theme", t); }catch(_){}
+  $("themeBtn").innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-' + THEMES[t].icon + '"/></svg>' + THEMES[t].label;
+  $("themeBtn").title = "Theme: " + THEMES[t].label + " (select to change)";
+}
+$("themeBtn").addEventListener("click", () => {
+  const order = ["auto", "light", "dark"];
+  applyTheme(order[(order.indexOf(currentTheme()) + 1) % order.length]);
+});
+applyTheme(currentTheme());
+
+window.matchMedia("(max-width: 720px)").addEventListener("change", () => { render(); });
+
+$("signOutBtn").addEventListener("click", () => {
+  clearToken();
+  try{ sessionStorage.removeItem("hk_data"); }catch(_){}
+  ALL = []; ROSTER = [];
+  if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+  showGate("You have signed out.");
+});
+
+if (window.__gisLoaded && window.google) initGoogle();
+const saved = storedToken();
+if (tokenOk(saved)) signedIn(saved); else { clearToken(); document.body.classList.add("locked"); }
+setInterval(() => { if (idToken) load(true); }, REFRESH_MINUTES * 60000 + Math.floor(Math.random() * 120000));
+</script>
+</body>
+</html>
