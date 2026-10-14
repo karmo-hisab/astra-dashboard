@@ -18,7 +18,7 @@
 <meta name="apple-mobile-web-app-title" content="HisabKitab">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --navy:#14234B; --navy-2:#1E3264;
@@ -629,13 +629,21 @@ async function gunzipBase64(b64){
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
   return await new Response(stream).text();
 }
-/* Data downloaded on one page is reused by the other page for 5 minutes (same browser tab only) */
-const SHARE_MS = 5 * 60000;
+/* Data downloaded on one page is reused by the others (same browser tab only):
+   shown instantly for up to 30 minutes, and refreshed in the background once it is older than 5 minutes. */
+const SHARE_MS = 5 * 60000, KEEP_MS = 30 * 60000;
+let staleCopy = false;
 function sharedGz(){
-  try{ const c = JSON.parse(sessionStorage.getItem("hk_data") || "null"); return c && Date.now() - c.at < SHARE_MS ? c.gz : null; }catch(_){ return null; }
+  try{
+    const c = JSON.parse(sessionStorage.getItem("hk_data") || "null");
+    if (!c || Date.now() - c.at > KEEP_MS) return null;
+    staleCopy = Date.now() - c.at > SHARE_MS;
+    return c.gz;
+  }catch(_){ return null; }
 }
 async function fetchClaims(useShared){
   if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
+  staleCopy = false;
   let gz = useShared ? sharedGz() : null;
   if (!gz){
     const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken})});
@@ -684,6 +692,7 @@ async function loadClaimsNotUsed(isBackground){
     apply(false);
     showNotice("", "");
     setUpdated("Data as of " + updated, false);
+    if (staleCopy){ staleCopy = false; setTimeout(() => load(true), 50); }      // saved copy shown; get fresh data quietly
   }catch(e){
     setUpdated("Not updated", false);
     if (e.auth){ clearToken(); showGate("Your sign-in has expired. Please sign in again."); return; }
@@ -727,9 +736,19 @@ const pctA = (a, b) => b ? Math.round(a * 1000 / b) / 10 : null;
 const pctTxt = v => v === null ? "–" : v + "%";
 
 /* ---------- Data ---------- */
-function sharedApps(){ try{ const c = JSON.parse(sessionStorage.getItem("hk_apps") || "null"); return c && Date.now() - c.at < 5 * 60000 ? c : null; }catch(_){ return null; } }
+/* Saved copy shown instantly for up to 30 minutes; refreshed quietly once older than 5 minutes */
+let staleApps = false;
+function sharedApps(){
+  try{
+    const c = JSON.parse(sessionStorage.getItem("hk_apps") || "null");
+    if (!c || Date.now() - c.at > 30 * 60000) return null;
+    staleApps = Date.now() - c.at > 5 * 60000;
+    return c;
+  }catch(_){ return null; }
+}
 async function fetchApps(useShared){
   if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
+  staleApps = false;
   const sh = useShared ? sharedApps() : null;
   let gz = sh ? sh.gz : null, me = sh ? sh.me || "" : "";
   if (!gz){
@@ -785,6 +804,7 @@ async function load(isBackground){
     }
     showNotice("", ""); render();
     setUpdated("Data as of " + data.updated, false);
+    if (staleApps){ staleApps = false; setTimeout(() => load(true), 50); }
   }catch(e){
     setUpdated("Not updated", false);
     if (e.auth){ clearToken(); showGate("Your sign-in has expired. Please sign in again."); return; }
