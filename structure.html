@@ -237,6 +237,12 @@ tbody tr.hl td b{color:var(--ink)}
 .empty-tree{padding:30px;text-align:center;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:8px}
 @media (max-width: 980px){ .sfilters{grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media (max-width: 720px){ .sfilters{grid-template-columns:1fr 1fr} .cstats{margin-left:0;width:100%} .tlrow{grid-template-columns:1fr} }
+.csk{font-size:11.5px;color:var(--muted);line-height:1.3}
+.csk.diff{color:var(--bad)}
+.mini.diff{color:var(--bad);border-color:var(--bad)}
+.cskills{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px}
+.skchip{font-size:11px;font-weight:600;color:var(--muted);background:var(--neutral-bg);border:1px solid var(--line);border-radius:999px;padding:0 8px}
+.skchip b{color:var(--ink)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -462,7 +468,7 @@ footer b{color:var(--muted);font-weight:600}
       <label class="f">Coordinator<select id="fCoord"></select></label>
       <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
       <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option></select></label>
-      <label class="f">Search<input id="q" type="search" placeholder="Find a name or UID" autocomplete="off"></label>
+      <label class="f">Search<input id="q" type="search" placeholder="Find a name, UID or skill" autocomplete="off"></label>
       <select id="fMonth" hidden aria-hidden="true" tabindex="-1"></select>
     </div>
   </section>
@@ -979,7 +985,7 @@ function render(){
     const loose = counselors.filter(p => p.coordKey === c.key && !teams.some(t => t.uid === p.teamUid));
     if (loose.length) cols.push({t:null, members: loose.sort(d.byScore)});
     if (!cols.length) continue;
-    const anyHit = q && (hit(c.name) || cols.some(col => (col.t && hit(col.t.name, col.t.uid)) || col.members.some(p => hit(p.name, p.uid))));
+    const anyHit = q && (hit(c.name) || cols.some(col => (col.t && hit(col.t.name, col.t.uid + " " + col.t.skill)) || col.members.some(p => hit(p.name, p.uid + " " + p.skill))));
     if (q && !anyHit) continue;
     blocks.push({c, cols, anyHit});
   }
@@ -996,9 +1002,14 @@ function render(){
     const open = expanded.has(c.key);
     const idleN = cols.reduce((n, x) => n + x.members.filter(isIdle).length, 0);
     const cR = cRank.has(c.key) ? cRank.get(c.key) : null;
+    const skillCount = new Map();
+    for (const x of cols) for (const p of x.members) skillCount.set(p.skill, (skillCount.get(p.skill) || 0) + 1);
+    const mism = cols.reduce((n, x) => n + (x.t ? x.members.filter(p => x.t.skill && p.skill !== x.t.skill).length : 0), 0);
+    const skillsLine = '<span class="cskills">' + [...skillCount.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) =>
+      '<span class="skchip">' + esc(k) + ' <b>' + n + '</b></span>').join("") + (mism ? '<span class="mini diff">' + mism + ' different skill</span>' : '') + '</span>';
     const head = '<button type="button" class="chead ' + colorOf(c.score) + (hit(c.name) ? " match" : "") + '" data-coord="' + esc(c.key) + '" aria-expanded="' + open + '">' +
       '<svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
-      '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">Coordinator, ' + fmt(cols.filter(x => x.t).length) + ' teams, ' + fmt(cols.reduce((n, x) => n + x.members.length, 0)) + ' counselors</span></span>' +
+      '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">Coordinator, ' + fmt(cols.filter(x => x.t).length) + ' teams, ' + fmt(cols.reduce((n, x) => n + x.members.length, 0)) + ' counselors</span>' + skillsLine + '</span>' +
       '<span class="cstats">' + (cR === null ? rankBadge(0, 0, null) : rankBadge(cR, coordsRanked.length, c.score)) +
       '<span class="stat-i">Score <b>' + (c.score ?? "–") + '</b></span><span class="stat-i"><b>' + fmt(c.ok) + '</b> hits</span>' +
       (idleN ? '<span class="mini idle">' + fmt(idleN) + ' idle 7d</span>' : '') + '</span></button>';
@@ -1012,7 +1023,9 @@ function render(){
             '<span class="stat-i"><b>' + fmt(members.length) + '</b> counselors</span>' + (members.length < 3 ? '<span class="flag" title="Fewer than 3 counselors">Small team</span>' : '') + '</div></div>'
         : '<div class="tlcard n"><div class="tlname">No team leader</div><div class="tlsub">Counselors not assigned to a current team leader</div></div>';
       const list = members.map(p => '<li class="' + colorOf(p.score) + (hit(p.name, p.uid) ? " match" : "") + '" title="' + esc(p.name) + ', UID ' + esc(p.uid) + (p.score !== null ? ", score " + p.score : "") + '">' +
-          '<span class="cdot"></span><span class="cbody"><span class="cn">' + esc(p.name) + '</span><span class="cmeta">' +
+          '<span class="cdot"></span><span class="cbody"><span class="cn">' + esc(p.name) + '</span>' +
+          '<span class="csk' + (t && t.skill && p.skill !== t.skill ? ' diff" title="Different skill from the team leader (' + esc(t.skill) + ')' : '') + '">' + esc(p.skill) +
+          (t && t.skill && p.skill !== t.skill ? ' <span class="mini diff">Different skill</span>' : '') + '</span><span class="cmeta">' +
           '<span class="cr">' + (p.score === null ? "Not ranked" : (p.groupRank <= 3 ? MEDALS[p.groupRank - 1] + " " : "") + p.groupRank + " of " + p.groupSize) + '</span>' +
           '<span class="ch">' + fmt(p.h.app + p.h.adm + p.h.post) + ' hits</span>' +
           (p.post ? '<span class="mini">Post-adm</span>' : p.sim ? '<span class="mini sim">SIM</span>' : '') + (isIdle(p) ? '<span class="mini idle">Idle</span>' : '') +
