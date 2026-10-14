@@ -124,7 +124,8 @@ html.nav-mini .sidenav span.two{display:none}
 .titles{display:flex;flex-direction:column;gap:3px;min-width:0}
 .titlerow{display:flex;align-items:center;gap:8px}
 .titles h1 > span{display:none}
-.topbar .themebtn{border:none;background:rgba(255,255,255,.08);color:#C3CBE0;width:30px;height:30px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+.topbar .themebtn{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#E3E7EF;height:28px;padding:0 11px 0 9px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.topbar .themebtn .ic{width:14px;height:14px}
 .topbar .themebtn:hover{background:rgba(255,255,255,.16);color:#fff}
 .subline{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;color:#C3CBE0}
 .subline #pageName{font-weight:600;color:#E3E7EF}
@@ -305,6 +306,9 @@ footer b{color:var(--muted);font-weight:600}
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></symbol>
     <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/></symbol>
     <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.2"/><path d="M6 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="4.5" cy="9" r="2.2"/><path d="M1 18c0-2.3 1.5-3.8 3.6-3.8"/><circle cx="19.5" cy="9" r="2.2"/><path d="M23 18c0-2.3-1.5-3.8-3.6-3.8"/></symbol>
+    <symbol id="i-leader" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.6"/><path d="M3 20.5c0-3.8 3.1-6.3 7-6.3 1.5 0 2.9.4 4 1"/><path d="M18 13.5l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.3 1.3.4-2.6-1.9-1.8 2.6-.4z"/></symbol>
+    <symbol id="i-headset" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="13.5" width="4" height="6" rx="1.5"/><rect x="17.5" y="13.5" width="4" height="6" rx="1.5"/><path d="M19.5 19.5c0 1.5-1.8 2.5-5 2.5h-1.5"/></symbol>
     <symbol id="i-tree" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></symbol>
     <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
@@ -962,7 +966,7 @@ function applyTheme(t){
   if (t === "auto") document.documentElement.removeAttribute("data-theme");
   else document.documentElement.setAttribute("data-theme", t);
   try{ localStorage.setItem("hk_theme", t); }catch(_){}
-  $("themeBtn").innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-' + THEMES[t].icon + '"/></svg>';
+  $("themeBtn").innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-' + THEMES[t].icon + '"/></svg><span>' + THEMES[t].label + ' theme</span>';
   $("themeBtn").title = "Theme: " + THEMES[t].label + " (select to change)";
 }
 $("themeBtn").addEventListener("click", () => {
