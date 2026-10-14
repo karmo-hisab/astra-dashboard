@@ -283,26 +283,6 @@ tbody tr.hl td b{color:var(--ink)}
 .sumtile .sl{font-size:14.5px;color:var(--ink);font-weight:700;margin-top:2px}
 .sumtile .sl span{display:block;font-weight:600;color:var(--muted);font-size:13px;margin-top:1px}
 @media (max-width: 720px){ .sumstrip{grid-template-columns:1fr 1fr;gap:8px} .sumtile:last-child{grid-column:1/-1} .sumtile .sv{font-size:26px} }
-/* Compact coordinator grid + one open chart */
-.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;margin-bottom:16px}
-.ccard2{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:10px 12px;cursor:pointer;font:inherit}
-.ccard2:hover{border-color:var(--navy-2);border-left-color:var(--c)}
-.ccard2.sel{outline:2px solid var(--accent);outline-offset:-1px;background:var(--neutral-bg)}
-.cc-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.cc-name{font-weight:700;font-size:14.5px;line-height:1.3}
-.cc-stats{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted)}
-.cc-stats b{color:var(--ink)}
-.cc-flags{display:flex;gap:6px;flex-wrap:wrap}
-.detail{border-left:4px solid var(--c)}
-.dhead{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line-2)}
-.dbtns{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.dbtns button{padding:5px 12px;font-size:12.5px}
-.ctoggle{display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:none;border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:600;color:var(--muted)}
-.ctoggle .ic{width:13px;height:13px;transform:rotate(-90deg);transition:transform .15s}
-.ctoggle[aria-expanded="true"] .ic{transform:rotate(90deg)}
-.ctoggle:hover{color:var(--ink);border-color:var(--navy-2)}
-.tip.pick{text-align:center;color:var(--faint);padding:10px 0 20px}
-@media (max-width: 720px){ .cgrid{grid-template-columns:1fr} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -550,7 +530,10 @@ footer b{color:var(--muted);font-weight:600}
 
   <div class="treebar">
     <span class="resultbar" id="treeCount"></span>
-
+    <div class="treebtns">
+      <button type="button" id="expandAll">Expand all</button>
+      <button type="button" id="collapseAll">Collapse all</button>
+    </div>
   </div>
   <div class="legend">
     <span><i class="lg-dot g"></i>Top / Above median</span>
@@ -1033,9 +1016,8 @@ function movement(prevMap, key, i, score){
 /* Coordinator -> Team leader -> Counselor, drawn as an org chart.
    Colours and ranks use the same peer scoring as the Teams page:
    coordinators vs coordinators, team leaders within their skill, counselors within skill + SIM/Normal. */
-let openCoord = "";                 // only one coordinator's chart is open at a time
-const openTL = new Set();           // team leaders whose counselor list is shown
-let showAllC = false;               // "Show all counselors" for the open coordinator
+const expanded = new Set();
+let autoOpen = true;
 const colorOf = s => { const b = band(s).key; return b === "ok" || b === "okl" ? "g" : b === "wait" ? "y" : b === "bad" ? "r" : "n"; };
 const rankBadge = (i, n, s, suffix) => (s === null || s === undefined)
   ? '<span class="rb n" title="Not ranked yet">Not ranked</span>'
@@ -1087,9 +1069,8 @@ function render(){
     blocks.push({c, cols, anyHit});
   }
   blocks.sort((a, b) => ((cRank.has(a.c.key) ? cRank.get(a.c.key) : 999) - (cRank.has(b.c.key) ? cRank.get(b.c.key) : 999)) || a.c.name.localeCompare(b.c.name));
-  if (blocks.length === 1) openCoord = blocks[0].c.key;                 // filtered to one coordinator: open it
-  if (q && blocks.length && !blocks.some(b => b.c.key === openCoord)) openCoord = blocks[0].c.key;   // search: open the first match
-  if (openCoord && !blocks.some(b => b.c.key === openCoord)) openCoord = "";
+  if (autoOpen && blocks.length <= 3) blocks.forEach(b => expanded.add(b.c.key));
+  if (q) blocks.forEach(b => expanded.add(b.c.key));
 
   const nTeams = blocks.reduce((n, b) => n + b.cols.filter(x => x.t).length, 0), nPeople = blocks.reduce((n, b) => n + b.cols.reduce((m, x) => m + x.members.length, 0), 0);
   const nSim = blocks.reduce((n, b) => n + b.cols.reduce((m, x) => m + x.members.filter(p => p.sim && !p.post).length, 0), 0);
@@ -1103,84 +1084,63 @@ function render(){
   const anyHits = counselors.some(p => p.ok > 0);
   $("zeroNote").innerHTML = anyHits ? "" : '<div class="zero">No approved claims yet, so everyone shows "Not ranked". Colours and ranks appear as claims are approved.</div>';
 
-  // 1) Compact grid of coordinator cards
-  const cardOf = ({c, cols}) => {
-    const cR = cRank.has(c.key) ? cRank.get(c.key) : null;
-    const nT = cols.filter(x => x.t).length, nC = cols.reduce((n, x) => n + x.members.length, 0);
+  $("tree").innerHTML = blocks.map(({c, cols}) => {
+    const open = expanded.has(c.key);
     const idleN = cols.reduce((n, x) => n + x.members.filter(isIdle).length, 0);
-    const mism = cols.reduce((n, x) => n + (x.t ? x.members.filter(p => x.t.skill && p.skill !== x.t.skill).length : 0), 0);
-    const nSk = new Set(cols.flatMap(x => x.members.map(p => p.skill))).size;
-    return '<button type="button" class="ccard2 ' + colorOf(c.score) + (openCoord === c.key ? " sel" : "") + (hit(c.name) ? " match" : "") + '" data-coord="' + esc(c.key) + '" aria-expanded="' + (openCoord === c.key) + '">' +
-      '<span class="cc-top"><span class="cc-name">' + esc(c.name) + '</span>' + (cR === null ? rankBadge(0, 0, null) : rankBadge(cR, coordsRanked.length, c.score)) + '</span>' +
-      '<span class="cc-stats"><span><b>' + fmt(nT) + '</b> teams</span><span><b>' + fmt(nC) + '</b> counselors</span><span><b>' + fmt(c.ok) + '</b> hits</span><span><b>' + nSk + '</b> skill' + (nSk === 1 ? "" : "s") + '</span></span>' +
-      ((idleN || mism) ? '<span class="cc-flags">' + (idleN ? '<span class="mini idle">' + fmt(idleN) + ' idle 7d</span>' : '') + (mism ? '<span class="mini diff">' + mism + ' different skill</span>' : '') + '</span>' : '') +
-      '</button>';
-  };
-  // 2) The open coordinator's chart (team leaders; counselors folded until asked)
-  const detailOf = ({c, cols}) => {
+    const cR = cRank.has(c.key) ? cRank.get(c.key) : null;
     const skillCount = new Map();
     for (const x of cols) for (const p of x.members) skillCount.set(p.skill, (skillCount.get(p.skill) || 0) + 1);
-    const skillsLine = '<span class="cskills">' + [...skillCount.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) => '<span class="skchip">' + esc(k) + ' <b>' + n + '</b></span>').join("") + '</span>';
+    const mism = cols.reduce((n, x) => n + (x.t ? x.members.filter(p => x.t.skill && p.skill !== x.t.skill).length : 0), 0);
+    const skillsLine = '<span class="cskills">' + [...skillCount.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) =>
+      '<span class="skchip">' + esc(k) + ' <b>' + n + '</b></span>').join("") + (mism ? '<span class="mini diff">' + mism + ' different skill</span>' : '') + '</span>';
+    const head = '<button type="button" class="chead ' + colorOf(c.score) + (hit(c.name) ? " match" : "") + '" data-coord="' + esc(c.key) + '" aria-expanded="' + open + '">' +
+      '<svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
+      '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">Coordinator, ' + fmt(cols.filter(x => x.t).length) + ' teams, ' + fmt(cols.reduce((n, x) => n + x.members.length, 0)) + ' counselors</span>' + skillsLine + '</span>' +
+      '<span class="cstats">' + (cR === null ? rankBadge(0, 0, null) : rankBadge(cR, coordsRanked.length, c.score)) +
+      '<span class="stat-i">Score <b>' + (c.score ?? "–") + '</b></span><span class="stat-i"><b>' + fmt(c.ok) + '</b> hits</span>' +
+      (idleN ? '<span class="mini idle">' + fmt(idleN) + ' idle 7d</span>' : '') + '</span></button>';
+    if (!open) return '<article class="org">' + head + '</article>';
     const tlCols = cols.map(({t, members}) => {
-      const key = t ? t.uid : "none:" + c.key;
-      const hasHit = q && members.some(p => hit(p.name, p.uid + " " + p.skill));
-      const shown = showAllC || openTL.has(key) || hasHit;
       const card = t
         ? '<div class="tlcard ' + colorOf(t.score) + (hit(t.name, t.uid) ? " match" : "") + '">' +
             '<div class="tlname">' + esc(t.name) + '</div><div class="tlsub">UID ' + esc(t.uid) + ', ' + esc(t.skill || "–") + '</div>' +
             '<div class="tlstats">' + (tRank.has(t.uid) ? rankBadge(tRank.get(t.uid), tN.get(t.uid), t.score, "in skill") : rankBadge(0, 0, null)) +
             '<span class="stat-i">Team score <b>' + (t.score ?? "–") + '</b></span><span class="stat-i"><b>' + fmt(t.ok) + '</b> hits</span>' +
-            (members.length < 3 ? '<span class="flag" title="Fewer than 3 counselors">Small team</span>' : '') + '</div>'
-        : '<div class="tlcard n"><div class="tlname">No team leader</div><div class="tlsub">Counselors not assigned to a current team leader</div>';
-      const toggle = '<button type="button" class="ctoggle" data-tl="' + esc(key) + '" aria-expanded="' + shown + '">' +
-        '<svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg>Counselors (' + fmt(members.length) + ')</button></div>';
-      const list = !shown ? "" : '<ul class="clist">' + (members.map(p => '<li class="' + colorOf(p.score) + (hit(p.name, p.uid + " " + p.skill) ? " match" : "") + '" title="' + esc(p.name) + ', UID ' + esc(p.uid) + (p.score !== null ? ", score " + p.score : "") + '">' +
+            '<span class="stat-i"><b>' + fmt(members.length) + '</b> counselors</span>' + (members.length < 3 ? '<span class="flag" title="Fewer than 3 counselors">Small team</span>' : '') + '</div></div>'
+        : '<div class="tlcard n"><div class="tlname">No team leader</div><div class="tlsub">Counselors not assigned to a current team leader</div></div>';
+      const list = members.map(p => '<li class="' + colorOf(p.score) + (hit(p.name, p.uid) ? " match" : "") + '" title="' + esc(p.name) + ', UID ' + esc(p.uid) + (p.score !== null ? ", score " + p.score : "") + '">' +
           '<span class="cdot"></span><span class="cbody"><span class="cn">' + esc(p.name) + '</span>' +
           '<span class="csk' + (t && t.skill && p.skill !== t.skill ? ' diff" title="Different skill from the team leader (' + esc(t.skill) + ')' : '') + '">' + esc(p.skill) +
           (t && t.skill && p.skill !== t.skill ? ' <span class="mini diff">Different skill</span>' : '') + '</span><span class="cmeta">' +
           '<span class="cr">' + (p.score === null ? "Not ranked" : (p.groupRank <= 3 ? MEDALS[p.groupRank - 1] + " " : "") + p.groupRank + " of " + p.groupSize) + '</span>' +
           '<span class="ch">' + fmt(p.h.app + p.h.adm + p.h.post) + ' hits</span>' +
           (p.post ? '<span class="mini">Post-adm</span>' : p.sim ? '<span class="mini sim">SIM</span>' : '') + (isIdle(p) ? '<span class="mini idle">Idle</span>' : '') +
-          '</span></span></li>').join("") || '<li class="n"><span class="cn" style="color:var(--faint)">No counselors listed</span></li>') + '</ul>';
-      return '<div class="tlcol">' + card + toggle + list + '</div>';
+          '</span></span></li>').join("") || '<li class="n"><span class="cn" style="color:var(--faint)">No counselors listed</span></li>';
+      return '<div class="tlcol">' + card + '<ul class="clist">' + list + '</ul></div>';
     }).join("");
-    const cR = cRank.has(c.key) ? cRank.get(c.key) : null;
-    return '<article class="org open detail ' + colorOf(c.score) + '" id="detail">' +
-      '<div class="dhead"><div><span class="cname">' + esc(c.name) + '</span><span class="csub"> Coordinator</span>' + skillsLine + '</div>' +
-      '<div class="dbtns">' + (cR === null ? rankBadge(0, 0, null) : rankBadge(cR, coordsRanked.length, c.score)) +
-      '<button type="button" id="allC">' + (showAllC ? "Hide all counselors" : "Show all counselors") + '</button>' +
-      '<button type="button" id="closeC" aria-label="Close">✕</button></div></div>' +
-      '<div class="obody"><div class="tlrow">' + tlCols + '</div></div></article>';
-  };
-  const open = blocks.find(b => b.c.key === openCoord);
-  $("tree").innerHTML = blocks.length
-    ? '<div class="cgrid">' + blocks.map(cardOf).join("") + '</div>' + (open ? detailOf(open) : '<p class="tip pick">Select a coordinator to see their team leaders and counselors.</p>')
-    : '<div class="empty-tree">Nothing matches these filters.</div>';
+    return '<article class="org open">' + head + '<div class="obody"><div class="tlrow">' + tlCols + '</div></div></article>';
+  }).join("") || '<div class="empty-tree">Nothing matches these filters.</div>';
 
   const nActive = ["fSkill","fCoord","fSim","fPeriod","q"].filter(id => $(id).value.trim()).length;
   $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
-  if (q){ const m = document.querySelector("#detail .match") || document.querySelector("#tree .match"); if (m && render._lastQ !== q) m.scrollIntoView({behavior:"smooth", block:"center"}); }
+  if (q){ const m = document.querySelector("#tree .match"); if (m && render._lastQ !== q) m.scrollIntoView({behavior:"smooth", block:"center"}); }
   render._lastQ = q;
 }
 
 /* Events */
-["fSkill","fSim","fPeriod"].forEach(id => $(id).addEventListener("change", () => render()));
-$("fCoord").addEventListener("change", () => { openCoord = $("fCoord").value || ""; render(); });
+["fSkill","fSim","fPeriod"].forEach(id => $(id).addEventListener("change", () => { autoOpen = true; render(); }));
+$("fCoord").addEventListener("change", () => { autoOpen = true; render(); });
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(render, 250); });
-$("resetBtn").addEventListener("click", () => { ["fSkill","fCoord","fSim","fPeriod","q"].forEach(id => $(id).value = ""); openCoord = ""; openTL.clear(); showAllC = false; render(); });
+$("resetBtn").addEventListener("click", () => { ["fSkill","fCoord","fSim","fPeriod","q"].forEach(id => $(id).value = ""); expanded.clear(); autoOpen = true; render(); });
 $("refreshBtn").addEventListener("click", () => load(false));
 $("tree").addEventListener("click", e => {
-  const card = e.target.closest(".ccard2");
-  if (card){
-    openCoord = openCoord === card.dataset.coord ? "" : card.dataset.coord; openTL.clear(); showAllC = false; render();
-    const d = $("detail"); if (d) d.scrollIntoView({behavior:"smooth", block:"start"});
-    return;
-  }
-  const tg = e.target.closest(".ctoggle");
-  if (tg){ const k = tg.dataset.tl; if (openTL.has(k)) openTL.delete(k); else openTL.add(k); render(); return; }
-  if (e.target.closest("#allC")){ showAllC = !showAllC; openTL.clear(); render(); return; }
-  if (e.target.closest("#closeC")){ openCoord = ""; render(); window.scrollTo({top:0, behavior:"smooth"}); }
+  const h = e.target.closest(".chead"); if (!h) return;
+  const k = h.dataset.coord; autoOpen = false;
+  if (expanded.has(k)) expanded.delete(k); else expanded.add(k);
+  render();
 });
+$("expandAll").addEventListener("click", () => { document.querySelectorAll("#tree .chead").forEach(h => expanded.add(h.dataset.coord)); autoOpen = false; render(); });
+$("collapseAll").addEventListener("click", () => { expanded.clear(); autoOpen = false; render(); });
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
