@@ -110,6 +110,16 @@ html.nav-mini .sidenav .collapse .ic{transform:rotate(180deg)}
   html.nav-mini .sidenav span{display:inline}
   .sidenav .collapse{display:none}
 }
+.sidenav span.two{display:flex;flex-direction:column;line-height:1.2}
+.sidenav span.two small{font-size:11px;font-weight:500;opacity:.75}
+html.nav-mini .sidenav span.two{display:none}
+/* Collapsible filter panel */
+.ftoggle{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:4px 10px;margin-right:10px}
+.ftoggle .ic{width:14px;height:14px;transition:transform .15s;transform:rotate(-90deg)}
+.filterpanel.fcollapsed .ftoggle .ic{transform:rotate(180deg)}
+.filterpanel.fcollapsed > :not(.filterhead):not(.activestrip){display:none!important}
+.filterpanel.fcollapsed .filterhead{margin-bottom:0}
+.filterhead .fbtns{display:flex;align-items:center}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -291,7 +301,7 @@ footer b{color:var(--muted);font-weight:600}
     <a href="structure.html" data-page="structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
     <a href="./" data-page="index" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
     <a href="teams.html" data-page="teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
-    <a href="apps.html" data-page="apps" title="Application Follow-up"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg><span>Application Follow-up</span></a>
+    <a href="apps.html" data-page="apps" title="Team Leaders Stats (Application Follow Up)"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg><span class="two">Team Leaders Stats<small>Application Follow Up</small></span></a>
   </nav>
   <button type="button" class="collapse" id="navCollapse" aria-label="Collapse menu"><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg><span>Collapse</span></button>
 </aside>
@@ -844,6 +854,26 @@ $("installBtn").addEventListener("click", async () => {
   box.scrollIntoView({behavior:"smooth", block:"start"});
 });
 window.addEventListener("appinstalled", () => { $("installBtn").hidden = true; $("installHelp").hidden = true; });
+
+/* Filters: Hide / Show (remembered per page) */
+(function(){
+  const panel = document.querySelector(".filterpanel"), head = panel && panel.querySelector(".filterhead");
+  if (!head) return;
+  const key = "hk_filters_" + ((location.pathname.split("/").pop() || "index.html").replace(".html", "") || "index");
+  const reset = head.querySelector("#resetBtn");
+  const box = document.createElement("div"); box.className = "fbtns";
+  const btn = document.createElement("button"); btn.type = "button"; btn.className = "ftoggle";
+  btn.setAttribute("aria-expanded", "true");
+  box.appendChild(btn); if (reset) box.appendChild(reset); head.appendChild(box);
+  const set = c => {
+    panel.classList.toggle("fcollapsed", c);
+    btn.setAttribute("aria-expanded", c ? "false" : "true");
+    btn.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg>' + (c ? "Show filters" : "Hide filters");
+  };
+  let c = false; try{ c = localStorage.getItem(key) === "1"; }catch(_){}
+  set(c);
+  btn.addEventListener("click", () => { c = !panel.classList.contains("fcollapsed"); set(c); try{ localStorage.setItem(key, c ? "1" : "0"); }catch(_){} });
+})();
 
 /* Left menu: highlight the current page, collapse (remembered), slide-out on phones */
 (function(){
