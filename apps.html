@@ -934,17 +934,18 @@ function render(){
     const keyOf = {coord:a => a.coord, tl:a => a.tlKey, tskill:a => a.tlSkill || "(No TL skill)", pskill:a => a.pskill, phase:a => a.phase, form:a => a.form || "(No form)"}[groupBy];
     const labelOf = {tl:a => a.tlName + (a.tlUid ? '<small class="subl">UID ' + esc(a.tlUid) + ', ' + esc(a.coord) + '</small>' : "")}[groupBy];
     const m = new Map();
-    for (const a of base){ const k = keyOf(a); if (!m.has(k)) m.set(k, {k, label: labelOf ? labelOf(a) : esc(k), n:0, sp:0, dc:0, el:0, en:0}); const x = m.get(k); x.n++; if (!a.examSlot && !a.enrolled) x.sp++; if (!a.awaited) x.dc++; if (a.eligible) x.el++; if (a.enrolled) x.en++; }
+    for (const a of base){ const k = keyOf(a); if (!m.has(k)) m.set(k, {k, label: labelOf ? labelOf(a) : esc(k), n:0, sp:0, ip:0, dc:0, el:0, en:0}); const x = m.get(k); x.n++; if (!a.examSlot && !a.enrolled) x.sp++; if (a.intApplies && !a.intDate && !a.enrolled) x.ip++; if (!a.awaited) x.dc++; if (a.eligible) x.el++; if (a.enrolled) x.en++; }
     rows = [...m.values()]; rows.forEach(x => { x.adm = pctA(x.en, x.n); x.conv = pctA(x.en, x.el); });
     const title = {coord:"Coordinator", tl:"Team leader", tskill:"TL skill", pskill:"Program skill", phase:"Phase", form:"Form name"}[groupBy];
-    head = [["name", title], ["n", "Assigned"], ["sp", "Exam slot pending"], ["dc", "Result declared"], ["el", "Eligible"], ["en", "Enrolled"], ["adm", "Application → Admission"], ["conv", "Eligibility → Admission"]];
-    const get = {name:x => x.k, n:x => x.n, sp:x => x.sp, dc:x => x.dc, el:x => x.el, en:x => x.en, adm:x => x.adm ?? -1, conv:x => x.conv ?? -1};
+    head = [["name", title], ["n", "Assigned"], ["sp", "Exam slot pending"], ["ip", "Interview slot pending"], ["dc", "Result declared"], ["el", "Eligible"], ["en", "Enrolled"], ["adm", "Application → Admission"], ["conv", "Eligibility → Admission"]];
+    const get = {name:x => x.k, n:x => x.n, sp:x => x.sp, ip:x => x.ip, dc:x => x.dc, el:x => x.el, en:x => x.en, adm:x => x.adm ?? -1, conv:x => x.conv ?? -1};
     const key = S.key || "adm", dir = S.key ? S.dir : -1;
     rows.sort((x, y) => { const p = get[key](x), q = get[key](y); return (typeof p === "number" ? p - q : String(p).localeCompare(String(q))) * dir || y.n - x.n; });
     const cls = v => v === null || overall === null ? "n" : v >= overall ? "g" : v >= overall * 0.8 ? "y" : "r";
     const overall2 = pctA(en, el);
     const cls2 = v => v === null || overall2 === null ? "n" : v >= overall2 ? "g" : v >= overall2 * 0.8 ? "y" : "r";
-    toRow = x => '<tr class="click" data-k="' + esc(x.k) + '" tabindex="0" title="Drill down">' + td(title, '<b>' + x.label + '</b>') + td("Assigned", fmt(x.n), "num") + td("Exam slot pending", x.sp ? '<span style="color:var(--wait);font-weight:700">' + fmt(x.sp) + '</span>' : "0", "num") + td("Result declared", fmt(x.dc), "num") +
+    toRow = x => '<tr class="click" data-k="' + esc(x.k) + '" tabindex="0" title="Drill down">' + td(title, '<b>' + x.label + '</b>') + td("Assigned", fmt(x.n), "num") + td("Exam slot pending", x.sp ? '<span style="color:var(--wait);font-weight:700">' + fmt(x.sp) + '</span>' : "0", "num") +
+      td("Interview slot pending", x.ip ? '<span style="color:var(--wait);font-weight:700">' + fmt(x.ip) + '</span>' : "0", "num") + td("Result declared", fmt(x.dc), "num") +
       td("Eligible", fmt(x.el), "num") + td("Enrolled", fmt(x.en), "num") +
       td("Application → Admission", '<span class="pbar ' + cls(x.adm) + '"><span class="pv">' + pctTxt(x.adm) + '</span><span class="pt"><span style="width:' + Math.min(100, x.adm || 0) + '%"></span></span></span>', "num") +
       td("Eligibility → Admission", '<span class="pbar ' + cls2(x.conv) + '"><span class="pv">' + pctTxt(x.conv) + '</span><span class="pt"><span style="width:' + Math.min(100, x.conv || 0) + '%"></span></span></span>', "num") + '</tr>';
@@ -952,7 +953,7 @@ function render(){
   } else {
     const q = $("q").value.trim().toLowerCase(), fo = FOCUS[$("fFocus").value];
     rows = base.filter(a => (!q || a._search.includes(q)) && (!fo || fo(a)));
-    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["pay", "Paid on"], ["assigned", "Assigned on"], ["phase", "Phase"], ["slot", "Exam slot"], ["intv", "Interview"], ["schol", "Result"], ["stage", "Status"]];
+    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["pay", "LPUNEST Payment Date"], ["assigned", "Assigned on"], ["phase", "Phase"], ["slot", "Exam slot"], ["intv", "Interview"], ["schol", "Result"], ["stage", "Status"]];
     const get = {app:a => a.app, program:a => a.program, tl:a => a.tlName, pay:a => a.pay || 0, assigned:a => a.assigned || 0, phase:a => a.phase,
       slot:a => a.examSlot ? 1 : 0, intv:a => !a.intApplies ? -1 : a.intDate ? 1 : 0, schol:a => a.awaited ? "" : a.schol, stage:a => a.stage};
     if (S.key) rows.sort((x, y) => { const p = get[S.key](x), q2 = get[S.key](y); return (typeof p === "number" ? p - q2 : String(p).localeCompare(String(q2), undefined, {numeric:true})) * S.dir; });
@@ -962,7 +963,7 @@ function render(){
       td("Application", '<span class="who"><b>' + esc(a.app) + '</b><small>' + esc(a.form) + '</small></span>') +
       td("Program", '<span class="who"><b class="pg">' + esc(a.program || "–") + '</b><small>' + esc(a.pskill) + (a.mismatch ? ' <span class="mini diff" title="Team leader skill: ' + esc(a.tlSkill) + '">Skill mismatch</span>' : '') + (a.type ? ", " + esc(a.type) : "") + '</small></span>') +
       td("Team leader", '<span class="who"><b>' + esc(a.tlName) + '</b><small>' + esc(a.coord) + '</small></span>') +
-      td("Paid on", dateTxt(a.pay), "num") +
+      td("LPUNEST Payment Date", dateTxt(a.pay), "num") +
       td("Assigned on", dateTxt(a.assigned) + (a.assigned ? '<small class="subl">' + Math.max(0, Math.floor((now - a.assigned) / DAYMS)) + ' days ago</small>' : ""), "num") +
       td("Phase", esc(a.phase)) +
       td("Exam slot", a.examSlot ? '<span class="okdate">' + esc(a.examSlot) + '</span>' : '<span class="tagx wait">Slot booking pending</span>') +
