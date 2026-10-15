@@ -270,9 +270,12 @@ var APP_COLS = [
   {key: "type",      test: /application\s*type/i},
   {key: "elig",      test: /eligib/i},
   {key: "enrol",     test: /enrol+ment\s*status/i},
-  {key: "enrolDate", test: /enrol+ment\s*date/i, date: true}
+  {key: "enrolDate", test: /enrol+ment\s*date/i, date: true},
+  {key: "examSlot",  test: /exam\s*slot/i},                 // shown as written; blank = slot booking pending
+  {key: "intDate",   test: /interview\s*date/i},            // MBA / PhD only; blank = slot booking pending
+  {key: "intResult", test: /interview\s*result/i}           // "Pass" = pass
 ];
-var APP_DICT = ["form", "tl", "schol", "phase", "program", "pskill", "type", "elig", "enrol"];
+var APP_DICT = ["form", "tl", "schol", "phase", "program", "pskill", "type", "elig", "enrol", "intResult"];
 
 /* Email -> UID from the duty list's Email column. Used only on the server; emails are never sent to the page. */
 function emailToUid_(){

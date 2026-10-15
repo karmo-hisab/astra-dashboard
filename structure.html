@@ -283,6 +283,7 @@ tbody tr.hl td b{color:var(--ink)}
 .sumtile .sl{font-size:14.5px;color:var(--ink);font-weight:700;margin-top:2px}
 .sumtile .sl span{display:block;font-weight:600;color:var(--muted);font-size:13px;margin-top:1px}
 @media (max-width: 720px){ .sumstrip{grid-template-columns:1fr 1fr;gap:8px} .sumtile:last-child{grid-column:1/-1} .sumtile .sv{font-size:26px} }
+.cuid{color:var(--faint);font-variant-numeric:tabular-nums}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1110,7 +1111,7 @@ function render(){
         : '<div class="tlcard n"><div class="tlname">No team leader</div><div class="tlsub">Counselors not assigned to a current team leader</div></div>';
       const list = members.map(p => '<li class="' + colorOf(p.score) + (hit(p.name, p.uid) ? " match" : "") + '" title="' + esc(p.name) + ', UID ' + esc(p.uid) + (p.score !== null ? ", score " + p.score : "") + '">' +
           '<span class="cdot"></span><span class="cbody"><span class="cn">' + esc(p.name) + '</span>' +
-          '<span class="csk' + (t && t.skill && p.skill !== t.skill ? ' diff" title="Different skill from the team leader (' + esc(t.skill) + ')' : '') + '">' + esc(p.skill) +
+          '<span class="csk' + (t && t.skill && p.skill !== t.skill ? ' diff" title="Different skill from the team leader (' + esc(t.skill) + ')' : '') + '"><span class="cuid">UID ' + esc(p.uid) + ',</span> ' + esc(p.skill) +
           (t && t.skill && p.skill !== t.skill ? ' <span class="mini diff">Different skill</span>' : '') + '</span><span class="cmeta">' +
           '<span class="cr">' + (p.score === null ? "Not ranked" : (p.groupRank <= 3 ? MEDALS[p.groupRank - 1] + " " : "") + p.groupRank + " of " + p.groupSize) + '</span>' +
           '<span class="ch">' + fmt(p.h.app + p.h.adm + p.h.post) + ' hits</span>' +

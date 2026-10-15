@@ -241,6 +241,10 @@ tbody tr.st3 td:first-child{border-left-color:var(--ok)}
 .pg{font-weight:600}
 @media (max-width: 1100px){ .stats6{grid-template-columns:repeat(3,1fr)!important} }
 @media (max-width: 720px){ .stats6{grid-template-columns:1fr 1fr!important} .f.inline,.f.inline.grow{min-width:0;max-width:none;flex:1 1 100%} }
+.okdate{font-weight:600;color:var(--ink);white-space:nowrap}
+.na{color:var(--faint);font-size:12.5px}
+.subl.pass{color:var(--ok);font-weight:700}
+.subl.fail{color:var(--bad);font-weight:700}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -497,6 +501,7 @@ footer b{color:var(--muted);font-weight:600}
         <label class="f">Program skill<select id="fPskill"></select></label>
         <label class="f">Phase<select id="fPhase"></select></label>
         <label class="f">Form name<select id="fForm"></select></label>
+        <label class="f">Type<select id="fAtype"></select></label>
       </div>
     </div>
     <div class="frow">
@@ -529,6 +534,7 @@ footer b{color:var(--muted);font-weight:600}
       <select id="fFocus">
         <option value="">All applications</option><option value="hot">Eligible, not enrolled</option><option value="awaited">Result awaited</option>
         <option value="noelig">Not eligible</option><option value="enrolled">Enrolled</option>
+        <option value="noslot">Exam slot not booked</option><option value="nointerview">Interview slot not booked (MBA / PhD)</option>
       </select>
     </label>
     <label class="f inline grow">Search<input id="q" type="search" placeholder="Application no. or program" autocomplete="off"></label>
@@ -831,8 +837,11 @@ function prepare(data){
       coord: rec && rec.coord ? rec.coord : "(Not in team list)", tlSkill: rec ? (rec.skill || "") : "",
       assigned: F.assigned !== undefined ? r[F.assigned] : 0, schol: dv("schol", r), phase: dv("phase", r) || "(No phase)",
       program: dv("program", r), pskill: dv("pskill", r) || "(No program skill)", type: dv("type", r),
-      eligible: yes(dv("elig", r)), eligText: dv("elig", r), enrolled: yes(dv("enrol", r)), enrolDate: F.enrolDate !== undefined ? r[F.enrolDate] : 0
+      eligible: yes(dv("elig", r)), eligText: dv("elig", r), enrolled: yes(dv("enrol", r)), enrolDate: F.enrolDate !== undefined ? r[F.enrolDate] : 0,
+      examSlot: String(dv("examSlot", r) || "").trim(), intDate: String(dv("intDate", r) || "").trim(), intResult: String(dv("intResult", r) || "").trim()
     };
+    a.intApplies = /\bmba\b|ph\.?\s*d/i.test(a.form + " " + a.program);       // interviews: MBA and PhD only
+    a.intPass = /^pass/i.test(a.intResult);
     a.awaited = !String(a.schol).trim();
     a.mismatch = !!(a.tlSkill && a.pskill && normS(a.tlSkill) !== normS(a.pskill));
     a.stage = a.enrolled ? 3 : a.eligible ? 0 : a.awaited ? 1 : 2;        // follow-up priority: eligible first
@@ -870,9 +879,11 @@ const FL = [
   {id:"fTskill", key:"tlSkill", blank:"(No TL skill)"},
   {id:"fPskill", key:"pskill"},
   {id:"fPhase",  key:"phase"},
-  {id:"fForm",   key:"form"}
+  {id:"fForm",   key:"form"},
+  {id:"fAtype",  key:"type", blank:"(No type)"}
 ];
-const FOCUS = {hot: a => a.eligible && !a.enrolled, awaited: a => a.awaited && !a.enrolled, noelig: a => !a.eligible && !a.awaited && !a.enrolled, enrolled: a => a.enrolled};
+const FOCUS = {hot: a => a.eligible && !a.enrolled, awaited: a => a.awaited && !a.enrolled, noelig: a => !a.eligible && !a.awaited && !a.enrolled, enrolled: a => a.enrolled,
+  noslot: a => !a.examSlot && !a.enrolled, nointerview: a => a.intApplies && !a.intDate && !a.enrolled};
 function readF(){
   return {drop: Object.fromEntries(FL.map(f => [f.id, $(f.id).value])),
     from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
@@ -923,17 +934,17 @@ function render(){
     const keyOf = {coord:a => a.coord, tl:a => a.tlKey, tskill:a => a.tlSkill || "(No TL skill)", pskill:a => a.pskill, phase:a => a.phase, form:a => a.form || "(No form)"}[groupBy];
     const labelOf = {tl:a => a.tlName + (a.tlUid ? '<small class="subl">UID ' + esc(a.tlUid) + ', ' + esc(a.coord) + '</small>' : "")}[groupBy];
     const m = new Map();
-    for (const a of base){ const k = keyOf(a); if (!m.has(k)) m.set(k, {k, label: labelOf ? labelOf(a) : esc(k), n:0, dc:0, el:0, en:0}); const x = m.get(k); x.n++; if (!a.awaited) x.dc++; if (a.eligible) x.el++; if (a.enrolled) x.en++; }
+    for (const a of base){ const k = keyOf(a); if (!m.has(k)) m.set(k, {k, label: labelOf ? labelOf(a) : esc(k), n:0, sp:0, dc:0, el:0, en:0}); const x = m.get(k); x.n++; if (!a.examSlot && !a.enrolled) x.sp++; if (!a.awaited) x.dc++; if (a.eligible) x.el++; if (a.enrolled) x.en++; }
     rows = [...m.values()]; rows.forEach(x => { x.adm = pctA(x.en, x.n); x.conv = pctA(x.en, x.el); });
     const title = {coord:"Coordinator", tl:"Team leader", tskill:"TL skill", pskill:"Program skill", phase:"Phase", form:"Form name"}[groupBy];
-    head = [["name", title], ["n", "Assigned"], ["dc", "Result declared"], ["el", "Eligible"], ["en", "Enrolled"], ["adm", "Application → Admission"], ["conv", "Eligibility → Admission"]];
-    const get = {name:x => x.k, n:x => x.n, dc:x => x.dc, el:x => x.el, en:x => x.en, adm:x => x.adm ?? -1, conv:x => x.conv ?? -1};
+    head = [["name", title], ["n", "Assigned"], ["sp", "Exam slot pending"], ["dc", "Result declared"], ["el", "Eligible"], ["en", "Enrolled"], ["adm", "Application → Admission"], ["conv", "Eligibility → Admission"]];
+    const get = {name:x => x.k, n:x => x.n, sp:x => x.sp, dc:x => x.dc, el:x => x.el, en:x => x.en, adm:x => x.adm ?? -1, conv:x => x.conv ?? -1};
     const key = S.key || "adm", dir = S.key ? S.dir : -1;
     rows.sort((x, y) => { const p = get[key](x), q = get[key](y); return (typeof p === "number" ? p - q : String(p).localeCompare(String(q))) * dir || y.n - x.n; });
     const cls = v => v === null || overall === null ? "n" : v >= overall ? "g" : v >= overall * 0.8 ? "y" : "r";
     const overall2 = pctA(en, el);
     const cls2 = v => v === null || overall2 === null ? "n" : v >= overall2 ? "g" : v >= overall2 * 0.8 ? "y" : "r";
-    toRow = x => '<tr class="click" data-k="' + esc(x.k) + '" tabindex="0" title="Drill down">' + td(title, '<b>' + x.label + '</b>') + td("Assigned", fmt(x.n), "num") + td("Result declared", fmt(x.dc), "num") +
+    toRow = x => '<tr class="click" data-k="' + esc(x.k) + '" tabindex="0" title="Drill down">' + td(title, '<b>' + x.label + '</b>') + td("Assigned", fmt(x.n), "num") + td("Exam slot pending", x.sp ? '<span style="color:var(--wait);font-weight:700">' + fmt(x.sp) + '</span>' : "0", "num") + td("Result declared", fmt(x.dc), "num") +
       td("Eligible", fmt(x.el), "num") + td("Enrolled", fmt(x.en), "num") +
       td("Application → Admission", '<span class="pbar ' + cls(x.adm) + '"><span class="pv">' + pctTxt(x.adm) + '</span><span class="pt"><span style="width:' + Math.min(100, x.adm || 0) + '%"></span></span></span>', "num") +
       td("Eligibility → Admission", '<span class="pbar ' + cls2(x.conv) + '"><span class="pv">' + pctTxt(x.conv) + '</span><span class="pt"><span style="width:' + Math.min(100, x.conv || 0) + '%"></span></span></span>', "num") + '</tr>';
@@ -941,8 +952,9 @@ function render(){
   } else {
     const q = $("q").value.trim().toLowerCase(), fo = FOCUS[$("fFocus").value];
     rows = base.filter(a => (!q || a._search.includes(q)) && (!fo || fo(a)));
-    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["assigned", "Assigned on"], ["phase", "Phase"], ["schol", "Result"], ["stage", "Status"]];
-    const get = {app:a => a.app, program:a => a.program, tl:a => a.tlName, assigned:a => a.assigned || 0, phase:a => a.phase, schol:a => a.awaited ? "" : a.schol, stage:a => a.stage};
+    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["pay", "Paid on"], ["assigned", "Assigned on"], ["phase", "Phase"], ["slot", "Exam slot"], ["intv", "Interview"], ["schol", "Result"], ["stage", "Status"]];
+    const get = {app:a => a.app, program:a => a.program, tl:a => a.tlName, pay:a => a.pay || 0, assigned:a => a.assigned || 0, phase:a => a.phase,
+      slot:a => a.examSlot ? 1 : 0, intv:a => !a.intApplies ? -1 : a.intDate ? 1 : 0, schol:a => a.awaited ? "" : a.schol, stage:a => a.stage};
     if (S.key) rows.sort((x, y) => { const p = get[S.key](x), q2 = get[S.key](y); return (typeof p === "number" ? p - q2 : String(p).localeCompare(String(q2), undefined, {numeric:true})) * S.dir; });
     else rows.sort((x, y) => x.stage - y.stage || (x.assigned || 0) - (y.assigned || 0));   // eligible first, oldest first
     const now = Date.now();
@@ -950,10 +962,15 @@ function render(){
       td("Application", '<span class="who"><b>' + esc(a.app) + '</b><small>' + esc(a.form) + '</small></span>') +
       td("Program", '<span class="who"><b class="pg">' + esc(a.program || "–") + '</b><small>' + esc(a.pskill) + (a.mismatch ? ' <span class="mini diff" title="Team leader skill: ' + esc(a.tlSkill) + '">Skill mismatch</span>' : '') + (a.type ? ", " + esc(a.type) : "") + '</small></span>') +
       td("Team leader", '<span class="who"><b>' + esc(a.tlName) + '</b><small>' + esc(a.coord) + '</small></span>') +
+      td("Paid on", dateTxt(a.pay), "num") +
       td("Assigned on", dateTxt(a.assigned) + (a.assigned ? '<small class="subl">' + Math.max(0, Math.floor((now - a.assigned) / DAYMS)) + ' days ago</small>' : ""), "num") +
       td("Phase", esc(a.phase)) +
+      td("Exam slot", a.examSlot ? '<span class="okdate">' + esc(a.examSlot) + '</span>' : '<span class="tagx wait">Slot booking pending</span>') +
+      td("Interview", !a.intApplies ? '<span class="na">Not applicable</span>'
+        : (a.intDate ? '<span class="okdate">' + esc(a.intDate) + '</span>' : '<span class="tagx wait">Slot booking pending</span>') +
+          (a.intResult ? '<small class="subl ' + (a.intPass ? "pass" : "fail") + '">' + (a.intPass ? "Passed" : "Not passed") + '</small>' : "")) +
       td("Result", a.awaited ? '<span class="tagx wait">Awaited</span>' : esc(a.schol)) +
-      td("Status", stageTag(a) + (a.enrolled && a.enrolDate ? '<small class="subl">' + dateTxt(a.enrolDate) + '</small>' : "") + '<small class="subl">Paid ' + dateTxt(a.pay) + '</small>') + '</tr>';
+      td("Status", stageTag(a) + (a.enrolled && a.enrolDate ? '<small class="subl">' + dateTxt(a.enrolDate) + '</small>' : "")) + '</tr>';
     $("viewCount").textContent = fmt(rows.length) + " application" + (rows.length === 1 ? "" : "s");
   }
   const size = pageSize(), pages = Math.max(1, Math.ceil(rows.length / size));
@@ -979,7 +996,7 @@ $("resetBtn").addEventListener("click", () => { [...FL.map(d => d.id), "dFrom", 
 $("refreshBtn").addEventListener("click", () => load(false));
 $("prevBtn").addEventListener("click", () => { pg--; render(); });
 $("nextBtn").addEventListener("click", () => { pg++; render(); });
-function sortClick(k){ const S = view === "summary" ? sortS : sortL; if (S.key === k) S.dir = -S.dir; else { S.key = k; S.dir = (k === "name" || k === "app" || k === "program" || k === "tl" || k === "phase" || k === "schol") ? 1 : -1; } pg = 1; render(); }
+function sortClick(k){ const S = view === "summary" ? sortS : sortL; if (S.key === k) S.dir = -S.dir; else { S.key = k; S.dir = (k === "name" || k === "app" || k === "program" || k === "tl" || k === "phase" || k === "schol" || k === "slot" || k === "intv") ? 1 : -1; } pg = 1; render(); }
 $("thead").addEventListener("click", e => { const th = e.target.closest("th[data-key]"); if (th) sortClick(th.dataset.key); });
 $("thead").addEventListener("keydown", e => { const th = e.target.closest("th[data-key]"); if (th && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); sortClick(th.dataset.key); } });
 /* Summary drill-down: coordinator -> their team leaders -> follow-up list */
