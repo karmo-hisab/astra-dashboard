@@ -971,7 +971,7 @@ function render(){
   } else {
     const q = $("q").value.trim().toLowerCase(), fo = FOCUS[$("fFocus").value];
     rows = base.filter(a => (!q || a._search.includes(q)) && (!fo || fo(a)));
-    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["pay", "LPUNEST Payment Date"], ["assigned", "Assigned on"], ["phase", "Phase"], ["slot", "Exam slot"], ["intv", "Interview"], ["schol", "Result"], ["stage", "Status"]];
+    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["assigned", "Assigned on"], ["phase", "Phase"], ["slot", "Exam slot"], ["intv", "Interview"], ["schol", "Result"], ["stage", "Status"]];
     const get = {app:a => a.app, program:a => a.program, tl:a => a.tlName, pay:a => a.pay || 0, assigned:a => a.assigned || 0, phase:a => a.phase,
       slot:a => a.examSlot ? 1 : 0, intv:a => !a.intApplies ? -1 : a.intDate ? 1 : 0, schol:a => a.awaited ? "" : a.schol, stage:a => a.stage};
     if (S.key) rows.sort((x, y) => { const p = get[S.key](x), q2 = get[S.key](y); return (typeof p === "number" ? p - q2 : String(p).localeCompare(String(q2), undefined, {numeric:true})) * S.dir; });
@@ -981,7 +981,6 @@ function render(){
       td("Application", '<span class="who"><b>' + esc(a.app) + '</b><small>' + esc(a.form) + '</small></span>') +
       td("Program", '<span class="who"><b class="pg">' + esc(a.program || "–") + '</b><small>' + esc(a.pskill) + (a.mismatch ? ' <span class="mini diff" title="Team leader skill: ' + esc(a.tlSkill) + '">Skill mismatch</span>' : '') + (a.type ? ", " + esc(a.type) : "") + '</small></span>') +
       td("Team leader", '<span class="who"><b>' + esc(a.tlName) + '</b><small>' + esc(a.coord) + '</small></span>') +
-      td("LPUNEST Payment Date", dateTxt(a.pay), "num") +
       td("Assigned on", dateTxt(a.assigned) + (a.assigned ? '<small class="subl">' + Math.max(0, Math.floor((now - a.assigned) / DAYMS)) + ' days ago</small>' : ""), "num") +
       td("Phase", esc(a.phase)) +
       td("Exam slot", a.examSlot ? '<span class="okdate">' + esc(a.examSlot) + '</span>' : '<span class="tagx wait">Slot booking pending</span>') +
