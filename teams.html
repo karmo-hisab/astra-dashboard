@@ -153,6 +153,18 @@ html.nav-mini .sidenav span.two{display:none}
 .topbar .themeseg button .ic{width:14px;height:14px}
 .topbar .themeseg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
 @media (max-width: 720px){ .topbar .statuspill{max-width:150px;font-size:11.5px;padding:4px 9px} }
+/* Theme button next to the badge */
+.thm{position:relative}
+.topbar .thmbtn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px 0 11px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#E3E7EF;font-size:12.5px;font-weight:600}
+.topbar .thmbtn:hover,.topbar .thmbtn[aria-expanded="true"]{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff}
+.topbar .thmbtn .ic{width:15px;height:15px}
+.topbar .thmbtn .chev2{width:11px;height:11px;transform:rotate(-90deg);opacity:.7}
+.thmpop{position:absolute;right:0;top:42px;z-index:40;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px}
+.topbar .thmpop button{display:flex;width:100%;align-items:center;flex-wrap:wrap;gap:4px 10px;background:none;border:none;color:var(--ink);padding:9px 10px;border-radius:5px;font-weight:600;font-size:13.5px;text-align:left}
+.topbar .thmpop button small{flex-basis:100%;padding-left:25px;font-size:11.5px;font-weight:400;color:var(--faint)}
+.topbar .thmpop button:hover{background:var(--neutral-bg)}
+.topbar .thmpop button[aria-pressed="true"]{background:var(--neutral-bg);box-shadow:inset 3px 0 0 var(--accent)}
+@media (max-width: 720px){ .topbar .thmbtn span{display:none} .topbar .thmbtn{padding:0 9px} }
 .stats4{grid-template-columns:repeat(4,1fr)!important}
 .tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
 .tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
@@ -432,18 +444,18 @@ footer b{color:var(--muted);font-weight:600}
   <div class="meta">
     <span class="status loading needs-auth statuspill" id="updated" title="When the data was last updated"><i></i>Loading…</span>
     <button id="refreshBtn" class="needs-auth" type="button" title="Get the latest data" hidden><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg><span class="rlabel">Refresh</span></button>
+    <div class="thm">
+      <button type="button" class="thmbtn" id="themeMenuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="themePop" title="Change theme"></button>
+      <div class="thmpop" id="themePop" hidden role="group" aria-label="Theme">
+        <button type="button" data-theme-set="auto" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-auto"/></svg>Auto<small>follows your device</small></button>
+        <button type="button" data-theme-set="light" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>Light</button>
+        <button type="button" data-theme-set="dark" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg>Dark</button>
+      </div>
+    </div>
     <div class="acct needs-auth">
       <button type="button" class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-controls="acctMenu" title="Account"></button>
       <div class="acctmenu" id="acctMenu" hidden>
         <div class="acctinfo"><span class="avatar big" id="avatarBig" aria-hidden="true"></span><div><div class="acctlabel">Signed in as</div><div class="acctmail" id="userEmail"></div></div></div>
-        <div class="themerow" role="group" aria-label="Theme">
-          <span class="acctlabel">Theme</span>
-          <div class="themeseg">
-            <button type="button" data-theme-set="auto" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-auto"/></svg>Auto</button>
-            <button type="button" data-theme-set="light" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>Light</button>
-            <button type="button" data-theme-set="dark" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg>Dark</button>
-          </div>
-        </div>
         <button id="installBtn" type="button" class="menuitem"><svg class="ic" aria-hidden="true"><use href="#i-install"/></svg>Install app</button>
         <button id="signOutBtn" type="button" class="menuitem"><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg>Sign out</button>
       </div>
@@ -1403,8 +1415,17 @@ function applyTheme(t){
   else document.documentElement.setAttribute("data-theme", t);
   try{ localStorage.setItem("hk_theme", t); }catch(_){}
   document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === t ? "true" : "false"));
+  $("themeMenuBtn").innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-' + THEMES[t].icon + '"/></svg><span>' + THEMES[t].label + '</span><svg class="ic chev2" aria-hidden="true"><use href="#i-chev"/></svg>';
+  $("themeMenuBtn").setAttribute("aria-label", "Theme: " + THEMES[t].label + ". Select to change");
 }
-document.querySelectorAll("[data-theme-set]").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); applyTheme(b.dataset.themeSet); }));
+(function(){
+  const pop = $("themePop"), btn = $("themeMenuBtn");
+  const open = v => { pop.hidden = !v; btn.setAttribute("aria-expanded", v ? "true" : "false"); };
+  btn.addEventListener("click", e => { e.stopPropagation(); open(pop.hidden); });
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); applyTheme(b.dataset.themeSet); open(false); }));
+  document.addEventListener("click", e => { if (!pop.hidden && !e.target.closest(".thm")) open(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") open(false); });
+})();
 applyTheme(currentTheme());
 
 window.matchMedia("(max-width: 720px)").addEventListener("change", () => { pg = 1; render(); });
