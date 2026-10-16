@@ -143,6 +143,7 @@ html.nav-mini .sidenav span.two{display:none}
 .topbar .acctmenu .menuitem:hover{background:var(--neutral-bg)}
 .topbar .acctmenu #installBtn{background:none;color:var(--ink);border:none}
 @media (max-width: 720px){ .rlabel{display:none} .subline{font-size:12px} }
+#refreshBtn{display:none!important}   /* data updates by itself (every 10 minutes, and on opening a page) */
 .stats4{grid-template-columns:repeat(4,1fr)!important}
 .tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
 .tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
@@ -447,7 +448,7 @@ footer b{color:var(--muted);font-weight:600}
     </div>
   </div>
   <div class="meta">
-    <button id="refreshBtn" class="needs-auth" type="button" title="Get the latest data"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg><span class="rlabel">Refresh</span></button>
+    <button id="refreshBtn" class="needs-auth" type="button" title="Get the latest data" hidden><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg><span class="rlabel">Refresh</span></button>
     <div class="acct needs-auth">
       <button type="button" class="avatar" id="avatarBtn" aria-haspopup="true" aria-expanded="false" aria-controls="acctMenu" title="Account"></button>
       <div class="acctmenu" id="acctMenu" hidden>
