@@ -972,10 +972,19 @@ function compute(opts){
     }
     p.cmp = g; p.groupSize = g ? g.members.length : 0;
     p.noHits = !!g && g.members.length >= 2 && g.totals[g.totals.length - 1] === 0;   // nobody in the group has an approved claim yet
-    p.score = (!g || g.members.length < 2 || p.noHits) ? null : pctl(total(p), g.totals);
+    p.zero = total(p) === 0;                                             // no approved claims: not ranked
+    p.score = (!g || g.members.length < 2 || p.noHits || p.zero) ? null : pctl(total(p), g.totals);
   }
   const byScore = (a, b) => ((b.score ?? -1) - (a.score ?? -1)) || total(b) - total(a) || String(a.name).localeCompare(String(b.name));
-  for (const g of [...groups.values(), ...skillGroups.values()]) [...g.members].sort(byScore).forEach((p, i) => { if (p.cmp === g) p.groupRank = i + 1; });
+  // Equal approved claims = equal rank (1, 2, 3, 3, 5 …)
+  for (const g of [...groups.values(), ...skillGroups.values()]){
+    let prevTotal = null, prevRank = 0;
+    [...g.members].sort(byScore).forEach((p, i) => {
+      const r = (p.score !== null && prevTotal !== null && total(p) === prevTotal) ? prevRank : i + 1;
+      if (p.score !== null){ prevTotal = total(p); prevRank = r; }
+      if (p.cmp === g) p.groupRank = r;
+    });
+  }
 
   // Tree scores
   const current = [...people.values()].filter(p => !p.isTL && p.active);
@@ -986,8 +995,13 @@ function compute(opts){
   for (const list of tlGroups.values()){
     const vals = list.map(t => t.ok).sort((a, b) => a - b);
     const anyHits = vals[vals.length - 1] > 0;
-    list.forEach(t => { t.groupSize = list.length; t.noHits = !anyHits; t.score = (list.length < 2 || !anyHits) ? null : pctl(t.ok, vals); });
-    list.slice().sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok).forEach((t, i) => t.groupRank = i + 1);
+    list.forEach(t => { t.groupSize = list.length; t.noHits = !anyHits; t.zero = t.ok === 0; t.score = (list.length < 2 || !anyHits || t.zero) ? null : pctl(t.ok, vals); });
+    let prevOk = null, prevRank = 0;
+    list.slice().sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok).forEach((t, i) => {
+      const r = (t.score !== null && prevOk !== null && t.ok === prevOk) ? prevRank : i + 1;
+      if (t.score !== null){ prevOk = t.ok; prevRank = r; }
+      t.groupRank = r;
+    });
   }
   for (const c of coords.values()){
     const m = current.filter(p => p.coordKey === c.key); c.counselors = m.length; c.score = null;   // coordinators are not ranked
@@ -1152,7 +1166,7 @@ function render(){
           '<span class="cdot"></span><span class="cbody"><span class="cn">' + esc(p.name) + '</span>' +
           '<span class="csk' + (t && t.skill && p.skill !== t.skill ? ' diff" title="Different skill from the team leader (' + esc(t.skill) + ')' : '') + '"><span class="cuid">UID ' + esc(p.uid) + ',</span> ' + esc(p.skill) +
           (t && t.skill && p.skill !== t.skill ? ' <span class="mini diff">Different skill</span>' : '') + '</span><span class="cmeta">' +
-          '<span class="cr">' + (p.score === null ? "Not ranked" : (p.groupRank <= 3 ? MEDALS[p.groupRank - 1] + " " : "") + p.groupRank + " of " + p.groupSize) + '</span>' +
+          '<span class="cr">' + (p.score === null ? (p.zero ? "No hits yet" : "Not ranked") : (p.groupRank <= 3 ? MEDALS[p.groupRank - 1] + " " : "") + p.groupRank + " of " + p.groupSize) + '</span>' +
           '<span class="ch">' + fmt(p.h.app + p.h.adm + p.h.post) + ' hits</span>' +
           (p.post ? '<span class="mini">Post-adm</span>' : p.sim ? '<span class="mini sim">SIM</span>' : '') + (isIdle(p) ? '<span class="mini idle">Idle</span>' : '') +
           '</span></span></li>').join("") || '<li class="n"><span class="cn" style="color:var(--faint)">No counselors listed</span></li>';

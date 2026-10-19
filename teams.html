@@ -959,10 +959,19 @@ function compute(opts){
     }
     p.cmp = g; p.groupSize = g ? g.members.length : 0;
     p.noHits = !!g && g.members.length >= 2 && g.totals[g.totals.length - 1] === 0;   // nobody in the group has an approved claim yet
-    p.score = (!g || g.members.length < 2 || p.noHits) ? null : pctl(total(p), g.totals);
+    p.zero = total(p) === 0;                                             // no approved claims: not ranked
+    p.score = (!g || g.members.length < 2 || p.noHits || p.zero) ? null : pctl(total(p), g.totals);
   }
   const byScore = (a, b) => ((b.score ?? -1) - (a.score ?? -1)) || total(b) - total(a) || String(a.name).localeCompare(String(b.name));
-  for (const g of [...groups.values(), ...skillGroups.values()]) [...g.members].sort(byScore).forEach((p, i) => { if (p.cmp === g) p.groupRank = i + 1; });
+  // Equal approved claims = equal rank (1, 2, 3, 3, 5 …)
+  for (const g of [...groups.values(), ...skillGroups.values()]){
+    let prevTotal = null, prevRank = 0;
+    [...g.members].sort(byScore).forEach((p, i) => {
+      const r = (p.score !== null && prevTotal !== null && total(p) === prevTotal) ? prevRank : i + 1;
+      if (p.score !== null){ prevTotal = total(p); prevRank = r; }
+      if (p.cmp === g) p.groupRank = r;
+    });
+  }
 
   // Tree scores
   const current = [...people.values()].filter(p => !p.isTL && p.active);
@@ -973,8 +982,13 @@ function compute(opts){
   for (const list of tlGroups.values()){
     const vals = list.map(t => t.ok).sort((a, b) => a - b);
     const anyHits = vals[vals.length - 1] > 0;
-    list.forEach(t => { t.groupSize = list.length; t.noHits = !anyHits; t.score = (list.length < 2 || !anyHits) ? null : pctl(t.ok, vals); });
-    list.slice().sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok).forEach((t, i) => t.groupRank = i + 1);
+    list.forEach(t => { t.groupSize = list.length; t.noHits = !anyHits; t.zero = t.ok === 0; t.score = (list.length < 2 || !anyHits || t.zero) ? null : pctl(t.ok, vals); });
+    let prevOk = null, prevRank = 0;
+    list.slice().sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok).forEach((t, i) => {
+      const r = (t.score !== null && prevOk !== null && t.ok === prevOk) ? prevRank : i + 1;
+      if (t.score !== null){ prevOk = t.ok; prevRank = r; }
+      t.groupRank = r;
+    });
   }
   for (const c of coords.values()){
     const m = current.filter(p => p.coordKey === c.key); c.counselors = m.length; c.score = null;   // coordinators are not ranked
@@ -1152,10 +1166,18 @@ function render(){
   // Ranks within the list shown (peers or selection), now and in the previous period
   const A = orderedLists(d, "", ""), AP = orderedLists(dPrev, "", "");
   const L = {people: A.people.filter(scope.people), teams: A.teams.filter(scope.teams), coords: A.coords.filter(scope.coords)};
-  L.people.forEach((p, i) => p._rank = i); L.teams.forEach((t, i) => t._rank = i); L.coords.forEach((c, i) => c._rank = i);
+  // Ranks are positions INSIDE each peer group (never one list across groups); lists are grouped by peer group
+  const grpLabel = p => p.cmp ? p.cmp.label : p.skill;
+  const scored = x => x.score !== null && x.score !== undefined;
+  L.people.forEach(p => p._rank = scored(p) ? p.groupRank - 1 : 9999);
+  L.teams.forEach(t => t._rank = scored(t) ? t.groupRank - 1 : 9999);
+  L.coords.forEach((c, i) => c._rank = i);
+  L.people.sort((a, b) => String(grpLabel(a)).localeCompare(String(grpLabel(b))) || a._rank - b._rank || (b.h.app + b.h.adm + b.h.post) - (a.h.app + a.h.adm + a.h.post) || String(a.name).localeCompare(String(b.name)));
+  L.teams.sort((a, b) => String(a.skill || "").localeCompare(String(b.skill || "")) || a._rank - b._rank || b.ok - a.ok || String(a.name).localeCompare(String(b.name)));
   const keep = (list, keyFn) => { const s = new Set(list.map(keyFn)); return x => s.has(keyFn(x)); };
-  const prevPeople = rankMap(AP.people.filter(keep(L.people, p => p.uid)), p => p.uid);
-  const prevTeams = rankMap(AP.teams.filter(keep(L.teams, t => t.uid)), t => t.uid);
+  // Movement: position within the peer group now vs. the previous period
+  const grpMap = list => { const m = new Map(); list.forEach(x => m.set(x.uid, {i: scored(x) ? x.groupRank - 1 : 9999, scored: scored(x)})); return m; };
+  const prevPeople = grpMap(AP.people), prevTeams = grpMap(AP.teams);
   const prevCoords = rankMap(AP.coords.filter(keep(L.coords, c => c.key)), c => c.key);
 
   // Filters applied after ranking, so ranks stay true
@@ -1182,8 +1204,8 @@ function render(){
           '<small>TL: ' + esc(t && !t.other ? t.name : "–") + '</small>' +
           '<small>Coordinator: ' + esc((d.coords.get(p.coordKey) || {}).name || "–") + '</small></span>') +
         td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") +
-        td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
-        td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : bandTag(p.score)) + '</tr>';
+        td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.zero ? "no approved claims yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
+        td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : p.zero ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(p.score)) + '</tr>';
     };
   } else if (view === "teams"){
     head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["trend","8-week trend"],["score","Score"],["band","Band"]];
@@ -1196,8 +1218,8 @@ function render(){
         td("Rank", rankWithMove(t._rank, t.score, movement(prevTeams, t.uid, t._rank, t.score))) +
         td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
         td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("8-week trend", spark(wk(t))) +
-        td("Score", scoreCell(t.score, (t.score !== null ? ord(t.groupRank) + " of " + t.groupSize + " TLs in skill" : t.groupSize < 2 ? "only TL in skill" : "no approved claims in skill yet") + '<br>' + fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
-        td("Band", bandTag(t.score)) + '</tr>';
+        td("Score", scoreCell(t.score, (t.score !== null ? ord(t.groupRank) + " of " + t.groupSize + " TLs in skill" : t.groupSize < 2 ? "only TL in skill" : t.noHits ? "no approved claims in skill yet" : "no approved claims yet") + '<br>' + fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
+        td("Band", (t.zero && !t.noHits) ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(t.score)) + '</tr>';
     };
   } else {
     head = [["name","Coordinator"],["teams","Teams"],["hits","Hits"],["trend","8-week trend"]];
