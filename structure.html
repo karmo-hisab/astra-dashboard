@@ -571,7 +571,7 @@ footer b{color:var(--muted);font-weight:600}
     <span><i class="lg-dot y"></i>Below median</span>
     <span><i class="lg-dot r"></i>Needs attention</span>
     <span><i class="lg-dot n"></i>Not ranked yet</span>
-    <span class="lg-note">Rank badges compare each person with their peers: coordinators with coordinators, team leaders within their skill, counselors within their skill and SIM/Normal group.</span>
+    <span class="lg-note">Rank badges compare each person only with their peers: team leaders within their skill, counselors within their skill and SIM/Normal group. Coordinators are not ranked.</span>
   </div>
   <div id="zeroNote"></div>
 
@@ -979,9 +979,18 @@ function compute(opts){
 
   // Tree scores
   const current = [...people.values()].filter(p => !p.isTL && p.active);
-  for (const t of teams.values()){ const m = current.filter(p => p.teamUid === t.uid); t.counselors = m.length; t.score = avg(m.map(p => p.score)); }
+  for (const t of teams.values()){ const m = current.filter(p => p.teamUid === t.uid); t.counselors = m.length; t.score = null; t.groupRank = null; t.groupSize = 0; }
+  // Team leaders: percentile of the team's approved claims among team leaders of the same skill (peer group)
+  const tlGroups = new Map();
+  for (const t of teams.values()){ if (t.other || !tlSet.has(t.uid)) continue; const k = t.skill || NOSKILL; if (!tlGroups.has(k)) tlGroups.set(k, []); tlGroups.get(k).push(t); }
+  for (const list of tlGroups.values()){
+    const vals = list.map(t => t.ok).sort((a, b) => a - b);
+    const anyHits = vals[vals.length - 1] > 0;
+    list.forEach(t => { t.groupSize = list.length; t.noHits = !anyHits; t.score = (list.length < 2 || !anyHits) ? null : pctl(t.ok, vals); });
+    list.slice().sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok).forEach((t, i) => t.groupRank = i + 1);
+  }
   for (const c of coords.values()){
-    const m = current.filter(p => p.coordKey === c.key); c.counselors = m.length; c.score = avg(m.map(p => p.score));
+    const m = current.filter(p => p.coordKey === c.key); c.counselors = m.length; c.score = null;   // coordinators are not ranked
     c.teamCount = [...teams.values()].filter(t => !t.other && t.coordKey === c.key && tlSet.has(t.uid)).length;
   }
   return {coords, teams, people, groups, haveRoster, byScore, tlSet};
@@ -1099,7 +1108,7 @@ function render(){
     if (q && !anyHit) continue;
     blocks.push({c, cols, anyHit});
   }
-  blocks.sort((a, b) => ((cRank.has(a.c.key) ? cRank.get(a.c.key) : 999) - (cRank.has(b.c.key) ? cRank.get(b.c.key) : 999)) || a.c.name.localeCompare(b.c.name));
+  blocks.sort((a, b) => a.c.name.localeCompare(b.c.name));             // coordinators are not ranked
   if (autoOpen && blocks.length <= 3) blocks.forEach(b => expanded.add(b.c.key));
   if (q) blocks.forEach(b => expanded.add(b.c.key));
 
@@ -1124,11 +1133,11 @@ function render(){
     const mism = cols.reduce((n, x) => n + (x.t ? x.members.filter(p => x.t.skill && p.skill !== x.t.skill).length : 0), 0);
     const skillsLine = '<span class="cskills">' + [...skillCount.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) =>
       '<span class="skchip">' + esc(k) + ' <b>' + n + '</b></span>').join("") + (mism ? '<span class="mini diff">' + mism + ' different skill</span>' : '') + '</span>';
-    const head = '<button type="button" class="chead ' + colorOf(c.score) + (hit(c.name) ? " match" : "") + '" data-coord="' + esc(c.key) + '" aria-expanded="' + open + '">' +
+    const head = '<button type="button" class="chead n' + (hit(c.name) ? " match" : "") + '" data-coord="' + esc(c.key) + '" aria-expanded="' + open + '">' +
       '<svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
       '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">Coordinator, ' + fmt(cols.filter(x => x.t).length) + ' teams, ' + fmt(cols.reduce((n, x) => n + x.members.length, 0)) + ' counselors</span>' + skillsLine + '</span>' +
-      '<span class="cstats">' + (cR === null ? rankBadge(0, 0, null) : rankBadge(cR, coordsRanked.length, c.score)) +
-      '<span class="stat-i">Score <b>' + (c.score ?? "–") + '</b></span><span class="stat-i"><b>' + fmt(c.ok) + '</b> hits</span>' +
+      '<span class="cstats">' +
+      '<span class="stat-i"><b>' + fmt(c.ok) + '</b> hits</span>' +
       (idleN ? '<span class="mini idle">' + fmt(idleN) + ' idle 7d</span>' : '') + '</span></button>';
     if (!open) return '<article class="org">' + head + '</article>';
     const tlCols = cols.map(({t, members}) => {

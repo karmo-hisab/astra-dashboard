@@ -538,8 +538,8 @@ footer b{color:var(--muted);font-weight:600}
       <ul>
         <li><b>Counselors:</b> same skill and same type (SIM or Normal). Someone alone in their group is compared with everyone in the same skill.</li>
         <li><b>Post-admission team:</b> compared only with each other.</li>
-        <li><b>Team leaders:</b> team score = average of their counselors' scores.</li>
-        <li><b>Coordinators:</b> score = average of all their counselors' scores.</li>
+        <li><b>Team leaders:</b> compared only with team leaders of the same skill, on their team's approved claims.</li>
+        <li><b>Coordinators:</b> not ranked; shown with their teams, counselors and hits only.</li>
       </ul>
       <p>Score is a percentile of approved claims from 0 to 100: a score of 75 means more approved claims than about three quarters of the peer group.</p>
       <p class="bands"><span class="bandtag ok">Top 75+</span><span class="bandtag okl">Above median 50–74</span><span class="bandtag wait">Below median 25–49</span><span class="bandtag bad">Needs attention under 25</span></p>
@@ -966,9 +966,18 @@ function compute(opts){
 
   // Tree scores
   const current = [...people.values()].filter(p => !p.isTL && p.active);
-  for (const t of teams.values()){ const m = current.filter(p => p.teamUid === t.uid); t.counselors = m.length; t.score = avg(m.map(p => p.score)); }
+  for (const t of teams.values()){ const m = current.filter(p => p.teamUid === t.uid); t.counselors = m.length; t.score = null; t.groupRank = null; t.groupSize = 0; }
+  // Team leaders: percentile of the team's approved claims among team leaders of the same skill (peer group)
+  const tlGroups = new Map();
+  for (const t of teams.values()){ if (t.other || !tlSet.has(t.uid)) continue; const k = t.skill || NOSKILL; if (!tlGroups.has(k)) tlGroups.set(k, []); tlGroups.get(k).push(t); }
+  for (const list of tlGroups.values()){
+    const vals = list.map(t => t.ok).sort((a, b) => a - b);
+    const anyHits = vals[vals.length - 1] > 0;
+    list.forEach(t => { t.groupSize = list.length; t.noHits = !anyHits; t.score = (list.length < 2 || !anyHits) ? null : pctl(t.ok, vals); });
+    list.slice().sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok).forEach((t, i) => t.groupRank = i + 1);
+  }
   for (const c of coords.values()){
-    const m = current.filter(p => p.coordKey === c.key); c.counselors = m.length; c.score = avg(m.map(p => p.score));
+    const m = current.filter(p => p.coordKey === c.key); c.counselors = m.length; c.score = null;   // coordinators are not ranked
     c.teamCount = [...teams.values()].filter(t => !t.other && t.coordKey === c.key && tlSet.has(t.uid)).length;
   }
   return {coords, teams, people, groups, haveRoster, byScore, tlSet};
@@ -1098,7 +1107,7 @@ function render(){
   const viewLevel = LEVEL_OF_VIEW[view], selLevel = level ? LEVEL_OF_SEL[level] : -1;
   const atLevel = level !== "" && viewLevel === selLevel;          // e.g. coordinator chosen + Coordinators view
   const below = level !== "" && viewLevel > selLevel;              // drill-down: the selection's own teams / counselors
-  const peers = mode === "peers" && atLevel;
+  const peers = mode === "peers" && atLevel && level !== "coord";     // coordinators are not ranked or compared
   const skillTxt = [...skills].join(", ");
   const scope = {
     people: x => !x.isTL && x.active && (
@@ -1111,8 +1120,7 @@ function render(){
       below ? t.coordKey === sc :                                  // coordinator chosen: their own teams
       atLevel ? t.uid === st : true),                              // "only this selection" / above the selection
     coords: c => view !== "coords" ? true :
-      peers ? handles(c.key, skills) :                             // coordinator chosen: coordinators of the same skills
-      atLevel ? c.key === sc : true
+      true
   };
   const hl = {
     people: x => level === "person" ? x.uid === sp : level === "team" ? x.teamUid === st : level === "coord" ? x.coordKey === sc : false,
@@ -1178,7 +1186,7 @@ function render(){
         td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : bandTag(p.score)) + '</tr>';
     };
   } else if (view === "teams"){
-    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["trend","8-week trend"],["score","Team score"],["band","Band"]];
+    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["trend","8-week trend"],["score","Score"],["band","Band"]];
     rows = L.teams.filter(t => (!q || (t.name + " " + t.uid).toLowerCase().includes(q)) && bandOk(t.score) && actOk(teamIdle(t)));
     const wk = t => (dTrend.teams.get(t.uid) || {}).wk;
     sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, trend: t => (wk(t) || [0])[TREND_WEEKS - 1], score: t => t.score ?? -1, band: t => t.score ?? -1};
@@ -1188,21 +1196,20 @@ function render(){
         td("Rank", rankWithMove(t._rank, t.score, movement(prevTeams, t.uid, t._rank, t.score))) +
         td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
         td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("8-week trend", spark(wk(t))) +
-        td("Team score", scoreCell(t.score, fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
+        td("Score", scoreCell(t.score, (t.score !== null ? ord(t.groupRank) + " of " + t.groupSize + " TLs in skill" : t.groupSize < 2 ? "only TL in skill" : "no approved claims in skill yet") + '<br>' + fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
         td("Band", bandTag(t.score)) + '</tr>';
     };
   } else {
-    head = [["rank","Rank"],["name","Coordinator"],["teams","Teams"],["hits","Hits"],["trend","8-week trend"],["score","Score"],["band","Band"]];
-    rows = L.coords.filter(c => (!q || c.name.toLowerCase().includes(q)) && bandOk(c.score) && actOk(coordIdle(c)));
+    head = [["name","Coordinator"],["teams","Teams"],["hits","Hits"],["trend","8-week trend"]];
+    rows = L.coords.filter(c => (!q || c.name.toLowerCase().includes(q)) && actOk(coordIdle(c))).sort((a, b) => a.name.localeCompare(b.name));
     const wk = c => (dTrend.coords.get(c.key) || {}).wk;
-    sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, trend: c => (wk(c) || [0])[TREND_WEEKS - 1], score: c => c.score ?? -1, band: c => c.score ?? -1};
+    sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, trend: c => (wk(c) || [0])[TREND_WEEKS - 1]};
     toRow = c => {
       const n = coordIdle(c);
       return '<tr class="click' + (hl.coords(c) ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
-        td("Rank", rankWithMove(c._rank, c.score, movement(prevCoords, c.key, c._rank, c.score))) +
         td("Coordinator", '<b>' + esc(c.name) + '</b>') +
         td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small>', "num") +
-        td("Hits", hitsCell(c.h), "num") + td("8-week trend", spark(wk(c))) + td("Score", scoreCell(c.score), "num") + td("Band", bandTag(c.score)) + '</tr>';
+        td("Hits", hitsCell(c.h), "num") + td("8-week trend", spark(wk(c))) + '</tr>';
     };
   }
   const sv = sortBy[view];
@@ -1230,7 +1237,7 @@ function render(){
   $("viewCount").textContent = fmt(rows.length) + " " + noun + (rows.length === 1 ? "" : "s") + (nHl ? ", " + fmt(nHl) + " highlighted" : "");
 
   // Mode switch and comparison box
-  $("modeBar").hidden = !atLevel;
+  $("modeBar").hidden = !atLevel || level === "coord";
   document.querySelectorAll("#modeBar button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode ? "true" : "false"));
   const full = view === "people" ? L.people : view === "teams" ? L.teams : L.coords;
   const H = full.filter(hlFn);
