@@ -306,6 +306,9 @@ tbody tr.hl td b{color:var(--ink)}
 .sumtile .sl span{display:block;font-weight:600;color:var(--muted);font-size:13px;margin-top:1px}
 @media (max-width: 720px){ .sumstrip{grid-template-columns:1fr 1fr;gap:8px} .sumtile:last-child{grid-column:1/-1} .sumtile .sv{font-size:26px} }
 .cuid{color:var(--faint);font-variant-numeric:tabular-nums}
+.hitsbox{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.25}
+.hitsbox small{font-size:11.5px;color:var(--faint);white-space:nowrap}
+@media (max-width: 720px){ .hitsbox{align-items:flex-start} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1027,7 +1030,7 @@ const moveTag = m => m === null || m === undefined ? "" :
   m === "new" ? '<small class="move new" title="Newly ranked this period">new</small>' :
   m > 0 ? '<small class="move up" title="Up ' + m + ' since the previous period">▲' + m + '</small>' :
   m < 0 ? '<small class="move down" title="Down ' + (-m) + ' since the previous period">▼' + (-m) + '</small>' :
-  '<small class="move same" title="Same rank as the previous period">–</small>';
+  '';                                                              // same position: show nothing
 const rankWithMove = (i, score, move) => '<span class="rankbox">' + rankCell(i, score) + moveTag(move) + '</span>';
 
 /* Small 8-week line of Hits */
@@ -1151,7 +1154,7 @@ function render(){
       '<svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
       '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">Coordinator, ' + fmt(cols.filter(x => x.t).length) + ' teams, ' + fmt(cols.reduce((n, x) => n + x.members.length, 0)) + ' counselors</span>' + skillsLine + '</span>' +
       '<span class="cstats">' +
-      '<span class="stat-i"><b>' + fmt(c.ok) + '</b> hits</span>' +
+      '<span class="stat-i hitsbox"><span><b>' + fmt(c.ok) + '</b> hits</span><small>App ' + fmt(c.h.app) + ', Adm ' + fmt(c.h.adm) + ', Post-adm ' + fmt(c.h.post) + '</small></span>' +
       (idleN ? '<span class="mini idle">' + fmt(idleN) + ' idle 7d</span>' : '') + '</span></button>';
     if (!open) return '<article class="org">' + head + '</article>';
     const tlCols = cols.map(({t, members}) => {
