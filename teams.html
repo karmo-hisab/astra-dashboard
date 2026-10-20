@@ -241,6 +241,8 @@ tbody tr.hl td b{color:var(--ink)}
 #moreFilters{margin-top:10px;padding-top:12px;border-top:1px solid var(--line-2)}
 .who small{display:block}
 .rank.none{color:var(--faint);font-weight:400}
+.hb{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:3px;font-size:12px;color:var(--faint);white-space:nowrap}
+.hb b{color:var(--muted);font-weight:700}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1007,14 +1009,18 @@ const rankCell = (i, score) => (score === null || score === undefined)
 const bandTag = s => { const b = band(s); return '<span class="bandtag ' + b.key + '">' + (s === null || s === undefined ? "Not ranked yet" : b.label) + '</span>'; };
 const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="color:var(--faint)">–</span>' : '<span class="score">' + s + '</span>') + (sub ? '<small class="subl">' + sub + '</small>' : '');
 const ord = n => { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
-const hitsCell = h => fmt(h.app + h.adm + h.post) + '<small class="subl">App ' + fmt(h.app) + ', Adm ' + fmt(h.adm) + ', Post ' + fmt(h.post) + '</small>';
+const hitsBreak = h => '<span class="hb">' +
+  '<span title="Arrow (LPUNEST Application)">🎯 App <b>' + fmt(h.app) + '</b></span>' +
+  '<span title="Brahmastra (Admission)">🏹 Adm <b>' + fmt(h.adm) + '</b></span>' +
+  '<span title="Naga Pasha (Hostel) + Akshaya Patra (Mess)">🐍🍜 Post <b>' + fmt(h.post) + '</b></span></span>';
+const hitsCell = h => fmt(h.app + h.adm + h.post) + hitsBreak(h);
 
 /* Rank cell: medal for the top three (only with a real score), plus movement versus the previous period */
 const moveTag = m => m === null || m === undefined ? "" :
   m === "new" ? '<small class="move new" title="Newly ranked this period">new</small>' :
   m > 0 ? '<small class="move up" title="Up ' + m + ' since the previous period">▲' + m + '</small>' :
   m < 0 ? '<small class="move down" title="Down ' + (-m) + ' since the previous period">▼' + (-m) + '</small>' :
-  '<small class="move same" title="Same rank as the previous period">–</small>';
+  '';                                                              // same position: show nothing
 const rankWithMove = (i, score, move) => '<span class="rankbox">' + rankCell(i, score) + moveTag(move) + '</span>';
 
 /* Small 8-week line of Hits */
@@ -1154,7 +1160,7 @@ function render(){
   $("oClaims").textContent = fmt(tot.claims);
   $("oClaimsSub").textContent = fmt(tot.ok) + " hit, " + fmt(tot.bad) + " miss, " + fmt(tot.wait) + " pending";
   $("oHits").textContent = fmt(tot.ok);
-  $("oHitsSub").textContent = "App " + fmt(tot.h.app) + ", Adm " + fmt(tot.h.adm) + ", Post " + fmt(tot.h.post);
+  $("oHitsSub").textContent = "🎯 " + fmt(tot.h.app) + "   🏹 " + fmt(tot.h.adm) + "   🐍🍜 " + fmt(tot.h.post);
   $("oTeams").textContent = fmt(teamsIn.filter(t => !t.other && d.tlSet.has(t.uid)).length);
   $("oTeamsSub").textContent = sc ? "under this coordinator" : fmt(d.coords.size) + " coordinators";
   $("oPeople").textContent = fmt(peopleIn.length);

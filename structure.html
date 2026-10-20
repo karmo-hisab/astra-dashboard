@@ -241,6 +241,8 @@ tbody tr.hl td b{color:var(--ink)}
 #moreFilters{margin-top:10px;padding-top:12px;border-top:1px solid var(--line-2)}
 .who small{display:block}
 .rank.none{color:var(--faint);font-weight:400}
+.hb{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:3px;font-size:12px;color:var(--faint);white-space:nowrap}
+.hb b{color:var(--muted);font-weight:700}
 /* Structure page */
 .sfilters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:end}
 .treebar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px}
@@ -309,6 +311,8 @@ tbody tr.hl td b{color:var(--ink)}
 .hitsbox{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.25}
 .hitsbox small{font-size:11.5px;color:var(--faint);white-space:nowrap}
 @media (max-width: 720px){ .hitsbox{align-items:flex-start} }
+.hitsbox .hb{justify-content:flex-end}
+@media (max-width: 720px){ .hitsbox .hb{justify-content:flex-start} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1023,7 +1027,11 @@ const rankCell = (i, score) => (score === null || score === undefined)
 const bandTag = s => { const b = band(s); return '<span class="bandtag ' + b.key + '">' + (s === null || s === undefined ? "Not ranked yet" : b.label) + '</span>'; };
 const scoreCell = (s, sub) => (s === null || s === undefined ? '<span style="color:var(--faint)">–</span>' : '<span class="score">' + s + '</span>') + (sub ? '<small class="subl">' + sub + '</small>' : '');
 const ord = n => { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
-const hitsCell = h => fmt(h.app + h.adm + h.post) + '<small class="subl">App ' + fmt(h.app) + ', Adm ' + fmt(h.adm) + ', Post ' + fmt(h.post) + '</small>';
+const hitsBreak = h => '<span class="hb">' +
+  '<span title="Arrow (LPUNEST Application)">🎯 App <b>' + fmt(h.app) + '</b></span>' +
+  '<span title="Brahmastra (Admission)">🏹 Adm <b>' + fmt(h.adm) + '</b></span>' +
+  '<span title="Naga Pasha (Hostel) + Akshaya Patra (Mess)">🐍🍜 Post <b>' + fmt(h.post) + '</b></span></span>';
+const hitsCell = h => fmt(h.app + h.adm + h.post) + hitsBreak(h);
 
 /* Rank cell: medal for the top three (only with a real score), plus movement versus the previous period */
 const moveTag = m => m === null || m === undefined ? "" :
@@ -1154,7 +1162,10 @@ function render(){
       '<svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
       '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">Coordinator, ' + fmt(cols.filter(x => x.t).length) + ' teams, ' + fmt(cols.reduce((n, x) => n + x.members.length, 0)) + ' counselors</span>' + skillsLine + '</span>' +
       '<span class="cstats">' +
-      '<span class="stat-i hitsbox"><span><b>' + fmt(c.ok) + '</b> hits</span><small>App ' + fmt(c.h.app) + ', Adm ' + fmt(c.h.adm) + ', Post-adm ' + fmt(c.h.post) + '</small></span>' +
+      '<span class="stat-i hitsbox"><span><b>' + fmt(c.ok) + '</b> hits</span><small class="hb">' +
+        '<span title="Arrow (LPUNEST Application)">🎯 App <b>' + fmt(c.h.app) + '</b></span>' +
+        '<span title="Brahmastra (Admission)">🏹 Adm <b>' + fmt(c.h.adm) + '</b></span>' +
+        '<span title="Naga Pasha (Hostel) + Akshaya Patra (Mess)">🐍🍜 Post <b>' + fmt(c.h.post) + '</b></span></small></span>' +
       (idleN ? '<span class="mini idle">' + fmt(idleN) + ' idle 7d</span>' : '') + '</span></button>';
     if (!open) return '<article class="org">' + head + '</article>';
     const tlCols = cols.map(({t, members}) => {
