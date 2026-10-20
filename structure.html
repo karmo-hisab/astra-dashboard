@@ -321,6 +321,8 @@ tbody tr.hl td b{color:var(--ink)}
 @media (max-width: 720px){ .hitsbox{align-items:flex-start} }
 .hitsbox .hb{justify-content:flex-end}
 @media (max-width: 720px){ .hitsbox .hb{justify-content:flex-start} }
+.tlhb{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line-2)}
+.tlhb .hb{margin-top:0}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1185,14 +1187,17 @@ function render(){
             '<div class="tlname">' + esc(t.name) + (isIdle({uid: t.uid}) ? ' <span class="mini idle" title="No claims of their own in the last 7 days">Idle 7d</span>' : '') + '</div><div class="tlsub">UID ' + esc(t.uid) + ', ' + esc(t.skill || "–") + '</div>' +
             '<div class="tlstats">' + (tRank.has(t.uid) ? rankBadge(tRank.get(t.uid), tN.get(t.uid), t.score, "in skill") : rankBadge(0, 0, null)) +
             '<span class="stat-i">Team score <b>' + (t.score ?? "–") + '</b></span><span class="stat-i"><b>' + fmt(t.ok) + '</b> hits</span>' +
-            '<span class="stat-i"><b>' + fmt(members.length) + '</b> counselors</span>' + (members.length < 3 ? '<span class="flag" title="Fewer than 3 counselors">Small team</span>' : '') + '</div></div>'
+            '<span class="stat-i"><b>' + fmt(members.length) + '</b> counselors</span>' + (members.length < 3 ? '<span class="flag" title="Fewer than 3 counselors">Small team</span>' : '') + '</div>' +
+            '<div class="tlhb">' + hitsBreak(t.h) + '</div></div>'
         : '<div class="tlcard n"><div class="tlname">No team leader</div><div class="tlsub">Counselors not assigned to a current team leader</div></div>';
       const list = members.map(p => '<li class="' + colorOf(p.score) + (hit(p.name, p.uid) ? " match" : "") + '" title="' + esc(p.name) + ', UID ' + esc(p.uid) + (p.score !== null ? ", score " + p.score : "") + '">' +
           '<span class="cdot"></span><span class="cbody"><span class="cn">' + esc(p.name) + '</span>' +
           '<span class="csk' + (t && t.skill && p.skill !== t.skill ? ' diff" title="Different skill from the team leader (' + esc(t.skill) + ')' : '') + '"><span class="cuid">UID ' + esc(p.uid) + ',</span> ' + esc(p.skill) +
           (t && t.skill && p.skill !== t.skill ? ' <span class="mini diff">Different skill</span>' : '') + '</span><span class="cmeta">' +
           '<span class="cr">' + (p.score === null ? (p.zero ? "No hits yet" : "Not ranked") : (p.groupRank <= 3 ? MEDALS[p.groupRank - 1] + " " : "") + p.groupRank + " of " + p.groupSize) + '</span>' +
-          '<span class="ch">' + fmt(p.h.app + p.h.adm + p.h.post) + ' hits</span>' +
+          '<span class="ch">' + fmt(p.h.app + p.h.adm + p.h.post) + ' hits' +
+            ((p.h.app + p.h.adm + p.h.post) ? ' · ' + [["🎯", p.h.app, "Arrow (LPUNEST Application)"], ["🏹", p.h.adm, "Brahmastra (Admission)"], ["🐍🍜", p.h.post, "Naga Pasha + Akshaya Patra"]]
+              .filter(x => x[1] > 0).map(x => '<span title="' + x[2] + '">' + x[0] + ' ' + fmt(x[1]) + '</span>').join(" ") : '') + '</span>' +
           (p.post ? '<span class="mini">Post-adm</span>' : p.sim ? '<span class="mini sim">SIM</span>' : '') + (isIdle(p) ? '<span class="mini idle">Idle</span>' : '') +
           '</span></span></li>').join("") || '<li class="n"><span class="cn" style="color:var(--faint)">No counselors listed</span></li>';
       return '<div class="tlcol">' + card + '<ul class="clist">' + list + '</ul></div>';
