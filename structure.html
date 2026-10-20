@@ -1161,6 +1161,7 @@ function render(){
   $("tree").innerHTML = blocks.map(({c, cols}) => {
     const open = expanded.has(c.key);
     const idleN = cols.reduce((n, x) => n + x.members.filter(isIdle).length, 0);
+    const idleTL = cols.filter(x => x.t && isIdle({uid: x.t.uid})).length;           // team leaders' own claims
     const cR = cRank.has(c.key) ? cRank.get(c.key) : null;
     const skillCount = new Map();
     for (const x of cols) for (const p of x.members) skillCount.set(p.skill, (skillCount.get(p.skill) || 0) + 1);
@@ -1175,12 +1176,13 @@ function render(){
         '<span title="Arrow (LPUNEST Application)">🎯 App <b>' + fmt(c.h.app) + '</b></span>' +
         '<span title="Brahmastra (Admission)">🏹 Adm <b>' + fmt(c.h.adm) + '</b></span>' +
         '<span title="Naga Pasha (Hostel) + Akshaya Patra (Mess)">🐍🍜 Post <b>' + fmt(c.h.post) + '</b></span></small></span>' +
-      (idleN ? '<span class="mini idle">' + fmt(idleN) + ' idle 7d</span>' : '') + '</span></button>';
+      (idleN ? '<span class="mini idle">' + fmt(idleN) + ' counselor' + (idleN === 1 ? "" : "s") + ' idle 7d</span>' : '') +
+      (idleTL ? '<span class="mini idle">' + fmt(idleTL) + ' TL' + (idleTL === 1 ? "" : "s") + ' idle 7d</span>' : '') + '</span></button>';
     if (!open) return '<article class="org">' + head + '</article>';
     const tlCols = cols.map(({t, members}) => {
       const card = t
         ? '<div class="tlcard ' + colorOf(t.score) + (hit(t.name, t.uid) ? " match" : "") + '">' +
-            '<div class="tlname">' + esc(t.name) + '</div><div class="tlsub">UID ' + esc(t.uid) + ', ' + esc(t.skill || "–") + '</div>' +
+            '<div class="tlname">' + esc(t.name) + (isIdle({uid: t.uid}) ? ' <span class="mini idle" title="No claims of their own in the last 7 days">Idle 7d</span>' : '') + '</div><div class="tlsub">UID ' + esc(t.uid) + ', ' + esc(t.skill || "–") + '</div>' +
             '<div class="tlstats">' + (tRank.has(t.uid) ? rankBadge(tRank.get(t.uid), tN.get(t.uid), t.score, "in skill") : rankBadge(0, 0, null)) +
             '<span class="stat-i">Team score <b>' + (t.score ?? "–") + '</b></span><span class="stat-i"><b>' + fmt(t.ok) + '</b> hits</span>' +
             '<span class="stat-i"><b>' + fmt(members.length) + '</b> counselors</span>' + (members.length < 3 ? '<span class="flag" title="Fewer than 3 counselors">Small team</span>' : '') + '</div></div>'

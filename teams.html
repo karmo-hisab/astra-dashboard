@@ -1200,6 +1200,7 @@ function render(){
   const bandOk = s => !bandF || (bandF === "none" ? (s === null || s === undefined) : band(s).key === bandF);
   const teamIdle = t => [...d.people.values()].filter(p => !p.isTL && p.active && p.teamUid === t.uid && isIdle(p)).length;
   const coordIdle = c => [...d.people.values()].filter(p => !p.isTL && p.active && p.coordKey === c.key && isIdle(p)).length;
+  const coordIdleTL = c => [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && t.coordKey === c.key && isIdle({uid: t.uid})).length;
   const actOk = n => !actF || (actF === "idle" ? n > 0 : n === 0);
 
   let head = [], rows = [], toRow, sortVals = {};
@@ -1231,7 +1232,7 @@ function render(){
       const n = teamIdle(t);
       return '<tr class="click' + (hl.teams(t) ? " hl" : "") + '" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' +
         td("Rank", rankWithMove(t._rank, t.score, movement(prevTeams, t.uid, t._rank, t.score))) +
-        td("Team leader", '<span class="who"><b>' + esc(t.name) + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
+        td("Team leader", '<span class="who"><b>' + esc(t.name) + (isIdle({uid: t.uid}) ? '<span class="idle" title="No claims of their own in the last 7 days">Idle 7d</span>' : '') + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
         td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("8-week trend", spark(wk(t))) +
         td("Score", scoreCell(t.score, (t.score !== null ? ord(t.groupRank) + " of " + t.groupSize + " TLs in skill" : t.groupSize < 2 ? "only TL in skill" : t.noHits ? "no approved claims in skill yet" : "no approved claims yet") + '<br>' + fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
         td("Band", (t.zero && !t.noHits) ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(t.score)) + '</tr>';
@@ -1245,7 +1246,8 @@ function render(){
       const n = coordIdle(c);
       return '<tr class="click' + (hl.coords(c) ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
         td("Coordinator", '<b>' + esc(c.name) + '</b>') +
-        td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small>', "num") +
+        td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small>' +
+          (coordIdleTL(c) ? '<small class="subl"><span class="idletxt">' + fmt(coordIdleTL(c)) + ' TL' + (coordIdleTL(c) === 1 ? "" : "s") + ' idle 7d</span></small>' : ""), "num") +
         td("Hits", hitsCell(c.h), "num") + td("8-week trend", spark(wk(c))) + '</tr>';
     };
   }
