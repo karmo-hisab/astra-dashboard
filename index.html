@@ -165,6 +165,14 @@ html.nav-mini .sidenav span.two{display:none}
 .topbar .thmpop button:hover{background:var(--neutral-bg)}
 .topbar .thmpop button[aria-pressed="true"]{background:var(--neutral-bg);box-shadow:inset 3px 0 0 var(--accent)}
 @media (max-width: 720px){ .topbar .thmbtn span{display:none} .topbar .thmbtn{padding:0 9px} }
+/* Rebuttal tag in the claim register */
+.rebut{display:inline-block;margin-top:4px;font-size:11.5px;font-weight:700;border-radius:3px;padding:1px 7px;border:1px solid currentColor;white-space:nowrap}
+.rebut.acc{color:var(--ok);background:var(--ok-bg)}
+.rebut.rej{color:var(--bad);background:var(--bad-bg)}
+.rebut.pen{color:var(--wait);background:var(--wait-bg)}
+.rebut-link{display:block;margin-top:3px;font-size:12px;font-weight:600;color:var(--navy-2)}
+:root[data-theme="dark"] .rebut-link{color:#9DB8FF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .rebut-link{color:#9DB8FF} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -443,6 +451,11 @@ footer b{color:var(--muted);font-weight:600}
             <option value="">All</option><option value="ok">Hit</option><option value="bad">Miss</option><option value="wait">Pending</option>
           </select>
         </label>
+        <label class="f">Rebuttal
+          <select id="fRebut">
+            <option value="">All</option><option value="any">Any rebuttal</option><option value="pen">Pending</option><option value="acc">Accepted</option><option value="rej">Rejected</option>
+          </select>
+        </label>
       </div>
     </div>
     <div class="frow">
@@ -660,7 +673,8 @@ async function fetchClaims(useShared){
   const rows = data.rows.map(r => ({
     _ts: r[F.ts], name: r[F.name], uid: r[F.uid], claim: D.claim[r[F.claim]], app: r[F.app], astra: r[F.astra],
     paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
-    fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]]
+    fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]],
+    rebuttal: F.rebuttal !== undefined && D.rebuttal ? String(D.rebuttal[r[F.rebuttal]] || "").trim() : ""
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
@@ -725,7 +739,7 @@ const DROPDOWNS = [
   {id:"fSarathi", key:"_team", labelKey:"_teamLabel"},
   {id:"fMonth",   key:"month"},
 ];
-const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fMonth","dFrom","dTo"];
+const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fRebut","fMonth","dFrom","dTo"];
 
 /* Current filter choices */
 function readFilters(){
@@ -733,6 +747,7 @@ function readFilters(){
     q: $("q").value.trim().toLowerCase(),
     res: $("fResult").value,
     ty: TYPES.find(t => t.astra === $("fType").value),
+    reb: $("fRebut").value,
     /* Date range uses the claim submission date (Timestamp, column A) */
     from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
     to:   $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null,
@@ -748,6 +763,7 @@ function rowMatches(r, f, skipArg){
   if (!has("date") && f.to !== null && r._ts > f.to) return false;
   if (!has("fResult") && f.res && resOf(r) !== f.res) return false;
   if (!has("fType") && f.ty && !f.ty.match.test(r.claim || "")) return false;
+  if (!has("fRebut") && f.reb && (f.reb === "any" ? !rebKind(r.rebuttal) : rebKind(r.rebuttal) !== f.reb)) return false;
   for (const d of DROPDOWNS) if (!has(d.id) && f.drop[d.id] && (r[d.key] || "(blank)") !== f.drop[d.id]) return false;
   return true;
 }
@@ -775,6 +791,7 @@ function buildOptions(f){
   // Fixed lists (Hit or Miss, Claim type): show counts, grey out options with no claims
   const fixed = [
     {id:"fResult", count: v => ALL.filter(r => rowMatches(r, f, "fResult") && resOf(r) === v).length},
+    {id:"fRebut",  count: v => ALL.filter(r => rowMatches(r, f, "fRebut") && (v === "any" ? !!rebKind(r.rebuttal) : rebKind(r.rebuttal) === v)).length},
     {id:"fType",   count: v => { const t = TYPES.find(x => x.astra === v); return ALL.filter(r => rowMatches(r, f, "fType") && t && t.match.test(r.claim || "")).length; }}
   ];
   for (const x of fixed){
@@ -841,6 +858,15 @@ function apply(resetPage = true){
   renderTable();
 }
 
+/* Rebuttal status (claims sheet column X), shown under the final status only when a rebuttal exists */
+const REBUTTAL_SHEET = "https://docs.google.com/spreadsheets/d/1geSxOEynNqJsKfb1rJGl0si7V40wwSjcXHyZRY-NO5Y/edit?gid=1942937272#gid=1942937272";
+const rebKind = v => { const t = String(v || "").toLowerCase(); return !t ? "" : /accept/.test(t) ? "acc" : /reject/.test(t) ? "rej" : "pen"; };
+function rebuttalTag(r){
+  const k = rebKind(r.rebuttal); if (!k) return "";
+  const label = k === "acc" ? "Accepted" : k === "rej" ? "Rejected" : "Pending";
+  return '<span class="rebut ' + k + '">Rebuttal: ' + label + '</span>' +
+    (k === "rej" ? '<a class="rebut-link" href="' + REBUTTAL_SHEET + '" target="_blank" rel="noopener">View remarks ↗</a>' : "");
+}
 function cell(c, r){
   const v = r[c.key];
   switch (c.key){
@@ -849,7 +875,7 @@ function cell(c, r){
                     return t ? '<span class="tag neutral" style="font-weight:500;color:var(--ink)" title="' + esc(t.label) + '"><span class="em" aria-hidden="true">' + t.emoji + '</span>' + esc(t.astra) + '</span>' : esc(v || "–"); }
     case "app":   return '<span class="mask">' + esc(v || "–") + '</span>';
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
-                         (v ? '<span class="reason">' + esc(v) + '</span>' : "");
+                         (v ? '<span class="reason">' + esc(v) + '</span>' : "") + rebuttalTag(r);
     case "fired": return '<span class="tag ' + (isFired(v) ? "ok" : "neutral") + '">' + icon(isFired(v) ? "fired" : "notfired") + esc(firedLabel(v)) + '</span>';
     default:      return v ? esc(v) : '<span style="color:var(--faint)">–</span>';
   }
@@ -879,12 +905,12 @@ function renderActive(){
   const label = (id, name) => { const el = $(id); if (!el.value) return; const o = el.options[el.selectedIndex];
     items.push({id, text: name + ": " + (o ? o.textContent.replace(/\s*\(\d[\d,]*\)$/, "") : el.value)}); };
   if ($("q").value.trim()) items.push({id:"q", text:'Search: "' + $("q").value.trim() + '"'});
-  label("fDrona", "Coordinator"); label("fSarathi", "Team leader"); label("fType", "Type"); label("fResult", "Status"); label("fMonth", "Month");
+  label("fDrona", "Coordinator"); label("fSarathi", "Team leader"); label("fType", "Type"); label("fResult", "Status"); label("fRebut", "Rebuttal"); label("fMonth", "Month");
   if ($("dFrom").value || $("dTo").value) items.push({id:"dates", text:"Dates: " + ($("dFrom").value || "…") + " to " + ($("dTo").value || "…")});
   $("activeStrip").hidden = !items.length;
   $("activeStrip").innerHTML = '<span class="aslabel">Showing</span>' + items.map(it =>
     '<span class="achip">' + esc(it.text) + '<button type="button" data-clear="' + it.id + '" aria-label="Remove ' + esc(it.text) + '">✕</button></span>').join("");
-  for (const id of ["fDrona","fSarathi","fType","fResult","fMonth","dFrom","dTo","q"]) $(id).classList.toggle("has-value", !!$(id).value.trim());
+  for (const id of ["fDrona","fSarathi","fType","fResult","fRebut","fMonth","dFrom","dTo","q"]) $(id).classList.toggle("has-value", !!$(id).value.trim());
 }
 $("activeStrip").addEventListener("click", e => {
   const b = e.target.closest("button[data-clear]"); if (!b) return;
@@ -896,7 +922,7 @@ $("activeStrip").addEventListener("click", e => {
 
 let t;
 $("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); });
-["fSarathi","fResult","fType","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
+["fSarathi","fResult","fType","fRebut","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
 $("fDrona").addEventListener("change", () => {
   // if the chosen team leader isn't under the new coordinator, clear it
   const f = readFilters();

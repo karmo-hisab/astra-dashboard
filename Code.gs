@@ -17,9 +17,9 @@ var CONFIG = {
 };
 
 /* Sheet columns sent to the dashboard (nothing else leaves the sheet)
-   ts   name uid  claim app  astra paid drona final fired sarathi month */
-var COLS = ["A", "M", "L", "E", "C", "N", "Q", "J", "V", "W", "I", "O"];
-var DICT_FIELDS = {claim: 3, drona: 7, final: 8, fired: 9, sarathi: 10, month: 11};
+   ts   name uid  claim app  astra paid drona final fired sarathi month rebuttal */
+var COLS = ["A", "M", "L", "E", "C", "N", "Q", "J", "V", "W", "I", "O", "X"];
+var DICT_FIELDS = {claim: 3, drona: 7, final: 8, fired: 9, sarathi: 10, month: 11, rebuttal: 12};
 
 /* ---------- Web entry points ---------- */
 function doPost(e){
@@ -118,7 +118,8 @@ function buildData_(){
     if (!tsText && !name && !app) continue;
     rows.push([ms(tsVals[i]), name, colText.L[i], code("claim", colText.E[i]), app, colText.N[i],
                colText.Q[i], ms(paidVals[i]), code("drona", colText.J[i]), code("final", colText.V[i]),
-               code("fired", colText.W[i]), code("sarathi", colText.I[i]), code("month", colText.O[i])]);
+               code("fired", colText.W[i]), code("sarathi", colText.I[i]), code("month", colText.O[i]),
+               code("rebuttal", colText.X[i])]);                       // X: rebuttal status (Accepted / Rejected / Pending / blank)
   }
   var roster = [], rosterNote = "";
   try { roster = buildRoster_(); } catch (e) { rosterNote = String(e && e.message || e); }
@@ -130,7 +131,7 @@ function buildData_(){
     rosterFields: ["uid", "name", "role", "coord", "sim", "skill", "tlUid", "tlName", "active", "lastSeen"],
     rosterNote: rosterNote,
     fields: ["ts", "name", "uid", "claim", "app", "astra", "paid", "paidTs",
-             "drona", "final", "fired", "sarathi", "month"],
+             "drona", "final", "fired", "sarathi", "month", "rebuttal"],
     dict: dicts,
     rows: rows
   };
