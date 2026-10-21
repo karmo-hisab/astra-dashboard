@@ -173,6 +173,30 @@ html.nav-mini .sidenav span.two{display:none}
 .rebut-link{display:block;margin-top:3px;font-size:12px;font-weight:600;color:var(--navy-2)}
 :root[data-theme="dark"] .rebut-link{color:#9DB8FF}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .rebut-link{color:#9DB8FF} }
+/* Verification progress */
+.vprog{padding:6px 18px;margin-bottom:22px}
+.vrow{display:flex;gap:18px;align-items:flex-start;padding:12px 0}
+.vrow + .vrow{border-top:1px solid var(--line-2)}
+.vlabel{flex:none;width:150px;display:flex;flex-direction:column}
+.vlabel b{font-family:var(--serif);font-size:16px}
+.vlabel small{font-size:12px;color:var(--faint)}
+.vmain{flex:1;min-width:0}
+.vbar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line-2);margin:6px 0 10px}
+.vbar span{display:block;height:100%}
+.vbar .ok{background:var(--ok)} .vbar .wait{background:var(--wait)} .vbar .bad{background:var(--bad)} .vbar .prq{background:#7A4FB5} .vbar .psb{background:#2F7F86}
+.vplain{font-size:12.5px;color:var(--muted);margin-right:2px} .vplain b{color:var(--ink)}
+.vchip.bad{border-left:4px solid var(--bad)}
+.vchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.vpct{font-weight:700;font-size:13.5px;margin-right:4px}
+.vchip{border-radius:999px;padding:3px 11px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--muted)}
+.vchip b{color:var(--ink)}
+.vchip:hover:not(:disabled){border-color:var(--navy-2)}
+.vchip:disabled{opacity:.5;cursor:default}
+.vchip.ok{border-left:4px solid var(--ok)} .vchip.wait{border-left:4px solid var(--wait)} .vchip.prq{border-left:4px solid #7A4FB5} .vchip.psb{border-left:4px solid #2F7F86}
+.vchip.on{background:var(--neutral-bg);border-color:var(--accent);color:var(--ink)}
+.vlate{font-size:12px;font-weight:700;color:var(--bad)}
+.vnote{display:block;margin-top:6px;font-size:12px;color:var(--faint)}
+@media (max-width: 720px){ .vrow{flex-direction:column;gap:4px} .vlabel{width:auto;flex-direction:row;gap:8px;align-items:baseline} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -418,6 +442,9 @@ footer b{color:var(--muted);font-weight:600}
     <div class="stat fire"><h2><svg class="ic" aria-hidden="true"><use href="#i-fired"/></svg>Astra ID fired (Used)</h2><div class="big" id="sFired">–</div><div class="sub" id="sFiredSub">&nbsp;</div></div>
   </section>
 
+  <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-hit"/></svg>Verification progress</h2>
+  <section class="panel vprog" id="vprog" aria-label="Verification progress"></section>
+
   <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-grid"/></svg>Claims by type</h2>
   <section class="types" aria-label="Claims by type" id="types"></section>
 
@@ -449,6 +476,13 @@ footer b{color:var(--muted);font-weight:600}
         <label class="f">Hit or Miss
           <select id="fResult">
             <option value="">All</option><option value="ok">Hit</option><option value="bad">Miss</option><option value="wait">Pending</option>
+          </select>
+        </label>
+        <label class="f">Verification stage
+          <select id="fStage">
+            <option value="">All</option><option value="s1p">Step 1 pending</option><option value="rej1">Rejected at Step 1</option>
+            <option value="s2p">Step 2 pending</option><option value="prq">Proof required</option><option value="psb">Proof submitted</option>
+            <option value="done2">Completed at Step 2</option>
           </select>
         </label>
         <label class="f">Rebuttal
@@ -745,7 +779,7 @@ const DROPDOWNS = [
   {id:"fSarathi", key:"_team", labelKey:"_teamLabel"},
   {id:"fMonth",   key:"month"},
 ];
-const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fRebut","fMonth","dFrom","dTo"];
+const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fStage","fRebut","fMonth","dFrom","dTo"];
 
 /* Current filter choices */
 function readFilters(){
@@ -754,6 +788,7 @@ function readFilters(){
     res: $("fResult").value,
     ty: TYPES.find(t => t.astra === $("fType").value),
     reb: $("fRebut").value,
+    stage: $("fStage").value,
     /* Date range uses the claim submission date (Timestamp, column A) */
     from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
     to:   $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null,
@@ -770,6 +805,7 @@ function rowMatches(r, f, skipArg){
   if (!has("fResult") && f.res && resOf(r) !== f.res) return false;
   if (!has("fType") && f.ty && !f.ty.match.test(r.claim || "")) return false;
   if (!has("fRebut") && f.reb && (f.reb === "any" ? !rebKind(r.rebuttal) : rebKind(r.rebuttal) !== f.reb)) return false;
+  if (!has("fStage") && f.stage && stageOf(r) !== f.stage) return false;
   for (const d of DROPDOWNS) if (!has(d.id) && f.drop[d.id] && (r[d.key] || "(blank)") !== f.drop[d.id]) return false;
   return true;
 }
@@ -797,6 +833,7 @@ function buildOptions(f){
   // Fixed lists (Hit or Miss, Claim type): show counts, grey out options with no claims
   const fixed = [
     {id:"fResult", count: v => ALL.filter(r => rowMatches(r, f, "fResult") && resOf(r) === v).length},
+    {id:"fStage",  count: v => ALL.filter(r => rowMatches(r, f, "fStage") && stageOf(r) === v).length},
     {id:"fRebut",  count: v => ALL.filter(r => rowMatches(r, f, "fRebut") && (v === "any" ? !!rebKind(r.rebuttal) : rebKind(r.rebuttal) === v)).length},
     {id:"fType",   count: v => { const t = TYPES.find(x => x.astra === v); return ALL.filter(r => rowMatches(r, f, "fType") && t && t.match.test(r.claim || "")).length; }}
   ];
@@ -815,6 +852,7 @@ function apply(resetPage = true){
   const f = readFilters();
   buildOptions(f);
   VIEW = ALL.filter(r => rowMatches(r, f, null));
+  renderProgress(f);
   const col = SHOWN.find(c => c.key === sortKey);
   VIEW.sort((a, b) => {
     let x = a[sortKey], y = b[sortKey];
@@ -864,6 +902,58 @@ function apply(resetPage = true){
   renderTable();
 }
 
+/* Verification stage from the final status (column V):
+   s1p = Step 1 pending, s2p = Step 2 pending, prq = proof required, psb = proof submitted, done = decided (at Step 1 or Step 2) */
+function stageOf(r){
+  if (r._stage) return r._stage;
+  const s = String(r.final || "").replace(/\s+/g, " ").trim().toLowerCase();
+  const m = s.match(/step\s*1\s*:?\s*(.*?)[,\s]*step\s*2\s*:?\s*(.*)$/);
+  let st;
+  if (!s) st = "s1p";
+  else if (!m) st = /^(approved|hit)/.test(s) ? "done2" : /to be evaluated|pending/.test(s) && !/quality assurance|clash/.test(s) ? "s1p" : /proof required/.test(s) ? "prq" : /proof submitted/.test(s) ? "psb" : /clash|quality assurance/.test(s) ? "s2p" : "rej1";
+  else {
+    const s1 = m[1].replace(/[,.\s]+$/, "").trim(), s2 = m[2].replace(/[,.\s]+$/, "").trim();
+    const forward = s1 === "approved" || /clash|quality assurance/.test(s1);
+    if (!s1 || /^(to be evaluated|1st step is pending|pending)$/.test(s1)) st = "s1p";
+    else if (!forward) st = "rej1";                                   // rejected at Step 1: no Step 2
+    else if (s2 === "approved") st = "done2";
+    else if (/proof required/.test(s2)) st = "prq";
+    else if (/proof submitted/.test(s2)) st = "psb";
+    else if (!s2 || s2 === s1 || /to be evaluated|pending|clash|quality assurance/.test(s2)) st = "s2p";
+    else st = "done2";                                                // rejected at Step 2
+  }
+  r._stage = st;
+  return st;
+}
+const STAGE_LABEL = {s1p:"Step 1 pending", rej1:"Rejected at Step 1", s2p:"Step 2 pending", prq:"Proof required", psb:"Proof submitted", done2:"Completed at Step 2"};
+const WAIT_DAYS = 3;
+function renderProgress(f){
+  const list = ALL.filter(r => rowMatches(r, f, "fStage"));
+  const c = {s1p:0, rej1:0, s2p:0, prq:0, psb:0, done2:0}, late = {s1p:0, s2p:0};
+  const old = Date.now() - WAIT_DAYS * 864e5;
+  for (const r of list){
+    const st = stageOf(r);
+    c[st]++;
+    if ((st === "s1p" || st === "s2p") && r._ts && r._ts < old) late[st]++;
+  }
+  const s1Done = list.length - c.s1p, s2Total = c.s2p + c.prq + c.psb + c.done2;
+  const pc = (a, b) => b ? Math.round(a * 100 / b) : 0;
+  const chip = (stage, n, label, cls) => '<button type="button" class="vchip ' + cls + ($("fStage").value === stage ? " on" : "") + '" data-stage="' + stage + '" ' + (n ? "" : "disabled") + '><b>' + fmt(n) + '</b> ' + label + '</button>';
+  const bar = segs => '<div class="vbar">' + segs.map(([n, cls]) => n ? '<span class="' + cls + '" style="width:' + (n * 100 / Math.max(1, segs.reduce((a, x) => a + x[0], 0))) + '%"></span>' : "").join("") + '</div>';
+  $("vprog").innerHTML =
+    '<div class="vrow"><div class="vlabel"><b>Step 1</b><small>Record verification</small></div>' +
+      '<div class="vmain">' + bar([[s1Done - c.rej1, "ok"], [c.rej1, "bad"], [c.s1p, "wait"]]) +
+      '<div class="vchips"><span class="vpct">' + pc(s1Done, list.length) + '% done</span><span class="vplain"><b>' + fmt(s1Done) + '</b> done</span>' +
+      chip("s1p", c.s1p, "pending", "wait") + chip("rej1", c.rej1, "rejected", "bad") +
+      (late.s1p ? '<span class="vlate">' + fmt(late.s1p) + ' waiting over ' + WAIT_DAYS + ' days</span>' : '') + '</div></div></div>' +
+    '<div class="vrow"><div class="vlabel"><b>Step 2</b><small>Snooping verification</small></div>' +
+      '<div class="vmain">' + bar([[c.done2, "ok"], [c.psb, "psb"], [c.prq, "prq"], [c.s2p, "wait"]]) +
+      '<div class="vchips"><span class="vpct">' + pc(c.done2, s2Total) + '% done</span>' + chip("done2", c.done2, "done", "ok") + chip("s2p", c.s2p, "pending", "wait") +
+      chip("prq", c.prq, "proof required", "prq") + chip("psb", c.psb, "proof submitted", "psb") +
+      (late.s2p ? '<span class="vlate">' + fmt(late.s2p) + ' waiting over ' + WAIT_DAYS + ' days</span>' : '') + '</div>' +
+      '<small class="vnote">' + fmt(s2Total) + ' claims forwarded from Step 1</small></div></div>';
+}
+
 /* Rebuttal status (claims sheet column X), shown under the final status only when a rebuttal exists */
 const REBUTTAL_SHEET = "https://docs.google.com/spreadsheets/d/1geSxOEynNqJsKfb1rJGl0si7V40wwSjcXHyZRY-NO5Y/edit?gid=1942937272#gid=1942937272";
 const rebKind = v => { const t = String(v || "").toLowerCase(); return !t ? "" : /accept/.test(t) ? "acc" : /reject/.test(t) ? "rej" : "pen"; };
@@ -911,12 +1001,12 @@ function renderActive(){
   const label = (id, name) => { const el = $(id); if (!el.value) return; const o = el.options[el.selectedIndex];
     items.push({id, text: name + ": " + (o ? o.textContent.replace(/\s*\(\d[\d,]*\)$/, "") : el.value)}); };
   if ($("q").value.trim()) items.push({id:"q", text:'Search: "' + $("q").value.trim() + '"'});
-  label("fDrona", "Coordinator"); label("fSarathi", "Team leader"); label("fType", "Type"); label("fResult", "Status"); label("fRebut", "Rebuttal"); label("fMonth", "Month");
+  label("fDrona", "Coordinator"); label("fSarathi", "Team leader"); label("fType", "Type"); label("fResult", "Status"); label("fStage", "Stage"); label("fRebut", "Rebuttal"); label("fMonth", "Month");
   if ($("dFrom").value || $("dTo").value) items.push({id:"dates", text:"Dates: " + ($("dFrom").value || "…") + " to " + ($("dTo").value || "…")});
   $("activeStrip").hidden = !items.length;
   $("activeStrip").innerHTML = '<span class="aslabel">Showing</span>' + items.map(it =>
     '<span class="achip">' + esc(it.text) + '<button type="button" data-clear="' + it.id + '" aria-label="Remove ' + esc(it.text) + '">✕</button></span>').join("");
-  for (const id of ["fDrona","fSarathi","fType","fResult","fRebut","fMonth","dFrom","dTo","q"]) $(id).classList.toggle("has-value", !!$(id).value.trim());
+  for (const id of ["fDrona","fSarathi","fType","fResult","fStage","fRebut","fMonth","dFrom","dTo","q"]) $(id).classList.toggle("has-value", !!$(id).value.trim());
 }
 $("activeStrip").addEventListener("click", e => {
   const b = e.target.closest("button[data-clear]"); if (!b) return;
@@ -928,7 +1018,12 @@ $("activeStrip").addEventListener("click", e => {
 
 let t;
 $("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); });
-["fSarathi","fResult","fType","fRebut","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
+["fSarathi","fResult","fType","fStage","fRebut","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
+$("vprog").addEventListener("click", e => {
+  const b = e.target.closest(".vchip"); if (!b) return;
+  $("fStage").value = $("fStage").value === b.dataset.stage ? "" : b.dataset.stage; apply();
+  if ($("fStage").value) document.querySelector(".table-panel").scrollIntoView({behavior:"smooth", block:"start"});
+});
 $("fDrona").addEventListener("change", () => {
   // if the chosen team leader isn't under the new coordinator, clear it
   const f = readFilters();
