@@ -197,6 +197,15 @@ html.nav-mini .sidenav span.two{display:none}
 .vlate{font-size:12px;font-weight:700;color:var(--bad)}
 .vnote{display:block;margin-top:6px;font-size:12px;color:var(--faint)}
 @media (max-width: 720px){ .vrow{flex-direction:column;gap:4px} .vlabel{width:auto;flex-direction:row;gap:8px;align-items:baseline} }
+.vhead{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;margin-bottom:10px}
+.vhead .section-title{margin:0}
+.vhead .vtoggle{margin-left:auto;margin-right:0}
+.vhead.collapsed{margin-bottom:22px}
+.vhead.collapsed .ftoggle .ic{transform:rotate(180deg)}
+.vmini{font-size:13px;color:var(--muted)}
+.vmini b{color:var(--ink)}
+.vsep{color:var(--faint);margin:0 4px}
+@media (max-width: 720px){ .vmini{order:3;flex-basis:100%} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -442,7 +451,11 @@ footer b{color:var(--muted);font-weight:600}
     <div class="stat fire"><h2><svg class="ic" aria-hidden="true"><use href="#i-fired"/></svg>Astra ID fired (Used)</h2><div class="big" id="sFired">–</div><div class="sub" id="sFiredSub">&nbsp;</div></div>
   </section>
 
-  <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-hit"/></svg>Verification progress</h2>
+  <div class="vhead">
+    <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-hit"/></svg>Verification progress</h2>
+    <span class="vmini" id="vmini" hidden></span>
+    <button type="button" class="ftoggle vtoggle" id="vToggle" aria-expanded="true" aria-controls="vprog"></button>
+  </div>
   <section class="panel vprog" id="vprog" aria-label="Verification progress"></section>
 
   <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-grid"/></svg>Claims by type</h2>
@@ -938,6 +951,8 @@ function renderProgress(f){
   }
   const s1Done = list.length - c.s1p, s2Total = c.s2p + c.prq + c.psb + c.done2;
   const pc = (a, b) => b ? Math.round(a * 100 / b) : 0;
+  $("vmini").innerHTML = '<b>Step 1:</b> ' + pc(s1Done, list.length) + '% done, ' + fmt(c.s1p) + ' pending <span class="vsep">|</span> <b>Step 2:</b> ' +
+    pc(c.done2, s2Total) + '% done, ' + fmt(c.s2p + c.prq + c.psb) + ' pending';
   const chip = (stage, n, label, cls) => '<button type="button" class="vchip ' + cls + ($("fStage").value === stage ? " on" : "") + '" data-stage="' + stage + '" ' + (n ? "" : "disabled") + '><b>' + fmt(n) + '</b> ' + label + '</button>';
   const bar = segs => '<div class="vbar">' + segs.map(([n, cls]) => n ? '<span class="' + cls + '" style="width:' + (n * 100 / Math.max(1, segs.reduce((a, x) => a + x[0], 0))) + '%"></span>' : "").join("") + '</div>';
   $("vprog").innerHTML =
@@ -1019,6 +1034,17 @@ $("activeStrip").addEventListener("click", e => {
 let t;
 $("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); });
 ["fSarathi","fResult","fType","fStage","fRebut","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
+(function(){
+  const setV = collapsed => {
+    $("vprog").hidden = collapsed; $("vmini").hidden = !collapsed;
+    $("vToggle").setAttribute("aria-expanded", collapsed ? "false" : "true");
+    $("vToggle").innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg>' + (collapsed ? "Show" : "Hide");
+    $("vToggle").closest(".vhead").classList.toggle("collapsed", collapsed);
+  };
+  let c = false; try{ c = localStorage.getItem("hk_vprog") === "1"; }catch(_){}
+  setV(c);
+  $("vToggle").addEventListener("click", () => { c = !c; setV(c); try{ localStorage.setItem("hk_vprog", c ? "1" : "0"); }catch(_){} });
+})();
 $("vprog").addEventListener("click", e => {
   const b = e.target.closest(".vchip"); if (!b) return;
   $("fStage").value = $("fStage").value === b.dataset.stage ? "" : b.dataset.stage; apply();
