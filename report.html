@@ -502,13 +502,13 @@ footer b{color:var(--muted);font-weight:600}
       <tr><th rowspan="2">Claim type</th><th colspan="3" class="grp">Step 1: Record verification</th><th colspan="3" class="grp">Step 2: Snooping verification</th></tr>
       <tr><th>Average</th><th>Median</th><th>Claims</th><th>Average</th><th>Median</th><th>Claims</th></tr>
     </thead><tbody id="tatBody"></tbody></table></div></div>
-    <p class="rnote">Step 1 TAT = Step-1 check date − claim submission (claims submitted before 21 Oct 2026 count from 21 Oct 2026, when Step 1 verification started). Step 2 TAT = Step-2 check date and time − Step-1 check date. Only claims with both dates are included.</p>
+    <p class="rnote">Step 1 TAT = Step-1 check date − claim submission. Step 2 TAT = Step-2 check date and time − Step-1 check date. For both steps, any start before 21 Oct 2026 (when verification started) counts from 21 Oct 2026. Only claims with both dates are included.</p>
 
     <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-cal"/></svg>Pending ageing</h2>
     <div class="panel rtable"><div class="tablebox"><table class="rt"><thead><tr>
       <th>Waiting at</th><th>0–1 days</th><th>2–3 days</th><th>4–7 days</th><th>Over 7 days</th><th>Total pending</th>
     </tr></thead><tbody id="ageBody"></tbody></table></div></div>
-    <p class="rnote">Step 1 waiting time counts from claim submission (or 21 Oct 2026 for older claims); Step 2 from the Step-1 check date.</p>
+    <p class="rnote">Step 1 waiting time counts from claim submission, Step 2 from the Step-1 check date; any start before 21 Oct 2026 counts from 21 Oct 2026.</p>
   </section>
 
   <footer>
@@ -752,7 +752,7 @@ function assignTeams(rows){
 /* ================== VERIFICATION REPORT PAGE ================== */
 /* Counts by claim type, TAT for Step 1 and Step 2, and pending ageing. Counts only, no student details. */
 const RDAY = 864e5;
-/* Step 1 verification started on this date: older claims count their Step 1 time from here */
+/* Verification started on this date: older claims count their Step 1 and Step 2 time from here */
 const STEP1_START = new Date("2026-10-21T00:00:00").getTime();
 const step1From = ts => Math.max(dayStart(ts), STEP1_START);
 const RTYPES = [
@@ -820,12 +820,12 @@ function render(){
       if (d1 >= 0){ row.t1.push(d1); total.t1.push(d1); }
     }
     if (r.s2d && r.s1d && (st === "done2" || st === "prq" || st === "psb")){
-      const d2 = (r.s2d - dayStart(r.s1d)) / RDAY;
+      const d2 = (r.s2d - Math.max(dayStart(r.s1d), STEP1_START)) / RDAY;   // also counted from 21 Oct 2026 at the earliest
       if (d2 >= 0){ row.t2.push(d2); total.t2.push(d2); }
     }
     // Pending ageing
     if (st === "s1p" && r._ts) age.s1p[bucket(Math.floor((now - Math.max(r._ts, STEP1_START)) / RDAY))]++;
-    if ((st === "s2p" || st === "prq" || st === "psb")) { const start = r.s1d || r._ts; if (start) age.s2p[bucket(Math.floor((now - start) / RDAY))]++; }
+    if ((st === "s2p" || st === "prq" || st === "psb")) { const start = Math.max(r.s1d || r._ts || 0, STEP1_START); age.s2p[bucket(Math.floor((now - start) / RDAY))]++; }
   }
   const pct = (a, b) => b ? Math.round(a * 100 / b) + "%" : "–";
   const sumRow = (label, x, cls) => '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +

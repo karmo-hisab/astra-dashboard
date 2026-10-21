@@ -950,7 +950,7 @@ function renderProgress(f){
   for (const r of list){
     const st = stageOf(r);
     c[st]++;
-    const startAt = st === "s1p" ? Math.max(r._ts || 0, STEP1_START_MS) : (r.s1d || r._ts);   // Step 1 started on 21 Oct 2026
+    const startAt = Math.max(st === "s1p" ? (r._ts || 0) : (r.s1d || r._ts || 0), STEP1_START_MS);   // verification started on 21 Oct 2026
     if ((st === "s1p" || st === "s2p") && startAt && startAt < old) late[st]++;
   }
   const s1Done = list.length - c.s1p, s2Total = c.s2p + c.prq + c.psb + c.done2;
