@@ -494,6 +494,7 @@ footer b{color:var(--muted);font-weight:600}
     <a href="structure.html" data-page="structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
     <a href="./" data-page="index" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
     <a href="teams.html" data-page="teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
+    <a href="report.html" data-page="report" title="Verification Report"><svg class="ic lg" aria-hidden="true"><use href="#i-hit"/></svg><span>Verification Report</span></a>
     <a href="apps.html" data-page="apps" title="Team Leaders Stats (Application Follow Up)"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg><span class="two">Team Leaders Stats<small>Application Follow Up</small></span></a>
   </nav>
   <button type="button" class="collapse" id="navCollapse" aria-label="Collapse menu"><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg><span>Collapse</span></button>
@@ -795,7 +796,8 @@ async function fetchClaims(useShared){
     _ts: r[F.ts], name: r[F.name], uid: r[F.uid], claim: D.claim[r[F.claim]], app: r[F.app], astra: r[F.astra],
     paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
     fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]],
-    rebuttal: F.rebuttal !== undefined && D.rebuttal ? String(D.rebuttal[r[F.rebuttal]] || "").trim() : ""
+    rebuttal: F.rebuttal !== undefined && D.rebuttal ? String(D.rebuttal[r[F.rebuttal]] || "").trim() : "",
+    s1d: F.s1date !== undefined ? r[F.s1date] || 0 : 0, s2d: F.s2date !== undefined ? r[F.s2date] || 0 : 0
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
