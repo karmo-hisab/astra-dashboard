@@ -595,7 +595,7 @@ footer b{color:var(--muted);font-weight:600}
   <section id="tree" aria-label="Team structure"></section>
 
   <footer>
-    <span><b>For LPU internal use only.</b> Access is limited to @lpu.co.in accounts. Please don't share screenshots outside LPU.</span>
+    <span><b>For LPU internal use only.</b> Access is limited to @lpu.co.in accounts. Please don't share screenshots outside LPU. Page visits are recorded for internal usage reports.</span>
     <span>Structure from the duty list (TL Bifurcation). Ranks follow the Teams page scoring.</span>
   </footer>
 </div>
@@ -700,6 +700,12 @@ function signedIn(token){
   document.body.classList.remove("locked");
   $("gateMsg").textContent = "";
   load(false);
+  // usage report: tell the data service this page was opened (recorded once per person, per page, per day)
+  try{
+    const page = (location.pathname.split("/").pop() || "index.html").replace(".html", "") || "index";
+    const k = "hk_seen_" + page + "_" + new Date().toISOString().slice(0, 10);
+    if (!sessionStorage.getItem(k)){ sessionStorage.setItem(k, "1"); fetch(API_URL, {method:"POST", body: JSON.stringify({token, what:"ping", page})}).catch(() => {}); }
+  }catch(_){}
 }
 function onCredential(resp){
   const p = jwtPayload(resp.credential);
