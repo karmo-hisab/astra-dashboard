@@ -942,6 +942,7 @@ function stageOf(r){
 }
 const STAGE_LABEL = {s1p:"Step 1 pending", rej1:"Rejected at Step 1", s2p:"Step 2 pending", prq:"Proof required", psb:"Proof submitted", done2:"Completed at Step 2"};
 const WAIT_DAYS = 3;
+const STEP1_START_MS = new Date("2026-10-21T00:00:00").getTime();      // Step 1 verification started
 function renderProgress(f){
   const list = ALL.filter(r => rowMatches(r, f, "fStage"));
   const c = {s1p:0, rej1:0, s2p:0, prq:0, psb:0, done2:0}, late = {s1p:0, s2p:0};
@@ -949,7 +950,8 @@ function renderProgress(f){
   for (const r of list){
     const st = stageOf(r);
     c[st]++;
-    if ((st === "s1p" || st === "s2p") && r._ts && r._ts < old) late[st]++;
+    const startAt = st === "s1p" ? Math.max(r._ts || 0, STEP1_START_MS) : (r.s1d || r._ts);   // Step 1 started on 21 Oct 2026
+    if ((st === "s1p" || st === "s2p") && startAt && startAt < old) late[st]++;
   }
   const s1Done = list.length - c.s1p, s2Total = c.s2p + c.prq + c.psb + c.done2;
   const pc = (a, b) => b ? Math.round(a * 100 / b) : 0;

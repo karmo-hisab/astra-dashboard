@@ -216,6 +216,8 @@ html.nav-mini .sidenav span.two{display:none}
 .rt th,.rt td{text-align:right}
 .rt th:first-child,.rt td:first-child{text-align:left}
 .rt th.grp{text-align:center;border-bottom:1px solid var(--line)}
+.rt thead tr:nth-child(2) th{text-align:right}
+.rt thead tr:first-child th[rowspan]{vertical-align:bottom}
 .rt td{font-variant-numeric:tabular-nums}
 .rt tr.total td{font-weight:700;border-top:2px solid var(--line);background:var(--neutral-bg)}
 .rt .accept{font-weight:700}
@@ -500,13 +502,13 @@ footer b{color:var(--muted);font-weight:600}
       <tr><th rowspan="2">Claim type</th><th colspan="3" class="grp">Step 1: Record verification</th><th colspan="3" class="grp">Step 2: Snooping verification</th></tr>
       <tr><th>Average</th><th>Median</th><th>Claims</th><th>Average</th><th>Median</th><th>Claims</th></tr>
     </thead><tbody id="tatBody"></tbody></table></div></div>
-    <p class="rnote">Step 1 TAT = Step-1 check date − claim submission. Step 2 TAT = Step-2 check date and time − Step-1 check date. Only claims with both dates are included.</p>
+    <p class="rnote">Step 1 TAT = Step-1 check date − claim submission (claims submitted before 21 Oct 2026 count from 21 Oct 2026, when Step 1 verification started). Step 2 TAT = Step-2 check date and time − Step-1 check date. Only claims with both dates are included.</p>
 
     <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-cal"/></svg>Pending ageing</h2>
     <div class="panel rtable"><div class="tablebox"><table class="rt"><thead><tr>
       <th>Waiting at</th><th>0–1 days</th><th>2–3 days</th><th>4–7 days</th><th>Over 7 days</th><th>Total pending</th>
     </tr></thead><tbody id="ageBody"></tbody></table></div></div>
-    <p class="rnote">Step 1 waiting time counts from claim submission; Step 2 from the Step-1 check date.</p>
+    <p class="rnote">Step 1 waiting time counts from claim submission (or 21 Oct 2026 for older claims); Step 2 from the Step-1 check date.</p>
   </section>
 
   <footer>
@@ -750,6 +752,9 @@ function assignTeams(rows){
 /* ================== VERIFICATION REPORT PAGE ================== */
 /* Counts by claim type, TAT for Step 1 and Step 2, and pending ageing. Counts only, no student details. */
 const RDAY = 864e5;
+/* Step 1 verification started on this date: older claims count their Step 1 time from here */
+const STEP1_START = new Date("2026-10-21T00:00:00").getTime();
+const step1From = ts => Math.max(dayStart(ts), STEP1_START);
 const RTYPES = [
   {re:/brahmast/i,      label:"Admission",   emoji:"🏹"},
   {re:/arrow/i,         label:"Application", emoji:"🎯"},
@@ -811,7 +816,7 @@ function render(){
     }
     // TAT: Step 1 = Step-1 check date − submission (whole days, the check date has no time); Step 2 = Step-2 date & time − Step-1 check date
     if (r.s1d && r._ts && st !== "s1p"){
-      const d1 = (dayStart(r.s1d) - dayStart(r._ts)) / RDAY;
+      const d1 = (dayStart(r.s1d) - step1From(r._ts)) / RDAY;
       if (d1 >= 0){ row.t1.push(d1); total.t1.push(d1); }
     }
     if (r.s2d && r.s1d && (st === "done2" || st === "prq" || st === "psb")){
@@ -819,7 +824,7 @@ function render(){
       if (d2 >= 0){ row.t2.push(d2); total.t2.push(d2); }
     }
     // Pending ageing
-    if (st === "s1p" && r._ts) age.s1p[bucket(Math.floor((now - r._ts) / RDAY))]++;
+    if (st === "s1p" && r._ts) age.s1p[bucket(Math.floor((now - Math.max(r._ts, STEP1_START)) / RDAY))]++;
     if ((st === "s2p" || st === "prq" || st === "psb")) { const start = r.s1d || r._ts; if (start) age.s2p[bucket(Math.floor((now - start) / RDAY))]++; }
   }
   const pct = (a, b) => b ? Math.round(a * 100 / b) + "%" : "–";

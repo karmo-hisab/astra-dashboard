@@ -143,7 +143,7 @@ html.nav-mini .sidenav span.two{display:none}
 .topbar .acctmenu .menuitem:hover{background:var(--neutral-bg)}
 .topbar .acctmenu #installBtn{background:none;color:var(--ink);border:none}
 @media (max-width: 720px){ .rlabel{display:none} .subline{font-size:12px} }
-#refreshBtn{display:none!important}   /* data updates by itself (every 10 minutes, and on opening a page) */
+#refreshBtn{display:inline-flex!important}   /* Team Leaders Stats keeps a Refresh button */   /* data updates by itself (every 10 minutes, and on opening a page) */
 /* Status pill and theme choice in the account menu */
 .topbar .statuspill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:#C3CBE0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 12px;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
 .subline .status::before{content:none}
@@ -513,7 +513,7 @@ footer b{color:var(--muted);font-weight:600}
   </div>
   <div class="meta">
     <span class="status loading needs-auth statuspill" id="updated" title="When the data was last updated"><i></i>Loading…</span>
-    <button id="refreshBtn" class="needs-auth" type="button" title="Get the latest data" hidden><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg><span class="rlabel">Refresh</span></button>
+    <button id="refreshBtn" class="needs-auth" type="button" title="Get the latest data"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg><span class="rlabel">Refresh</span></button>
     <div class="thm">
       <button type="button" class="thmbtn" id="themeMenuBtn" aria-haspopup="true" aria-expanded="false" aria-controls="themePop" title="Change theme"></button>
       <div class="thmpop" id="themePop" hidden role="group" aria-label="Theme">
