@@ -287,6 +287,11 @@ tbody tr.hl td b{color:var(--ink)}
 .leadnote{display:block;font-size:12.5px;color:var(--faint);margin:0 2px 8px}
 .leadnote.stale{color:var(--wait);font-weight:600}
 .faint{color:var(--faint)}
+.funnel{display:flex;flex-direction:column;gap:1px;font-size:12.5px;white-space:nowrap;color:var(--muted)}
+.funnel .fl{font-size:13.5px;color:var(--ink)}
+.funnel b{color:var(--ink)}
+.fskills{display:flex;flex-direction:column;margin-top:5px;padding-top:4px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--faint);white-space:nowrap}
+.fskills i{font-style:normal;color:var(--muted);font-weight:600}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1121,10 +1126,23 @@ function leadTotals(from, to){
 }
 const sumLeads = (m, uids) => { const t = {l: 0, c: 0, a: 0}; for (const u of uids){ const x = m.get(String(u)); if (x){ t.l += x.l; t.c += x.c; t.a += x.a; } } return t; };
 const leadRate = t => t && t.l ? t.c / t.l : -1;
-function leadCell(t){
+const pctTxt = (a, b) => b ? (Math.round(1000 * a / b) / 10) + "%" : "–";
+/* Lead funnel in one cell: leads, applications (L→App %), admissions (L→Adm %) */
+function leadCell(t, extra){
   if (!LEADS) return '<span class="faint">–</span>';
-  if (!t || !t.l) return '<span class="faint">No leads</span>';
-  return '<b>' + (Math.round(1000 * t.c / t.l) / 10) + '%</b><small class="subl">' + fmt(t.c) + ' of ' + fmt(t.l) + ' leads</small>';
+  if (!t || !t.l) return '<span class="faint">No leads</span>' + (extra || "");
+  return '<div class="funnel"><span class="fl"><b>' + fmt(t.l) + '</b> leads</span>' +
+    '<span class="fa" title="Lead to Application">🎯 <b>' + fmt(t.c) + '</b> apps · <b>' + pctTxt(t.c, t.l) + '</b></span>' +
+    '<span class="fd" title="Lead to Admission (Enrolment)">🏹 <b>' + fmt(t.a) + '</b> adm · <b>' + pctTxt(t.a, t.l) + '</b></span></div>' + (extra || "");
+}
+/* Coordinator: one small line per skill (L→App % · L→Adm %) */
+function skillLines(m, people){
+  const by = new Map();
+  for (const x of people){ const k = x.skill || "Other"; if (!by.has(k)) by.set(k, []); by.get(k).push(x.uid); }
+  const lines = [...by.entries()].map(([k, uids]) => [k, sumLeads(m, uids)]).filter(([, t]) => t.l).sort((a, b) => b[1].l - a[1].l);
+  if (lines.length < 2) return "";
+  return '<div class="fskills">' + lines.map(([k, t]) => '<span title="' + esc(k) + ': ' + fmt(t.l) + ' leads, ' + fmt(t.c) + ' apps, ' + fmt(t.a) + ' adm"><i>' + esc(k) + '</i> ' +
+    pctTxt(t.c, t.l) + ' · ' + pctTxt(t.a, t.l) + '</span>').join("") + '</div>';
 }
 
 function movement(prevMap, key, i, score){
@@ -1148,7 +1166,8 @@ function render(){
   const teamUids = t => [...d.people.values()].filter(x => x.teamUid === t.uid || x.uid === t.uid).map(x => x.uid);
   const coordUids = c => [...d.people.values()].filter(x => x.coordKey === c.key).map(x => x.uid);
   const pLead = p => LT ? sumLeads(LT, [p.uid]) : null, tLead = t => LT ? sumLeads(LT, teamUids(t)) : null, cLead = c => LT ? sumLeads(LT, coordUids(c)) : null;
-  $("leadNote").innerHTML = !LEADS ? "" : '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Lead conversion: leads assigned in the period (Meritto Lead Assignment Date) with a Payment Approved form' +
+  const cSkills = c => LT ? skillLines(LT, [...d.people.values()].filter(x => x.coordKey === c.key && !x.isTL)) : "";
+  $("leadNote").innerHTML = !LEADS ? "" : '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Lead funnel: leads assigned in the period (Meritto Lead Assignment Date) → online Payment Approved forms (🎯 L→App %) → admissions (🏹 L→Adm %). Leads with an outreach application (number starting with N) are not counted' +
     (LEADS_INFO.asOf ? " · lead data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
   const isIdle = p => !(lastClaim.get(String(p.uid)) >= idleSince);
 
@@ -1280,7 +1299,7 @@ function render(){
   const hlBase = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
   const hlFn = x => !below && hlBase(x);                          // no highlighting inside a drill-down (every row belongs to the selection)
   if (view === "people"){
-    head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["conv","Lead conversion"],["score","Score"],["band","Band"]];
+    head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["conv","Lead funnel"],["score","Score"],["band","Band"]];
     rows = L.people.filter(p => (!q || (p.name + " " + p.uid).toLowerCase().includes(q)) && bandOk(p.score) && actOk(isIdle(p) ? 1 : 0));
     sortVals = {name: p => p.name, group: p => p.skill + (p.post ? " 0" : p.sim ? " 1" : " 2"), hits: p => p.h.app + p.h.adm + p.h.post, conv: p => leadRate(pLead(p)), score: p => p.score ?? -1, band: p => p.score ?? -1};
     toRow = p => {
@@ -1292,12 +1311,12 @@ function render(){
           '<small>UID ' + esc(p.uid) + '</small>' +
           '<small>TL: ' + esc(t && !t.other ? t.name : "–") + '</small>' +
           '<small>Coordinator: ' + esc((d.coords.get(p.coordKey) || {}).name || "–") + '</small></span>') +
-        td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") + td("Lead conversion", leadCell(pLead(p)), "num") +
+        td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") + td("Lead funnel", leadCell(pLead(p))) +
         td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.zero ? "no approved claims yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
         td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : p.zero ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(p.score)) + '</tr>';
     };
   } else if (view === "teams"){
-    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["conv","Lead conversion"],["trend","8-week trend"],["score","Score"],["band","Band"]];
+    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["conv","Lead funnel"],["trend","8-week trend"],["score","Score"],["band","Band"]];
     rows = L.teams.filter(t => (!q || (t.name + " " + t.uid).toLowerCase().includes(q)) && bandOk(t.score) && actOk(teamIdle(t)));
     const wk = t => (dTrend.teams.get(t.uid) || {}).wk;
     sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, conv: t => leadRate(tLead(t)), trend: t => (wk(t) || [0])[TREND_WEEKS - 1], score: t => t.score ?? -1, band: t => t.score ?? -1};
@@ -1306,12 +1325,12 @@ function render(){
       return '<tr class="click' + (hl.teams(t) ? " hl" : "") + '" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' +
         td("Rank", rankWithMove(t._rank, t.score, movement(prevTeams, t.uid, t._rank, t.score))) +
         td("Team leader", '<span class="who"><b>' + esc(t.name) + (isIdle({uid: t.uid}) ? '<span class="idle" title="No claims of their own in the last 7 days">Idle 7d</span>' : '') + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
-        td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("Lead conversion", leadCell(tLead(t)), "num") + td("8-week trend", spark(wk(t))) +
+        td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("Lead funnel", leadCell(tLead(t))) + td("8-week trend", spark(wk(t))) +
         td("Score", scoreCell(t.score, (t.score !== null ? ord(t.groupRank) + " of " + t.groupSize + " TLs in skill" : t.groupSize < 2 ? "only TL in skill" : t.noHits ? "no approved claims in skill yet" : "no approved claims yet") + '<br>' + fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
         td("Band", (t.zero && !t.noHits) ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(t.score)) + '</tr>';
     };
   } else {
-    head = [["name","Coordinator"],["teams","Teams"],["hits","Hits"],["conv","Lead conversion"],["trend","8-week trend"]];
+    head = [["name","Coordinator"],["teams","Teams"],["hits","Hits"],["conv","Lead funnel"],["trend","8-week trend"]];
     rows = L.coords.filter(c => (!q || c.name.toLowerCase().includes(q)) && actOk(coordIdle(c))).sort((a, b) => a.name.localeCompare(b.name));
     const wk = c => (dTrend.coords.get(c.key) || {}).wk;
     sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, conv: c => leadRate(cLead(c)), trend: c => (wk(c) || [0])[TREND_WEEKS - 1]};
@@ -1321,7 +1340,7 @@ function render(){
         td("Coordinator", '<b>' + esc(c.name) + '</b>') +
         td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small>' +
           (coordIdleTL(c) ? '<small class="subl"><span class="idletxt">' + fmt(coordIdleTL(c)) + ' TL' + (coordIdleTL(c) === 1 ? "" : "s") + ' idle 7d</span></small>' : ""), "num") +
-        td("Hits", hitsCell(c.h), "num") + td("Lead conversion", leadCell(cLead(c)), "num") + td("8-week trend", spark(wk(c))) + '</tr>';
+        td("Hits", hitsCell(c.h), "num") + td("Lead funnel", leadCell(cLead(c), cSkills(c))) + td("8-week trend", spark(wk(c))) + '</tr>';
     };
   }
   const sv = sortBy[view];
