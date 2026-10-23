@@ -1142,8 +1142,7 @@ function skillLines(m, people){
   for (const x of people){ const k = x.skill || "Other"; if (!by.has(k)) by.set(k, []); by.get(k).push(x.uid); }
   const lines = [...by.entries()].map(([k, uids]) => [k, sumLeads(m, uids)]).filter(([, t]) => t.l).sort((a, b) => b[1].l - a[1].l);
   if (lines.length < 2) return "";
-  return '<div class="fskills">' + lines.map(([k, t]) => '<span title="' + esc(k) + ': ' + fmt(t.l) + ' leads, ' + fmt(t.c) + ' apps, ' + fmt(t.a) + ' adm"><i>' + esc(k) + '</i> <b>' + fmt(t.l) + '</b> leads · ' +
-    pctTxt(t.c, t.l) + ' · ' + pctTxt(t.a, t.l) + '</span>').join("") + '</div>';
+  return '<div class="fskills">' + lines.map(([k, t]) => '<span title="' + esc(k) + ': ' + fmt(t.l) + ' leads, ' + fmt(t.c) + ' apps, ' + fmt(t.a) + ' adm"><i>' + esc(k) + '</i> <b>' + fmt(t.l) + '</b> leads · 🎯 <b>' + fmt(t.c) + '</b> (' + pctTxt(t.c, t.l) + ') · 🏹 <b>' + fmt(t.a) + '</b> (' + pctTxt(t.a, t.l) + ')</span>').join("") + '</div>';
 }
 
 function movement(prevMap, key, i, score){
@@ -1167,7 +1166,7 @@ function render(){
   const teamUids = t => [...d.people.values()].filter(x => x.teamUid === t.uid || x.uid === t.uid).map(x => x.uid);
   const coordUids = c => [...d.people.values()].filter(x => x.coordKey === c.key).map(x => x.uid);
   const pLead = p => LT ? sumLeads(LT, [p.uid]) : null, tLead = t => LT ? sumLeads(LT, teamUids(t)) : null, cLead = c => LT ? sumLeads(LT, coordUids(c)) : null;
-  const cSkills = c => LT ? skillLines(LT, [...d.people.values()].filter(x => x.coordKey === c.key && !x.isTL)) : "";
+  const cSkills = c => LT ? skillLines(LT, [...d.people.values()].filter(x => x.coordKey === c.key)) : "";      // same people as the total
   $("leadNote").innerHTML = !LEADS ? "" : '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Lead funnel (session 2027): leads registered from 1 Sep 2026, plus older leads that paid on a 2027-session form → online Payment Approved forms (🎯 L→App %) → admissions (🏹 L→Adm %). Leads with an application number starting with N are not counted' +
     (LEADS_INFO.asOf ? " · lead data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
   const isIdle = p => !(lastClaim.get(String(p.uid)) >= idleSince);
