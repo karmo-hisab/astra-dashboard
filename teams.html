@@ -209,6 +209,8 @@ html.nav-mini .sidenav span.two{display:none}
 .stats4{grid-template-columns:repeat(4,1fr)!important}
 .tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
 .tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
+.tfilters.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width: 1250px){ .tfilters.six{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .viewbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
 .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px;gap:3px}
 .seg button{border:none;background:none;padding:6px 16px;border-radius:4px;font-weight:600;color:var(--muted)}
@@ -542,11 +544,12 @@ footer b{color:var(--muted);font-weight:600}
       <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-filter"/></svg>Filters<span class="chip" id="activeChip" hidden></span></h2>
       <button class="linkbtn" id="resetBtn" type="button">Clear all</button>
     </div>
-    <div class="tfilters five main">
+    <div class="tfilters six main">
       <label class="f">Coordinator<select id="fCoord"></select></label>
       <label class="f">Team leader<select id="fTeam"></select></label>
       <label class="f">Counselor<select id="fPerson"></select></label>
       <label class="f">Skill<select id="fSkill"></select></label>
+      <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
       <label class="f">Search<input id="q" type="search" placeholder="Name or UID" autocomplete="off"></label>
     </div>
     <div class="morebar">
@@ -554,7 +557,6 @@ footer b{color:var(--muted);font-weight:600}
       <button type="button" class="linkbtn" id="moreBtn" aria-expanded="false" aria-controls="moreFilters">More filters</button>
     </div>
     <div class="tfilters five" id="moreFilters" hidden>
-      <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
       <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option></select></label>
       <label class="f">Payment month<select id="fMonth"></select></label>
       <label class="f">Band<select id="fBand"><option value="">All</option><option value="ok">Top</option><option value="okl">Above median</option><option value="wait">Below median</option><option value="bad">Needs attention</option><option value="none">Not ranked yet</option></select></label>
@@ -1163,12 +1165,15 @@ function render(){
   const lastClaim = cached("last", String(dataStamp), () => { const m = new Map(); for (const r of ALL){ const u = String(r.uid); if (!m.has(u) || m.get(u) < r._ts) m.set(u, r._ts); } return m; });
   const idleSince = Date.now() - 7 * DAY;
   const LT = cached("leads", [dataStamp, JSON.stringify(P.cur)].join("|"), () => leadTotals(P.cur.from, P.cur.to));
-  const teamUids = t => [...d.people.values()].filter(x => x.teamUid === t.uid || x.uid === t.uid).map(x => x.uid);
-  const coordUids = c => [...d.people.values()].filter(x => x.coordKey === c.key).map(x => x.uid);
+  // the funnel follows the Skill and Counselor type filters (team leaders count only when no type is chosen)
+  const fSkillV = $("fSkill").value, fSimV = $("fSim").value;
+  const funnelOk = x => (!fSkillV || x.skill === fSkillV) && (!fSimV || (!x.isTL && (fSimV === "SIM") === !!x.sim));
+  const teamUids = t => [...d.people.values()].filter(x => (x.teamUid === t.uid || x.uid === t.uid) && funnelOk(x)).map(x => x.uid);
+  const coordUids = c => [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x)).map(x => x.uid);
   const pLead = p => LT ? sumLeads(LT, [p.uid]) : null, tLead = t => LT ? sumLeads(LT, teamUids(t)) : null, cLead = c => LT ? sumLeads(LT, coordUids(c)) : null;
-  const cSkills = c => LT ? skillLines(LT, [...d.people.values()].filter(x => x.coordKey === c.key)) : "";      // same people as the total
+  const cSkills = c => LT ? skillLines(LT, [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x))) : "";   // same people as the total
   $("leadNote").innerHTML = !LEADS ? "" : '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Lead funnel (session 2027): leads registered from 1 Sep 2026, plus older leads that paid on a 2027-session form → online Payment Approved forms (🎯 L→App %) → admissions (🏹 L→Adm %). Leads with an application number starting with N are not counted' +
-    (LEADS_INFO.asOf ? " · lead data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
+    (fSimV ? " · " + fSimV + " counselors only" : "") + (LEADS_INFO.asOf ? " · lead data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
   const isIdle = p => !(lastClaim.get(String(p.uid)) >= idleSince);
 
   $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Scores need the team list for skills and SIM; showing claims only.</div>';
@@ -1422,7 +1427,7 @@ function render(){
     '<tr><td class="empty" colspan="3">No groups to show.</td></tr>';
 
   const nActive = ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].filter(id => $(id).value.trim()).length;
-  const nMore = ["fSim","fPeriod","fMonth","fBand","fAct"].filter(id => $(id).value).length;
+  const nMore = ["fPeriod","fMonth","fBand","fAct"].filter(id => $(id).value).length;
   $("moreBtn").textContent = "More filters" + (nMore ? " (" + nMore + " active)" : "");
   const anyMove = $("tbody").querySelector(".move.up,.move.down,.move.new");
   $("periodNote").textContent = anyMove ? "▲▼ shows rank change compared with " + P.prevLabel + "." : "";
