@@ -284,6 +284,9 @@ tbody tr.hl td b{color:var(--ink)}
 .rank.none{color:var(--faint);font-weight:400}
 .hb{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:3px;font-size:12px;color:var(--faint);white-space:nowrap}
 .hb b{color:var(--muted);font-weight:700}
+.leadnote{display:block;font-size:12.5px;color:var(--faint);margin:0 2px 8px}
+.leadnote.stale{color:var(--wait);font-weight:600}
+.faint{color:var(--faint)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -570,6 +573,7 @@ footer b{color:var(--muted);font-weight:600}
   <div id="zeroNote"></div>
   <p class="note" id="periodNote"></p>
 
+  <div id="leadNote"></div>
   <section class="panel table-panel">
     <div class="tablebox"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
     <div class="pager"><span id="pageInfo"></span><div><button id="prevBtn" type="button">Previous</button><button id="nextBtn" type="button">Next</button></div></div>
@@ -629,7 +633,7 @@ const REFRESH_MINUTES = 10;
 /* ============================================== */
 
 const $ = id => document.getElementById(id);
-let ALL = [], ROSTER = [];
+let ALL = [], ROSTER = [], LEADS = null, LEADS_INFO = {asOf: "", stale: false};
 
 /* Final status from column V, e.g. "Step1: Approved, Step2: To be evaluated"
    Hit = Step 1 AND Step 2 both Approved; Pending = still being evaluated; Miss = everything else */
@@ -791,7 +795,8 @@ async function fetchClaims(useShared){
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
-  return {rows, updated: data.updated, roster};
+  const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0})) : null;
+  return {rows, updated: data.updated, roster, leads, leadsAsOf: data.leadsAsOf || "", leadsStale: !!data.leadsStale};
 }
 
 function setUpdated(text, loading){
@@ -804,7 +809,7 @@ async function load(isBackground){
   setUpdated("Updating…", true);
   $("refreshBtn").disabled = true;
   try{
-    const {rows, updated, roster} = await fetchClaims(!isBackground && !ALL.length);
+    const {rows, updated, roster, leads, leadsAsOf, leadsStale} = await fetchClaims(!isBackground && !ALL.length);
     const fresh = [];
     for (const o of rows){
       if (!o.name && !o.app && !o._ts) continue;
@@ -816,6 +821,7 @@ async function load(isBackground){
     assignTeams(fresh);
     ALL = fresh;
     ROSTER = roster || [];
+    LEADS = leads; LEADS_INFO = {asOf: leadsAsOf, stale: leadsStale};
     buildOptions();
     render();
     showNotice("", "");
@@ -1101,6 +1107,26 @@ function orderedLists(d, sc, st){
   return {people, teams, coords};
 }
 const rankMap = (list, keyFn) => { const m = new Map(); list.forEach((x, i) => m.set(keyFn(x), {i, scored: x.score !== null && x.score !== undefined})); return m; };
+/* Lead conversion (Meritto, daily): leads assigned to a counselor in the period (Lead Assignment Date) and how many
+   of them have a Payment Approved form. Counts only, per counselor UID. */
+function leadTotals(from, to){
+  const m = new Map();
+  if (!LEADS) return null;
+  for (const r of LEADS){
+    if ((from && r.d < from) || (to && r.d >= to)) continue;
+    const x = m.get(r.uid) || {l: 0, c: 0, a: 0};
+    x.l += r.l; x.c += r.c; x.a += r.a; m.set(r.uid, x);
+  }
+  return m;
+}
+const sumLeads = (m, uids) => { const t = {l: 0, c: 0, a: 0}; for (const u of uids){ const x = m.get(String(u)); if (x){ t.l += x.l; t.c += x.c; t.a += x.a; } } return t; };
+const leadRate = t => t && t.l ? t.c / t.l : -1;
+function leadCell(t){
+  if (!LEADS) return '<span class="faint">–</span>';
+  if (!t || !t.l) return '<span class="faint">No leads</span>';
+  return '<b>' + (Math.round(1000 * t.c / t.l) / 10) + '%</b><small class="subl">' + fmt(t.c) + ' of ' + fmt(t.l) + ' leads</small>';
+}
+
 function movement(prevMap, key, i, score){
   if (score === null || score === undefined) return null;
   const p = prevMap.get(key);
@@ -1118,6 +1144,12 @@ function render(){
   const dTrend = cached("trend", [dataStamp, $("fSkill").value, $("fSim").value, mondayOf(Date.now())].join("|"), () => compute({weeks:true, ignoreMonth:true}));
   const lastClaim = cached("last", String(dataStamp), () => { const m = new Map(); for (const r of ALL){ const u = String(r.uid); if (!m.has(u) || m.get(u) < r._ts) m.set(u, r._ts); } return m; });
   const idleSince = Date.now() - 7 * DAY;
+  const LT = cached("leads", [dataStamp, JSON.stringify(P.cur)].join("|"), () => leadTotals(P.cur.from, P.cur.to));
+  const teamUids = t => [...d.people.values()].filter(x => x.teamUid === t.uid || x.uid === t.uid).map(x => x.uid);
+  const coordUids = c => [...d.people.values()].filter(x => x.coordKey === c.key).map(x => x.uid);
+  const pLead = p => LT ? sumLeads(LT, [p.uid]) : null, tLead = t => LT ? sumLeads(LT, teamUids(t)) : null, cLead = c => LT ? sumLeads(LT, coordUids(c)) : null;
+  $("leadNote").innerHTML = !LEADS ? "" : '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Lead conversion: leads assigned in the period (Meritto Lead Assignment Date) with a Payment Approved form' +
+    (LEADS_INFO.asOf ? " · lead data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
   const isIdle = p => !(lastClaim.get(String(p.uid)) >= idleSince);
 
   $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Scores need the team list for skills and SIM; showing claims only.</div>';
@@ -1248,9 +1280,9 @@ function render(){
   const hlBase = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
   const hlFn = x => !below && hlBase(x);                          // no highlighting inside a drill-down (every row belongs to the selection)
   if (view === "people"){
-    head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["score","Score"],["band","Band"]];
+    head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["conv","Lead conversion"],["score","Score"],["band","Band"]];
     rows = L.people.filter(p => (!q || (p.name + " " + p.uid).toLowerCase().includes(q)) && bandOk(p.score) && actOk(isIdle(p) ? 1 : 0));
-    sortVals = {name: p => p.name, group: p => p.skill + (p.post ? " 0" : p.sim ? " 1" : " 2"), hits: p => p.h.app + p.h.adm + p.h.post, score: p => p.score ?? -1, band: p => p.score ?? -1};
+    sortVals = {name: p => p.name, group: p => p.skill + (p.post ? " 0" : p.sim ? " 1" : " 2"), hits: p => p.h.app + p.h.adm + p.h.post, conv: p => leadRate(pLead(p)), score: p => p.score ?? -1, band: p => p.score ?? -1};
     toRow = p => {
       const tag = p.post ? '<span class="simtag post">Post-adm</span>' : '<span class="simtag' + (p.sim ? " on" : "") + '">' + (p.sim ? "SIM" : "Normal") + '</span>';
       const t = d.teams.get(p.teamUid), idle = isIdle(p);
@@ -1260,36 +1292,36 @@ function render(){
           '<small>UID ' + esc(p.uid) + '</small>' +
           '<small>TL: ' + esc(t && !t.other ? t.name : "–") + '</small>' +
           '<small>Coordinator: ' + esc((d.coords.get(p.coordKey) || {}).name || "–") + '</small></span>') +
-        td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") +
+        td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") + td("Lead conversion", leadCell(pLead(p)), "num") +
         td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.zero ? "no approved claims yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
         td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : p.zero ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(p.score)) + '</tr>';
     };
   } else if (view === "teams"){
-    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["trend","8-week trend"],["score","Score"],["band","Band"]];
+    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["conv","Lead conversion"],["trend","8-week trend"],["score","Score"],["band","Band"]];
     rows = L.teams.filter(t => (!q || (t.name + " " + t.uid).toLowerCase().includes(q)) && bandOk(t.score) && actOk(teamIdle(t)));
     const wk = t => (dTrend.teams.get(t.uid) || {}).wk;
-    sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, trend: t => (wk(t) || [0])[TREND_WEEKS - 1], score: t => t.score ?? -1, band: t => t.score ?? -1};
+    sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, conv: t => leadRate(tLead(t)), trend: t => (wk(t) || [0])[TREND_WEEKS - 1], score: t => t.score ?? -1, band: t => t.score ?? -1};
     toRow = t => {
       const n = teamIdle(t);
       return '<tr class="click' + (hl.teams(t) ? " hl" : "") + '" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' +
         td("Rank", rankWithMove(t._rank, t.score, movement(prevTeams, t.uid, t._rank, t.score))) +
         td("Team leader", '<span class="who"><b>' + esc(t.name) + (isIdle({uid: t.uid}) ? '<span class="idle" title="No claims of their own in the last 7 days">Idle 7d</span>' : '') + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
-        td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("8-week trend", spark(wk(t))) +
+        td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("Lead conversion", leadCell(tLead(t)), "num") + td("8-week trend", spark(wk(t))) +
         td("Score", scoreCell(t.score, (t.score !== null ? ord(t.groupRank) + " of " + t.groupSize + " TLs in skill" : t.groupSize < 2 ? "only TL in skill" : t.noHits ? "no approved claims in skill yet" : "no approved claims yet") + '<br>' + fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
         td("Band", (t.zero && !t.noHits) ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(t.score)) + '</tr>';
     };
   } else {
-    head = [["name","Coordinator"],["teams","Teams"],["hits","Hits"],["trend","8-week trend"]];
+    head = [["name","Coordinator"],["teams","Teams"],["hits","Hits"],["conv","Lead conversion"],["trend","8-week trend"]];
     rows = L.coords.filter(c => (!q || c.name.toLowerCase().includes(q)) && actOk(coordIdle(c))).sort((a, b) => a.name.localeCompare(b.name));
     const wk = c => (dTrend.coords.get(c.key) || {}).wk;
-    sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, trend: c => (wk(c) || [0])[TREND_WEEKS - 1]};
+    sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, conv: c => leadRate(cLead(c)), trend: c => (wk(c) || [0])[TREND_WEEKS - 1]};
     toRow = c => {
       const n = coordIdle(c);
       return '<tr class="click' + (hl.coords(c) ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
         td("Coordinator", '<b>' + esc(c.name) + '</b>') +
         td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small>' +
           (coordIdleTL(c) ? '<small class="subl"><span class="idletxt">' + fmt(coordIdleTL(c)) + ' TL' + (coordIdleTL(c) === 1 ? "" : "s") + ' idle 7d</span></small>' : ""), "num") +
-        td("Hits", hitsCell(c.h), "num") + td("8-week trend", spark(wk(c))) + '</tr>';
+        td("Hits", hitsCell(c.h), "num") + td("Lead conversion", leadCell(cLead(c)), "num") + td("8-week trend", spark(wk(c))) + '</tr>';
     };
   }
   const sv = sortBy[view];

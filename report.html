@@ -694,7 +694,8 @@ async function fetchClaims(useShared){
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
-  return {rows, updated: data.updated, roster};
+  const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0})) : null;
+  return {rows, updated: data.updated, roster, leads, leadsAsOf: data.leadsAsOf || "", leadsStale: !!data.leadsStale};
 }
 
 function setUpdated(text, loading){
