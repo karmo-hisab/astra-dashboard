@@ -209,6 +209,8 @@ html.nav-mini .sidenav span.two{display:none}
 .stats4{grid-template-columns:repeat(4,1fr)!important}
 .tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
 .tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
+.tfilters.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width: 1250px){ .tfilters.six{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .viewbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
 .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px;gap:3px}
 .seg button{border:none;background:none;padding:6px 16px;border-radius:4px;font-weight:600;color:var(--muted)}
@@ -287,6 +289,12 @@ tbody tr.hl td b{color:var(--ink)}
 .leadnote{display:block;font-size:12.5px;color:var(--faint);margin:0 2px 8px}
 .leadnote.stale{color:var(--wait);font-weight:600}
 .faint{color:var(--faint)}
+.funnel{display:flex;flex-direction:column;gap:1px;font-size:12.5px;white-space:nowrap;color:var(--muted)}
+.funnel .fl{font-size:13.5px;color:var(--ink)}
+.funnel b{color:var(--ink)}
+.fskills{display:flex;flex-direction:column;margin-top:5px;padding-top:4px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--faint);white-space:nowrap}
+.fskills i{font-style:normal;color:var(--muted);font-weight:600}
+.fskills b{color:var(--muted)}
 /* Application Follow-up page */
 .stats6{grid-template-columns:repeat(6,1fr)!important}
 .viewopts{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:10px}
@@ -928,7 +936,8 @@ function prepare(data){
     };
     a.intApplies = /\bmba\b|ph\.?\s*d/i.test(a.form + " " + a.program);       // interviews: MBA and PhD only
     a.intPass = /^pass/i.test(a.intResult);
-    a.awaited = !String(a.schol).trim();
+    // Result declared only when Scholarship has a real value; blank or "NA" = result not declared yet
+    a.awaited = /^(|na|n\/a|n\.a\.?|-+|not available|null|none)$/i.test(String(a.schol || "").trim());
     a.mismatch = !!(a.tlSkill && a.pskill && normS(a.tlSkill) !== normS(a.pskill));
     a.stage = a.enrolled ? 3 : a.eligible ? 0 : a.awaited ? 1 : 2;        // follow-up priority: eligible first
     a._search = (a.app + " " + a.program).toLowerCase();
