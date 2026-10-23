@@ -292,6 +292,7 @@ tbody tr.hl td b{color:var(--ink)}
 .funnel b{color:var(--ink)}
 .fskills{display:flex;flex-direction:column;margin-top:5px;padding-top:4px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--faint);white-space:nowrap}
 .fskills i{font-style:normal;color:var(--muted);font-weight:600}
+.fskills b{color:var(--muted)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1141,7 +1142,7 @@ function skillLines(m, people){
   for (const x of people){ const k = x.skill || "Other"; if (!by.has(k)) by.set(k, []); by.get(k).push(x.uid); }
   const lines = [...by.entries()].map(([k, uids]) => [k, sumLeads(m, uids)]).filter(([, t]) => t.l).sort((a, b) => b[1].l - a[1].l);
   if (lines.length < 2) return "";
-  return '<div class="fskills">' + lines.map(([k, t]) => '<span title="' + esc(k) + ': ' + fmt(t.l) + ' leads, ' + fmt(t.c) + ' apps, ' + fmt(t.a) + ' adm"><i>' + esc(k) + '</i> ' +
+  return '<div class="fskills">' + lines.map(([k, t]) => '<span title="' + esc(k) + ': ' + fmt(t.l) + ' leads, ' + fmt(t.c) + ' apps, ' + fmt(t.a) + ' adm"><i>' + esc(k) + '</i> <b>' + fmt(t.l) + '</b> leads · ' +
     pctTxt(t.c, t.l) + ' · ' + pctTxt(t.a, t.l) + '</span>').join("") + '</div>';
 }
 
@@ -1167,7 +1168,7 @@ function render(){
   const coordUids = c => [...d.people.values()].filter(x => x.coordKey === c.key).map(x => x.uid);
   const pLead = p => LT ? sumLeads(LT, [p.uid]) : null, tLead = t => LT ? sumLeads(LT, teamUids(t)) : null, cLead = c => LT ? sumLeads(LT, coordUids(c)) : null;
   const cSkills = c => LT ? skillLines(LT, [...d.people.values()].filter(x => x.coordKey === c.key && !x.isTL)) : "";
-  $("leadNote").innerHTML = !LEADS ? "" : '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Lead funnel: leads assigned in the period (Meritto Lead Assignment Date) → online Payment Approved forms (🎯 L→App %) → admissions (🏹 L→Adm %). Leads with an outreach application (number starting with N) are not counted' +
+  $("leadNote").innerHTML = !LEADS ? "" : '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Lead funnel (session 2027): leads registered from 1 Sep 2026, plus older leads that paid on a 2027-session form → online Payment Approved forms (🎯 L→App %) → admissions (🏹 L→Adm %). Leads with an application number starting with N are not counted' +
     (LEADS_INFO.asOf ? " · lead data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
   const isIdle = p => !(lastClaim.get(String(p.uid)) >= idleSince);
 
