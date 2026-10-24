@@ -307,6 +307,15 @@ tbody tr.hl td b{color:var(--ink)}
 @media (max-width: 720px){ .funnelbar{grid-template-columns:1fr} .funnelbar .fbtile + .fbtile{border-left:none;border-top:1px solid var(--line-2)} }
 .fbs .warnx{color:var(--wait);font-weight:600}
 .fbs .faint{color:var(--faint)}
+.fbbar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--line-2);margin:5px 0 4px;max-width:340px}
+.fbbar i{display:block;height:100%}
+.fbbar .tel,.fbparts .dot.tel{background:var(--ok)}
+.fbbar .oth,.fbparts .dot.oth{background:var(--wait)}
+.fbbar .una,.fbparts .dot.una{background:var(--faint)}
+.fbparts{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--faint)}
+.fbparts span{white-space:nowrap;cursor:help}
+.fbparts b{color:var(--muted)}
+.fbparts .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1219,13 +1228,20 @@ function render(){
     if (!selP && !selT && !selC && !fSkillV && !fSimV){            // everyone: ALL session leads (Telephonic, other teams, unassigned)
       const all = {l: 0, c: 0, a: 0}, assigned = {l: 0};
       for (const [k, x] of LT){ all.l += x.l; all.c += x.c; all.a += x.a; if (k !== "UNASSIGNED") assigned.l += x.l; }
-      outside = {l: assigned.l - T.l}; T = all;                    // percentages below use this full total
+      outside = {l: assigned.l - T.l, tel: T.l, un: all.l - assigned.l}; T = all;   // percentages below use this full total
     }
     const range = $("fPeriod").value ? " · " + periodText() : " · session 2027";
     $("fbLeads").textContent = fmt(T.l);
-    $("fbLeadsSub").innerHTML = range.slice(3) +
-      (outside && outside.l > 0 ? ' · <span class="warnx" title="Leads owned by counselors who are not in TL Bifurcation">incl. ' + fmt(outside.l) + ' assigned to teams not in Division of Telephonic</span>' : "") +
-      (outside && un.l > 0 ? ' · <span class="faint" title="Leads with no Lead Owner in Meritto">incl. ' + fmt(un.l) + ' unassigned</span>' : "");
+    if (outside){
+      const parts = [["tel", "Telephonic", outside.tel, "Leads of counselors in Division of Telephonic (TL Bifurcation)"],
+                     ["oth", "Other teams", outside.l, "Leads assigned to teams not in Division of Telephonic"],
+                     ["una", "Unassigned", outside.un, "Leads with no Lead Owner in Meritto"]].filter(x => x[2] > 0);
+      const tot = parts.reduce((n, x) => n + x[2], 0) || 1;
+      $("fbLeadsSub").innerHTML = '<span class="fbbar">' + parts.map(x => '<i class="' + x[0] + '" style="width:' + (100 * x[2] / tot) + '%" title="' + x[3] + '"></i>').join("") + '</span>' +
+        '<span class="fbparts">' + parts.map(x => '<span title="' + x[3] + '"><i class="dot ' + x[0] + '"></i>' + x[1] + ' <b>' + fmt(x[2]) + '</b></span>').join("") + '</span>';
+    } else {
+      $("fbLeadsSub").textContent = range.slice(3);
+    }
     $("fbLeadsLabel").textContent = outside ? "👥 Total leads" : "👥 Leads assigned";
     $("fbApps").textContent = fmt(T.c); $("fbAppsPct").textContent = pctTxt(T.c, T.l) + " of leads (L→App)";
     $("fbAdm").textContent = fmt(T.a); $("fbAdmPct").textContent = pctTxt(T.a, T.l) + " of leads (L→Adm)";
