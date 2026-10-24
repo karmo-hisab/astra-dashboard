@@ -295,7 +295,7 @@ tbody tr.hl td b{color:var(--ink)}
 .fskills{display:flex;flex-direction:column;margin-top:5px;padding-top:4px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--faint);white-space:nowrap}
 .fskills i{font-style:normal;color:var(--muted);font-weight:600}
 .fskills b{color:var(--muted)}
-.funnelbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;margin:-8px 0 22px;overflow:hidden}
+.funnelbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;margin:0 0 16px;overflow:hidden}
 .funnelbar .fbtile{display:flex;flex-direction:column;gap:2px;padding:14px 18px}
 .funnelbar .fbtile + .fbtile{border-left:1px solid var(--line-2)}
 .fbl{font-size:13px;font-weight:600;color:var(--muted)}
@@ -304,6 +304,7 @@ tbody tr.hl td b{color:var(--ink)}
 .fbnote{grid-column:1/-1;border-top:1px solid var(--line-2);padding:8px 18px}
 .fbnote .leadnote{margin:0}
 @media (max-width: 720px){ .funnelbar{grid-template-columns:1fr} .funnelbar .fbtile + .fbtile{border-left:none;border-top:1px solid var(--line-2)} }
+.fbs .warnx{color:var(--wait);font-weight:600}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -541,17 +542,17 @@ footer b{color:var(--muted);font-weight:600}
   <div id="notice"></div>
   <div id="rosterWarn"></div>
 
+  <section class="panel funnelbar" id="funnelBar" hidden aria-label="Lead funnel for the current selection">
+    <div class="fbtile"><span class="fbl">👥 Leads assigned</span><span class="fbn" id="fbLeads">–</span><span class="fbs" id="fbLeadsSub">session 2027</span></div>
+    <div class="fbtile"><span class="fbl">🎯 LPUNEST applications</span><span class="fbn" id="fbApps">–</span><span class="fbs" id="fbAppsPct">&nbsp;</span></div>
+    <div class="fbtile"><span class="fbl">🏹 Admissions</span><span class="fbn" id="fbAdm">–</span><span class="fbs" id="fbAdmPct">&nbsp;</span></div>
+    <div class="fbnote" id="leadNote"></div>
+  </section>
   <section class="stats stats4" aria-label="Overview for the current selection">
     <div class="stat tot"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Claims</h2><div class="big" id="oClaims">–</div><div class="sub" id="oClaimsSub">&nbsp;</div></div>
     <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Verified hits</h2><div class="big" id="oHits">–</div><div class="sub" id="oHitsSub">&nbsp;</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-admission"/></svg>Teams</h2><div class="big" id="oTeams">–</div><div class="sub" id="oTeamsSub">&nbsp;</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Counselors</h2><div class="big" id="oPeople">–</div><div class="sub" id="oPeopleSub">&nbsp;</div></div>
-  </section>
-  <section class="panel funnelbar" id="funnelBar" hidden aria-label="Lead funnel for the current selection">
-    <div class="fbtile"><span class="fbl">👥 Leads assigned</span><span class="fbn" id="fbLeads">–</span><span class="fbs">session 2027</span></div>
-    <div class="fbtile"><span class="fbl">🎯 LPUNEST applications</span><span class="fbn" id="fbApps">–</span><span class="fbs" id="fbAppsPct">&nbsp;</span></div>
-    <div class="fbtile"><span class="fbl">🏹 Admissions</span><span class="fbn" id="fbAdm">–</span><span class="fbs" id="fbAdmPct">&nbsp;</span></div>
-    <div class="fbnote" id="leadNote"></div>
   </section>
 
   <section class="panel filterpanel" aria-label="Filters">
@@ -1194,8 +1195,15 @@ function render(){
       : selT ? [...d.people.values()].filter(x => (x.teamUid === selT || x.uid === selT) && funnelOk(x)).map(x => x.uid)
       : selC ? [...d.people.values()].filter(x => x.coordKey === selC && funnelOk(x)).map(x => x.uid)
       : [...d.people.values()].filter(funnelOk).map(x => x.uid);
-    const T = sumLeads(LT, uids);
+    let T = sumLeads(LT, uids), outside = null;
+    if (!selP && !selT && !selC && !fSkillV && !fSimV){            // everyone: the full total, incl. counselors not in TL Bifurcation
+      const all = {l: 0, c: 0, a: 0}; for (const x of LT.values()){ all.l += x.l; all.c += x.c; all.a += x.a; }
+      outside = {l: all.l - T.l, c: all.c - T.c}; T = all;
+    }
     $("fbLeads").textContent = fmt(T.l);
+    $("fbLeadsSub").innerHTML = outside && outside.l > 0
+      ? 'session 2027 · <span class="warnx" title="Leads owned by counselor UIDs that are not in TL Bifurcation (e.g. left or moved). Add them there to place them under a coordinator.">' + fmt(outside.l) + ' with counselors not in TL Bifurcation</span>'
+      : "session 2027";
     $("fbApps").textContent = fmt(T.c); $("fbAppsPct").textContent = pctTxt(T.c, T.l) + " of leads (L→App)";
     $("fbAdm").textContent = fmt(T.a); $("fbAdmPct").textContent = pctTxt(T.a, T.l) + " of leads (L→Adm)";
     $("leadNote").innerHTML = '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Leads registered from 1 Sep 2026 (plus older leads that paid on a 2027 form) · online Payment Approved forms only · leads with an N application not counted' +
