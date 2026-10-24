@@ -994,7 +994,8 @@ function renderProgress(f){
 }
 
 /* Mode of conversion (claims sheet column F), shown under the claim: Ameyo call or other (WhatsApp etc.) */
-const modeKey = v => { const t = String(v || "").trim(); return !t ? "" : /ameyo|call/i.test(t) ? "Ameyo call" : t; };
+// "Ameyo (On Call)" -> Ameyo call; "Others (Whatsapp call/chat, SIM call/SMS)" -> Others (full text on hover)
+const modeKey = v => { const t = String(v || "").trim(); if (!t) return ""; if (/ameyo/i.test(t)) return "Ameyo call"; return t.replace(/\s*\(.*$/, "").trim() || t; };
 function modeTag(r){
   const k = modeKey(r.mode); if (!k) return "";
   return '<span class="modetag" title="Mode of conversion: ' + esc(r.mode) + '">' + (k === "Ameyo call" ? "📞 " : "💬 ") + esc(k) + '</span>';

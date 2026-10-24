@@ -18,8 +18,8 @@ var CONFIG = {
 
 /* Sheet columns sent to the dashboard (nothing else leaves the sheet)
    ts   name uid  claim app  astra paid drona final fired sarathi month rebuttal */
-var COLS = ["A", "M", "L", "E", "C", "N", "Q", "J", "V", "W", "I", "O", "X"];
-var DICT_FIELDS = {claim: 3, drona: 7, final: 8, fired: 9, sarathi: 10, month: 11, rebuttal: 12};
+var COLS = ["A", "M", "L", "E", "C", "N", "Q", "J", "V", "W", "I", "O", "X", "F"];
+var DICT_FIELDS = {claim: 3, drona: 7, final: 8, fired: 9, sarathi: 10, month: 11, rebuttal: 12, mode: 13};
 
 /* ---------- Web entry points ---------- */
 function doPost(e){
@@ -28,6 +28,7 @@ function doPost(e){
   try {
     var user = verifyToken_(req.token);
     if (!user) return json_({ok: false, error: "auth", message: "Please sign in with your @" + CONFIG.DOMAIN + " Google account."});
+    if (req.what === "ping"){ logVisit_(user.email, req.page); return json_({ok: true}); }   // page opened (usage report)
     if (req.fresh) dropIfOlder_(req.what === "apps" ? "ha_" : "hk_", 30);   // Refresh button: rebuild from the sheets
     if (req.what === "apps"){                                       // Application Follow-up page
       var me = emailToUid_()[user.email] || "";
@@ -91,17 +92,50 @@ function getPacked_(){
   } finally { lock.releaseLock(); }
 }
 
+/* ---------- Lead conversion (Meritto -> BigQuery, filled daily by the leads-job in Google Cloud) ----------
+   Reads only the lead_summary view: counts per day (Lead Assignment Date) and counselor UID. No lead-level data.
+   Needs: Apps Script linked to project 417974248161 and the BigQuery advanced service added (Services > BigQuery API). */
+var LEADS_BQ = {project: "karmo-ka-hisabkitab", location: "asia-south1",
+                view: "karmo-ka-hisabkitab.hisabkitab_leads.lead_summary", days: 400};
+function leadSummary_(){
+  try {
+    var req = {query: "SELECT UNIX_MILLIS(TIMESTAMP(day, 'Asia/Kolkata')) AS d, uid, leads, converted, admitted FROM `" +
+                      LEADS_BQ.view + "` WHERE day >= DATE_SUB(CURRENT_DATE('Asia/Kolkata'), INTERVAL " + LEADS_BQ.days + " DAY)",
+               useLegacySql: false, location: LEADS_BQ.location, timeoutMs: 30000};
+    var res = BigQuery.Jobs.query(req, LEADS_BQ.project), jobId = res.jobReference.jobId, rows = [], tries = 0;
+    while (!res.jobComplete && tries++ < 40){
+      Utilities.sleep(500);
+      res = BigQuery.Jobs.getQueryResults(LEADS_BQ.project, jobId, {location: LEADS_BQ.location});
+    }
+    if (!res.jobComplete) throw new Error("query did not finish in time");
+    var add = function(list){ (list || []).forEach(function(x){
+      rows.push([Number(x.f[0].v), String(x.f[1].v), Number(x.f[2].v) || 0, Number(x.f[3].v) || 0, Number(x.f[4].v) || 0]); }); };
+    add(res.rows);
+    var token = res.pageToken;
+    while (token){
+      var page = BigQuery.Jobs.getQueryResults(LEADS_BQ.project, jobId, {pageToken: token, location: LEADS_BQ.location});
+      add(page.rows); token = page.pageToken;
+    }
+    return rows;
+  } catch (e) {
+    Logger.log("Lead summary not available: " + e.message);
+    return null;                                                  // the dashboard still works without it
+  }
+}
+
 function buildData_(){
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_TAB);
   if (!sh) throw new Error('Tab "' + CONFIG.SHEET_TAB + '" not found.');
   var last = sh.getLastRow();
-  var colText = {}, tsVals = [], paidVals = [];
+  var colText = {}, tsVals = [], paidVals = [], s1Vals = [], s2Vals = [];
   if (last >= 2){
     COLS.forEach(function(c){
       colText[c] = sh.getRange(c + "2:" + c + last).getDisplayValues().map(function(r){ return String(r[0]).trim(); });
     });
     tsVals = sh.getRange("A2:A" + last).getValues().map(function(r){ return r[0]; });
     paidVals = sh.getRange("Q2:Q" + last).getValues().map(function(r){ return r[0]; });
+    s1Vals = sh.getRange("S2:S" + last).getValues().map(function(r){ return r[0]; });   // Step-1 check date
+    s2Vals = sh.getRange("U2:U" + last).getValues().map(function(r){ return r[0]; });   // Step-2 check date & time
   }
   var dicts = {}, index = {};
   Object.keys(DICT_FIELDS).forEach(function(k){ dicts[k] = []; index[k] = {}; });
@@ -110,6 +144,18 @@ function buildData_(){
     return index[field][value];
   }
   function ms(v){ return v instanceof Date ? v.getTime() : 0; }
+  /* Dates written as text, e.g. "14-Oct-2026", "14-Oct-2026 14:32:03" or "14/10/2026 14:32" (India time) */
+  var MON = {jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
+  function anyMs(v){
+    if (v instanceof Date) return v.getTime();
+    var t = String(v || "").trim(); if (!t) return 0;
+    var m = t.match(/^(\d{1,2})[-\/\s]([A-Za-z]{3}|\d{1,2})[-\/\s](\d{4})(?:[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i);
+    if (!m) return 0;
+    var mon = isNaN(m[2]) ? MON[m[2].toLowerCase()] : Number(m[2]) - 1, h = Number(m[4] || 0);
+    if (m[7]){ var pm = /pm/i.test(m[7]); if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+    if (mon === undefined) return 0;
+    return Date.UTC(Number(m[3]), mon, Number(m[1]), h, Number(m[5] || 0), Number(m[6] || 0)) - 330 * 60000;   // IST -> UTC
+  }
 
   var rows = [];
   var n = last >= 2 ? last - 1 : 0;
@@ -119,10 +165,13 @@ function buildData_(){
     rows.push([ms(tsVals[i]), name, colText.L[i], code("claim", colText.E[i]), app, colText.N[i],
                colText.Q[i], ms(paidVals[i]), code("drona", colText.J[i]), code("final", colText.V[i]),
                code("fired", colText.W[i]), code("sarathi", colText.I[i]), code("month", colText.O[i]),
-               code("rebuttal", colText.X[i])]);                       // X: rebuttal status (Accepted / Rejected / Pending / blank)
+               code("rebuttal", colText.X[i]),                        // X: rebuttal status (Accepted / Rejected / Pending / blank)
+               anyMs(s1Vals[i]), anyMs(s2Vals[i]),                    // S: Step-1 check date, U: Step-2 check date & time
+               code("mode", colText.F[i])]);                          // F: Mode of conversion (e.g. Ameyo call)
   }
   var roster = [], rosterNote = "";
   try { roster = buildRoster_(); } catch (e) { rosterNote = String(e && e.message || e); }
+  var lead = leadsWithBackup_();
   return {
     v: 2,
     updated: Utilities.formatDate(new Date(), "Asia/Kolkata", "dd-MMM-yyyy hh:mm a"),
@@ -130,8 +179,11 @@ function buildData_(){
     roster: roster,
     rosterFields: ["uid", "name", "role", "coord", "sim", "skill", "tlUid", "tlName", "active", "lastSeen"],
     rosterNote: rosterNote,
+    leads: lead.rows,                                             // counts per day and counselor UID (BigQuery, else last good copy)
+    leadFields: ["day", "uid", "leads", "converted", "admitted"],
+    leadsAsOf: lead.asOf, leadsStale: lead.stale,
     fields: ["ts", "name", "uid", "claim", "app", "astra", "paid", "paidTs",
-             "drona", "final", "fired", "sarathi", "month", "rebuttal"],
+             "drona", "final", "fired", "sarathi", "month", "rebuttal", "s1date", "s2date", "mode"],
     dict: dicts,
     rows: rows
   };
@@ -226,6 +278,61 @@ function dropIfOlder_(pre, seconds){
 function clearCaches_(){ CacheService.getScriptCache().removeAll(["hk_n", "ha_n", "em_map"]); }
 /* Runs automatically when TL Bifurcation, the claims sheet or the assignment sheet changes */
 function onSheetChange(e){ clearCaches_(); }
+/* ---------- Dashboard usage (who opened which page; private sheet in the owner's Drive) ---------- */
+var USAGE_KEEP_DAYS = 90;
+var PAGE_NAMES = {index: "Astra Claim Status", teams: "Team Performance", structure: "Team Structure", apps: "Team Leaders Stats"};
+function usageBook_(){
+  var props = PropertiesService.getScriptProperties(), id = props.getProperty("USAGE_ID"), ss = null;
+  if (id){ try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; } }
+  if (!ss){
+    ss = SpreadsheetApp.create("HisabKitab dashboard usage (private)");
+    var v = ss.getSheets()[0]; v.setName("Visits");
+    v.getRange(1, 1, 1, 5).setValues([["Date", "First opened", "Email", "UID", "Page"]]).setFontWeight("bold"); v.setFrozenRows(1);
+    var sm = ss.insertSheet("Daily summary");
+    sm.getRange("A1").setFormula('=IFERROR(QUERY(UNIQUE({Visits!A2:A, Visits!C2:C}), "select Col1, count(Col2) where Col1 is not null group by Col1 order by Col1 desc label Col1 \'Date\', count(Col2) \'People who opened\'", 0), "No visits yet")');
+    ss.insertSheet("Not opened yet");
+    props.setProperty("USAGE_ID", ss.getId());
+  }
+  return ss;
+}
+function logVisit_(email, page){
+  page = PAGE_NAMES[String(page || "").replace(/[^a-z]/gi, "")] || "Other";
+  var day = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd");
+  var cache = CacheService.getScriptCache(), key = "v:" + email + ":" + page + ":" + day;
+  if (cache.get(key)) return;                                  // already recorded today for this page
+  cache.put(key, "1", 21600);
+  var lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) return;
+  try {
+    var m = String(email).split("@")[0].match(/(\d{4,})/);
+    usageBook_().getSheetByName("Visits").appendRow([day, Utilities.formatDate(new Date(), "Asia/Kolkata", "HH:mm"), email, m ? m[1] : "", page]);
+  } finally { lock.releaseLock(); }
+}
+/* Daily: "Not opened yet" list (team members from TL Bifurcation with no visit at all) and 90-day clean-up */
+function usageDaily(){
+  var ss = usageBook_(), v = ss.getSheetByName("Visits"), last = v.getLastRow();
+  var rows = last >= 2 ? v.getRange(2, 1, last - 1, 5).getValues() : [];
+  var cutoff = Utilities.formatDate(new Date(Date.now() - USAGE_KEEP_DAYS * 864e5), "Asia/Kolkata", "yyyy-MM-dd");
+  var keep = rows.filter(function(r){ var d = r[0] instanceof Date ? Utilities.formatDate(r[0], "Asia/Kolkata", "yyyy-MM-dd") : String(r[0]); return d >= cutoff; });
+  if (keep.length !== rows.length){ v.getRange(2, 1, Math.max(rows.length, 1), 5).clearContent(); if (keep.length) v.getRange(2, 1, keep.length, 5).setValues(keep); }
+  var seenEmail = {}, seenUid = {};
+  keep.forEach(function(r){ seenEmail[String(r[2]).toLowerCase()] = true; if (r[3]) seenUid[String(r[3])] = true; });
+  var emap = emailToUid_(), uidSeen = {};
+  Object.keys(emap).forEach(function(e){ if (seenEmail[e]) uidSeen[emap[e]] = true; });
+  var out = [["UID", "Name", "Role", "Coordinator", "Skill"]];
+  readDuty_().forEach(function(r){ if (!uidSeen[r[0]] && !seenUid[r[0]]) out.push([r[0], r[1], r[2], r[3], r[5]]); });
+  var n = ss.getSheetByName("Not opened yet"); n.clearContents();
+  n.getRange(1, 1, out.length, 5).setValues(out); n.getRange(1, 1, 1, 5).setFontWeight("bold"); n.setFrozenRows(1);
+  n.getRange(1, 7).setValue("Updated " + Utilities.formatDate(new Date(), "Asia/Kolkata", "dd-MMM-yyyy HH:mm") + " | " + (out.length - 1) + " people have not opened the dashboard in the last " + USAGE_KEEP_DAYS + " days");
+}
+/* Run ONCE: switches on the usage report (creates the private sheet and a daily 7 AM update) */
+function setupUsage(){
+  var ss = usageBook_();
+  ScriptApp.getProjectTriggers().forEach(function(t){ if (t.getHandlerFunction() === "usageDaily") ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger("usageDaily").timeBased().atHour(7).everyDays(1).inTimezone("Asia/Kolkata").create();
+  usageDaily();
+  Logger.log("Usage report ON. Private sheet: " + ss.getUrl());
+}
+
 /* Run ONCE from the editor: installs the "clear on edit" triggers (safe to run again) */
 function installTriggers(){
   ScriptApp.getProjectTriggers().forEach(function(t){ if (t.getHandlerFunction() === "onSheetChange") ScriptApp.deleteTrigger(t); });
@@ -398,4 +505,69 @@ function testSetup(){
     Logger.log("Application columns found: " + a.found.length + " of " + APP_COLS.length + (missing.length ? " | missing: " + missing.join(", ") : ""));
   } catch (e) { Logger.log("Applications: NOT READ | " + e.message); }
   Logger.log("Setup OK. Now deploy as a web app.");
+}
+
+/* Check: is the rebuttal status (column X) being read? Run from the editor, see the Execution log */
+function testRebuttal(){
+  var d = buildData_(), fi = d.fields.indexOf("rebuttal"), ai = d.fields.indexOf("astra");
+  if (fi < 0){ Logger.log("Column X is NOT being read."); return; }
+  var n = 0;
+  d.rows.forEach(function(r){ var v = d.dict.rebuttal[r[fi]]; if (v) n++; if (String(r[ai]) === "12") Logger.log("Astra ID 12 -> rebuttal: '" + v + "'"); });
+  Logger.log("Claims with a rebuttal status: " + n);
+}
+
+/* Check: are the Step-1 (S) and Step-2 (U) check dates being read? Run from the editor, see the Execution log */
+function testTAT(){
+  var d = buildData_(), f1 = d.fields.indexOf("s1date"), f2 = d.fields.indexOf("s2date");
+  if (f1 < 0){ Logger.log("Columns S and U are NOT being read."); return; }
+  var n1 = 0, n2 = 0; d.rows.forEach(function(r){ if (r[f1]) n1++; if (r[f2]) n2++; });
+  Logger.log("Claims: " + d.rows.length + " | with Step-1 date: " + n1 + " | with Step-2 date: " + n2);
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_TAB);
+  var s = sh.getRange("S1:S6").getValues(), u = sh.getRange("U1:U6").getValues();
+  for (var i = 0; i < 6; i++) Logger.log("Row " + (i + 1) + " | S: " + JSON.stringify(s[i][0]) + " | U: " + JSON.stringify(u[i][0]));
+}
+
+/* Last good copy of the lead summary (counts only), kept on a tab of the private usage spreadsheet.
+   Saved at most once an hour; used whenever BigQuery cannot be read, so the dashboard keeps the old numbers. */
+var LEAD_BACKUP_TAB = "Lead summary (last good)";
+function leadsWithBackup_(){
+  var props = PropertiesService.getScriptProperties();
+  var rows = leadSummary_(), now = new Date();
+  if (rows && rows.length){
+    var last = Number(props.getProperty("LEADS_SAVED") || 0);
+    if (Date.now() - last > 3600 * 1000){
+      try {
+        var sh = usageBook_().getSheetByName(LEAD_BACKUP_TAB) || usageBook_().insertSheet(LEAD_BACKUP_TAB);
+        sh.clearContents();
+        sh.getRange(1, 1, 1, 5).setValues([["day (ms)", "uid", "leads", "converted", "admitted"]]);
+        sh.getRange(2, 1, rows.length, 5).setValues(rows);
+        props.setProperty("LEADS_SAVED", String(Date.now()));
+        props.setProperty("LEADS_ASOF", Utilities.formatDate(now, "Asia/Kolkata", "dd-MMM-yyyy hh:mm a"));
+      } catch (e) { Logger.log("Lead backup not saved: " + e.message); }
+    }
+    return {rows: rows, asOf: Utilities.formatDate(now, "Asia/Kolkata", "dd-MMM-yyyy hh:mm a"), stale: false};
+  }
+  try {                                                           // BigQuery not readable: use the last good copy
+    var b = usageBook_().getSheetByName(LEAD_BACKUP_TAB), n = b ? b.getLastRow() - 1 : 0;
+    if (n > 0){
+      var old = b.getRange(2, 1, n, 5).getValues().map(function(r){ return [Number(r[0]), String(r[1]), Number(r[2]) || 0, Number(r[3]) || 0, Number(r[4]) || 0]; });
+      return {rows: old, asOf: props.getProperty("LEADS_ASOF") || "", stale: true};
+    }
+  } catch (e) { Logger.log("Lead backup not readable: " + e.message); }
+  return {rows: null, asOf: "", stale: true};
+}
+
+/* Check: can the data service read the lead summary from BigQuery? Run from the editor, see the Execution log */
+function testLeads(){
+  var rows = leadSummary_();
+  if (!rows){
+    var b = leadsWithBackup_();
+    Logger.log("BigQuery NOT available (see the message above). Backup copy: " + (b.rows ? b.rows.length + " rows, as of " + b.asOf : "none yet"));
+    return;
+  }
+  var t = rows.reduce(function(a, r){ a.l += r[2]; a.c += r[3]; a.u[r[1]] = 1; return a; }, {l: 0, c: 0, u: {}});
+  Logger.log("Lead summary rows: " + rows.length + " | leads: " + t.l + " | converted: " + t.c + " | counselors: " + Object.keys(t.u).length);
+  PropertiesService.getScriptProperties().deleteProperty("LEADS_SAVED");      // save a fresh backup copy now
+  var b = leadsWithBackup_();
+  Logger.log("Backup copy saved (" + (b.rows ? b.rows.length : 0) + " rows) on the '" + LEAD_BACKUP_TAB + "' tab of the private usage sheet");
 }
