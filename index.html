@@ -206,6 +206,7 @@ html.nav-mini .sidenav span.two{display:none}
 .vmini b{color:var(--ink)}
 .vsep{color:var(--faint);margin:0 4px}
 @media (max-width: 720px){ .vmini{order:3;flex-basis:100%} }
+.modetag{display:block;margin-top:4px;font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -492,6 +493,9 @@ footer b{color:var(--muted);font-weight:600}
             <option value="">All</option><option value="ok">Hit</option><option value="bad">Miss</option><option value="wait">Pending</option>
           </select>
         </label>
+        <label class="f">Mode of conversion
+          <select id="fMode"><option value="">All</option></select>
+        </label>
         <label class="f">Verification stage
           <select id="fStage">
             <option value="">All</option><option value="s1p">Step 1 pending</option><option value="rej1">Rejected at Step 1</option>
@@ -729,7 +733,8 @@ async function fetchClaims(useShared){
     paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
     fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]],
     rebuttal: F.rebuttal !== undefined && D.rebuttal ? String(D.rebuttal[r[F.rebuttal]] || "").trim() : "",
-    s1d: F.s1date !== undefined ? r[F.s1date] || 0 : 0, s2d: F.s2date !== undefined ? r[F.s2date] || 0 : 0
+    s1d: F.s1date !== undefined ? r[F.s1date] || 0 : 0, s2d: F.s2date !== undefined ? r[F.s2date] || 0 : 0,
+    mode: F.mode !== undefined && D.mode ? String(D.mode[r[F.mode]] || "").trim() : ""
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
@@ -795,7 +800,7 @@ const DROPDOWNS = [
   {id:"fSarathi", key:"_team", labelKey:"_teamLabel"},
   {id:"fMonth",   key:"month"},
 ];
-const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fStage","fRebut","fMonth","dFrom","dTo"];
+const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fMode","fStage","fRebut","fMonth","dFrom","dTo"];
 
 /* Current filter choices */
 function readFilters(){
@@ -805,6 +810,7 @@ function readFilters(){
     ty: TYPES.find(t => t.astra === $("fType").value),
     reb: $("fRebut").value,
     stage: $("fStage").value,
+    mode: $("fMode").value,
     /* Date range uses the claim submission date (Timestamp, column A) */
     from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
     to:   $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null,
@@ -822,6 +828,7 @@ function rowMatches(r, f, skipArg){
   if (!has("fType") && f.ty && !f.ty.match.test(r.claim || "")) return false;
   if (!has("fRebut") && f.reb && (f.reb === "any" ? !rebKind(r.rebuttal) : rebKind(r.rebuttal) !== f.reb)) return false;
   if (!has("fStage") && f.stage && stageOf(r) !== f.stage) return false;
+  if (!has("fMode") && f.mode && (f.mode === "(blank)" ? !!modeKey(r.mode) : modeKey(r.mode) !== f.mode)) return false;
   for (const d of DROPDOWNS) if (!has(d.id) && f.drop[d.id] && (r[d.key] || "(blank)") !== f.drop[d.id]) return false;
   return true;
 }
@@ -846,9 +853,21 @@ function buildOptions(f){
     sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '">' + esc(opts.get(v).label) + ' (' + fmt(opts.get(v).n) + ')</option>').join("");
     sel.value = cur;
   }
+  // Mode of conversion: options from the values in column F (Ameyo call first, blank last)
+  {
+    const sel = $("fMode"), cur = sel.value;
+    const modes = [...new Set(ALL.map(r => modeKey(r.mode)).filter(Boolean))].sort((a, b) => (a === "Ameyo call" ? -1 : b === "Ameyo call" ? 1 : a.localeCompare(b)));
+    if (ALL.some(r => !modeKey(r.mode))) modes.push("(blank)");
+    const key = modes.join("|");
+    if (sel.dataset.key !== key){
+      sel.innerHTML = '<option value="">All</option>' + modes.map(m => '<option value="' + esc(m) + '">' + esc(m === "(blank)" ? "Not filled" : m) + '</option>').join("");
+      sel.dataset.key = key; sel.value = modes.includes(cur) ? cur : "";
+    }
+  }
   // Fixed lists (Hit or Miss, Claim type): show counts, grey out options with no claims
   const fixed = [
     {id:"fResult", count: v => ALL.filter(r => rowMatches(r, f, "fResult") && resOf(r) === v).length},
+    {id:"fMode",   count: v => ALL.filter(r => rowMatches(r, f, "fMode") && (v === "(blank)" ? !modeKey(r.mode) : modeKey(r.mode) === v)).length},
     {id:"fStage",  count: v => ALL.filter(r => rowMatches(r, f, "fStage") && stageOf(r) === v).length},
     {id:"fRebut",  count: v => ALL.filter(r => rowMatches(r, f, "fRebut") && (v === "any" ? !!rebKind(r.rebuttal) : rebKind(r.rebuttal) === v)).length},
     {id:"fType",   count: v => { const t = TYPES.find(x => x.astra === v); return ALL.filter(r => rowMatches(r, f, "fType") && t && t.match.test(r.claim || "")).length; }}
@@ -974,6 +993,13 @@ function renderProgress(f){
       '<small class="vnote">' + fmt(s2Total) + ' claims forwarded from Step 1</small></div></div>';
 }
 
+/* Mode of conversion (claims sheet column F), shown under the claim: Ameyo call or other (WhatsApp etc.) */
+const modeKey = v => { const t = String(v || "").trim(); return !t ? "" : /ameyo|call/i.test(t) ? "Ameyo call" : t; };
+function modeTag(r){
+  const k = modeKey(r.mode); if (!k) return "";
+  return '<span class="modetag" title="Mode of conversion: ' + esc(r.mode) + '">' + (k === "Ameyo call" ? "📞 " : "💬 ") + esc(k) + '</span>';
+}
+
 /* Rebuttal status (claims sheet column X), shown under the final status only when a rebuttal exists */
 const REBUTTAL_SHEET = "https://docs.google.com/spreadsheets/d/1geSxOEynNqJsKfb1rJGl0si7V40wwSjcXHyZRY-NO5Y/edit?gid=1942937272#gid=1942937272";
 const rebKind = v => { const t = String(v || "").toLowerCase(); return !t ? "" : /accept/.test(t) ? "acc" : /reject/.test(t) ? "rej" : "pen"; };
@@ -988,7 +1014,7 @@ function cell(c, r){
   switch (c.key){
     case "name":  return '<span class="who"><b>' + esc(v || "–") + '</b><small>UID ' + esc(r.uid || "–") + '</small></span>';
     case "claim": { const t = TYPES.find(t => t.match.test(v || ""));
-                    return t ? '<span class="tag neutral" style="font-weight:500;color:var(--ink)" title="' + esc(t.label) + '"><span class="em" aria-hidden="true">' + t.emoji + '</span>' + esc(t.astra) + '</span>' : esc(v || "–"); }
+                    return (t ? '<span class="tag neutral" style="font-weight:500;color:var(--ink)" title="' + esc(t.label) + '"><span class="em" aria-hidden="true">' + t.emoji + '</span>' + esc(t.astra) + '</span>' : esc(v || "–")) + modeTag(r); }
     case "app":   return '<span class="mask">' + esc(v || "–") + '</span>';
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
                          (v ? '<span class="reason">' + esc(v) + '</span>' : "") + rebuttalTag(r);
@@ -1021,12 +1047,12 @@ function renderActive(){
   const label = (id, name) => { const el = $(id); if (!el.value) return; const o = el.options[el.selectedIndex];
     items.push({id, text: name + ": " + (o ? o.textContent.replace(/\s*\(\d[\d,]*\)$/, "") : el.value)}); };
   if ($("q").value.trim()) items.push({id:"q", text:'Search: "' + $("q").value.trim() + '"'});
-  label("fDrona", "Coordinator"); label("fSarathi", "Team leader"); label("fType", "Type"); label("fResult", "Status"); label("fStage", "Stage"); label("fRebut", "Rebuttal"); label("fMonth", "Month");
+  label("fDrona", "Coordinator"); label("fSarathi", "Team leader"); label("fType", "Type"); label("fResult", "Status"); label("fMode", "Mode"); label("fStage", "Stage"); label("fRebut", "Rebuttal"); label("fMonth", "Month");
   if ($("dFrom").value || $("dTo").value) items.push({id:"dates", text:"Dates: " + ($("dFrom").value || "…") + " to " + ($("dTo").value || "…")});
   $("activeStrip").hidden = !items.length;
   $("activeStrip").innerHTML = '<span class="aslabel">Showing</span>' + items.map(it =>
     '<span class="achip">' + esc(it.text) + '<button type="button" data-clear="' + it.id + '" aria-label="Remove ' + esc(it.text) + '">✕</button></span>').join("");
-  for (const id of ["fDrona","fSarathi","fType","fResult","fStage","fRebut","fMonth","dFrom","dTo","q"]) $(id).classList.toggle("has-value", !!$(id).value.trim());
+  for (const id of ["fDrona","fSarathi","fType","fResult","fMode","fStage","fRebut","fMonth","dFrom","dTo","q"]) $(id).classList.toggle("has-value", !!$(id).value.trim());
 }
 $("activeStrip").addEventListener("click", e => {
   const b = e.target.closest("button[data-clear]"); if (!b) return;
@@ -1038,7 +1064,7 @@ $("activeStrip").addEventListener("click", e => {
 
 let t;
 $("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); });
-["fSarathi","fResult","fType","fStage","fRebut","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
+["fSarathi","fResult","fType","fMode","fStage","fRebut","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
 (function(){
   const setV = collapsed => {
     $("vprog").hidden = collapsed; $("vmini").hidden = !collapsed;

@@ -206,9 +206,12 @@ html.nav-mini .sidenav span.two{display:none}
 .vmini b{color:var(--ink)}
 .vsep{color:var(--faint);margin:0 4px}
 @media (max-width: 720px){ .vmini{order:3;flex-basis:100%} }
+.modetag{display:block;margin-top:4px;font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
 .stats4{grid-template-columns:repeat(4,1fr)!important}
 .tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
 .tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
+.tfilters.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width: 1250px){ .tfilters.six{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .viewbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
 .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px;gap:3px}
 .seg button{border:none;background:none;padding:6px 16px;border-radius:4px;font-weight:600;color:var(--muted)}
@@ -287,6 +290,33 @@ tbody tr.hl td b{color:var(--ink)}
 .leadnote{display:block;font-size:12.5px;color:var(--faint);margin:0 2px 8px}
 .leadnote.stale{color:var(--wait);font-weight:600}
 .faint{color:var(--faint)}
+.funnel{display:flex;flex-direction:column;gap:1px;font-size:12.5px;white-space:nowrap;color:var(--muted)}
+.funnel .fl{font-size:13.5px;color:var(--ink)}
+.funnel b{color:var(--ink)}
+.fskills{display:flex;flex-direction:column;margin-top:5px;padding-top:4px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--faint);white-space:nowrap}
+.fskills i{font-style:normal;color:var(--muted);font-weight:600}
+.fskills b{color:var(--muted)}
+.funnelbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;margin:0 0 16px;overflow:hidden}
+.funnelbar .fbtile{display:flex;flex-direction:column;gap:0;padding:9px 16px}
+.funnelbar .fbtile + .fbtile{border-left:1px solid var(--line-2)}
+.fbl{font-size:12.5px;font-weight:600;color:var(--muted)}
+.fbn{font-family:var(--serif);font-size:23px;font-weight:700;line-height:1.2}
+.fbs{font-size:12px;color:var(--faint);line-height:1.35}
+.fbnote{grid-column:1/-1;border-top:1px solid var(--line-2);padding:5px 16px;font-size:11.5px}
+.fbnote .leadnote{font-size:11.5px;cursor:help}
+.fbnote .leadnote{margin:0}
+@media (max-width: 720px){ .funnelbar{grid-template-columns:1fr} .funnelbar .fbtile + .fbtile{border-left:none;border-top:1px solid var(--line-2)} }
+.fbs .warnx{color:var(--wait);font-weight:600}
+.fbs .faint{color:var(--faint)}
+.fbbar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--line-2);margin:5px 0 4px;max-width:340px}
+.fbbar i{display:block;height:100%}
+.fbbar .tel,.fbparts .dot.tel{background:var(--ok)}
+.fbbar .oth,.fbparts .dot.oth{background:var(--wait)}
+.fbbar .una,.fbparts .dot.una{background:var(--faint)}
+.fbparts{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--faint)}
+.fbparts span{white-space:nowrap;cursor:help}
+.fbparts b{color:var(--muted)}
+.fbparts .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
 /* Structure page */
 .sfilters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:end}
 .treebar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px}
@@ -809,7 +839,8 @@ async function fetchClaims(useShared){
     paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
     fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]],
     rebuttal: F.rebuttal !== undefined && D.rebuttal ? String(D.rebuttal[r[F.rebuttal]] || "").trim() : "",
-    s1d: F.s1date !== undefined ? r[F.s1date] || 0 : 0, s2d: F.s2date !== undefined ? r[F.s2date] || 0 : 0
+    s1d: F.s1date !== undefined ? r[F.s1date] || 0 : 0, s2d: F.s2date !== undefined ? r[F.s2date] || 0 : 0,
+    mode: F.mode !== undefined && D.mode ? String(D.mode[r[F.mode]] || "").trim() : ""
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
@@ -928,6 +959,13 @@ function periodWindow(kind){
     return {cur:{from:m, to:null}, prev:{from:pm, to:m}, prevLabel:"last month"};
   }
   if (kind === "30d") return {cur:{from:now - 30 * DAY, to:null}, prev:{from:now - 60 * DAY, to:now - 30 * DAY}, prevLabel:"previous 30 days"};
+  if (kind === "custom"){                                   // From / To dates (both days included)
+    const f = $("pFrom").value ? new Date($("pFrom").value + "T00:00:00").getTime() : null;
+    const t = $("pTo").value ? new Date($("pTo").value + "T00:00:00").getTime() + DAY : null;
+    const len = (f !== null && t !== null && t > f) ? t - f : null;
+    return {cur:{from:f, to:t}, prev: len ? {from:f - len, to:f} : {from:null, to:(f || now) - 7 * DAY},
+            prevLabel: len ? "the same number of days before" : "7 days earlier"};
+  }
   return {cur:{from:null, to:null}, prev:{from:null, to:now - 7 * DAY}, prevLabel:"7 days ago"};   // whole session vs a week ago
 }
 const TREND_WEEKS = 8;
@@ -1127,6 +1165,14 @@ function orderedLists(d, sc, st){
 const rankMap = (list, keyFn) => { const m = new Map(); list.forEach((x, i) => m.set(keyFn(x), {i, scored: x.score !== null && x.score !== undefined})); return m; };
 /* Lead conversion (Meritto, daily): leads assigned to a counselor in the period (Lead Assignment Date) and how many
    of them have a Payment Approved form. Counts only, per counselor UID. */
+function periodText(){
+  const v = $("fPeriod").value, o = {day: "numeric", month: "short"};
+  if (v === "custom"){
+    const f = $("pFrom").value ? new Date($("pFrom").value + "T00:00:00") : null, t = $("pTo").value ? new Date($("pTo").value + "T00:00:00") : null;
+    return f && t ? f.toLocaleDateString("en-IN", o) + " – " + t.toLocaleDateString("en-IN", o) : f ? "from " + f.toLocaleDateString("en-IN", o) : t ? "until " + t.toLocaleDateString("en-IN", o) : "custom dates";
+  }
+  return ({week: "this week", month: "this month", "30d": "last 30 days"})[v] || "session 2027";
+}
 function leadTotals(from, to){
   const m = new Map();
   if (!LEADS) return null;
@@ -1139,10 +1185,22 @@ function leadTotals(from, to){
 }
 const sumLeads = (m, uids) => { const t = {l: 0, c: 0, a: 0}; for (const u of uids){ const x = m.get(String(u)); if (x){ t.l += x.l; t.c += x.c; t.a += x.a; } } return t; };
 const leadRate = t => t && t.l ? t.c / t.l : -1;
-function leadCell(t){
+const pctTxt = (a, b) => b ? (Math.round(1000 * a / b) / 10) + "%" : "–";
+/* Lead funnel in one cell: leads, applications (L→App %), admissions (L→Adm %) */
+function leadCell(t, extra){
   if (!LEADS) return '<span class="faint">–</span>';
-  if (!t || !t.l) return '<span class="faint">No leads</span>';
-  return '<b>' + (Math.round(1000 * t.c / t.l) / 10) + '%</b><small class="subl">' + fmt(t.c) + ' of ' + fmt(t.l) + ' leads</small>';
+  if (!t || !t.l) return '<span class="faint">No leads</span>' + (extra || "");
+  return '<div class="funnel"><span class="fl"><b>' + fmt(t.l) + '</b> leads</span>' +
+    '<span class="fa" title="Lead to Application">🎯 <b>' + fmt(t.c) + '</b> apps · <b>' + pctTxt(t.c, t.l) + '</b></span>' +
+    '<span class="fd" title="Lead to Admission (Enrolment)">🏹 <b>' + fmt(t.a) + '</b> adm · <b>' + pctTxt(t.a, t.l) + '</b></span></div>' + (extra || "");
+}
+/* Coordinator: one small line per skill (L→App % · L→Adm %) */
+function skillLines(m, people){
+  const by = new Map();
+  for (const x of people){ const k = x.skill || "Other"; if (!by.has(k)) by.set(k, []); by.get(k).push(x.uid); }
+  const lines = [...by.entries()].map(([k, uids]) => [k, sumLeads(m, uids)]).filter(([, t]) => t.l).sort((a, b) => b[1].l - a[1].l);
+  if (lines.length < 2) return "";
+  return '<div class="fskills">' + lines.map(([k, t]) => '<span title="' + esc(k) + ': ' + fmt(t.l) + ' leads, ' + fmt(t.c) + ' apps, ' + fmt(t.a) + ' adm"><i>' + esc(k) + '</i> <b>' + fmt(t.l) + '</b> leads · 🎯 <b>' + fmt(t.c) + '</b> (' + pctTxt(t.c, t.l) + ') · 🏹 <b>' + fmt(t.a) + '</b> (' + pctTxt(t.a, t.l) + ')</span>').join("") + '</div>';
 }
 
 function movement(prevMap, key, i, score){

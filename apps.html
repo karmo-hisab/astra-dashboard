@@ -206,6 +206,7 @@ html.nav-mini .sidenav span.two{display:none}
 .vmini b{color:var(--ink)}
 .vsep{color:var(--faint);margin:0 4px}
 @media (max-width: 720px){ .vmini{order:3;flex-basis:100%} }
+.modetag{display:block;margin-top:4px;font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
 .stats4{grid-template-columns:repeat(4,1fr)!important}
 .tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
 .tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
@@ -295,6 +296,27 @@ tbody tr.hl td b{color:var(--ink)}
 .fskills{display:flex;flex-direction:column;margin-top:5px;padding-top:4px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--faint);white-space:nowrap}
 .fskills i{font-style:normal;color:var(--muted);font-weight:600}
 .fskills b{color:var(--muted)}
+.funnelbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;margin:0 0 16px;overflow:hidden}
+.funnelbar .fbtile{display:flex;flex-direction:column;gap:0;padding:9px 16px}
+.funnelbar .fbtile + .fbtile{border-left:1px solid var(--line-2)}
+.fbl{font-size:12.5px;font-weight:600;color:var(--muted)}
+.fbn{font-family:var(--serif);font-size:23px;font-weight:700;line-height:1.2}
+.fbs{font-size:12px;color:var(--faint);line-height:1.35}
+.fbnote{grid-column:1/-1;border-top:1px solid var(--line-2);padding:5px 16px;font-size:11.5px}
+.fbnote .leadnote{font-size:11.5px;cursor:help}
+.fbnote .leadnote{margin:0}
+@media (max-width: 720px){ .funnelbar{grid-template-columns:1fr} .funnelbar .fbtile + .fbtile{border-left:none;border-top:1px solid var(--line-2)} }
+.fbs .warnx{color:var(--wait);font-weight:600}
+.fbs .faint{color:var(--faint)}
+.fbbar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--line-2);margin:5px 0 4px;max-width:340px}
+.fbbar i{display:block;height:100%}
+.fbbar .tel,.fbparts .dot.tel{background:var(--ok)}
+.fbbar .oth,.fbparts .dot.oth{background:var(--wait)}
+.fbbar .una,.fbparts .dot.una{background:var(--faint)}
+.fbparts{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--faint)}
+.fbparts span{white-space:nowrap;cursor:help}
+.fbparts b{color:var(--muted)}
+.fbparts .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
 /* Application Follow-up page */
 .stats6{grid-template-columns:repeat(6,1fr)!important}
 .viewopts{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:10px}
@@ -808,7 +830,8 @@ async function fetchClaims(useShared){
     paid: r[F.paid], _paidTs: r[F.paidTs], drona: D.drona[r[F.drona]], final: D.final[r[F.final]],
     fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]],
     rebuttal: F.rebuttal !== undefined && D.rebuttal ? String(D.rebuttal[r[F.rebuttal]] || "").trim() : "",
-    s1d: F.s1date !== undefined ? r[F.s1date] || 0 : 0, s2d: F.s2date !== undefined ? r[F.s2date] || 0 : 0
+    s1d: F.s1date !== undefined ? r[F.s1date] || 0 : 0, s2d: F.s2date !== undefined ? r[F.s2date] || 0 : 0,
+    mode: F.mode !== undefined && D.mode ? String(D.mode[r[F.mode]] || "").trim() : ""
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
