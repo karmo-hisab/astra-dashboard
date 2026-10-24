@@ -305,6 +305,7 @@ tbody tr.hl td b{color:var(--ink)}
 .fbnote .leadnote{margin:0}
 @media (max-width: 720px){ .funnelbar{grid-template-columns:1fr} .funnelbar .fbtile + .fbtile{border-left:none;border-top:1px solid var(--line-2)} }
 .fbs .warnx{color:var(--wait);font-weight:600}
+.fbs .faint{color:var(--faint)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -543,7 +544,7 @@ footer b{color:var(--muted);font-weight:600}
   <div id="rosterWarn"></div>
 
   <section class="panel funnelbar" id="funnelBar" hidden aria-label="Lead funnel for the current selection">
-    <div class="fbtile"><span class="fbl">👥 Leads assigned</span><span class="fbn" id="fbLeads">–</span><span class="fbs" id="fbLeadsSub">session 2027</span></div>
+    <div class="fbtile"><span class="fbl" id="fbLeadsLabel">👥 Leads assigned</span><span class="fbn" id="fbLeads">–</span><span class="fbs" id="fbLeadsSub">session 2027</span></div>
     <div class="fbtile"><span class="fbl">🎯 LPUNEST applications</span><span class="fbn" id="fbApps">–</span><span class="fbs" id="fbAppsPct">&nbsp;</span></div>
     <div class="fbtile"><span class="fbl">🏹 Admissions</span><span class="fbn" id="fbAdm">–</span><span class="fbs" id="fbAdmPct">&nbsp;</span></div>
     <div class="fbnote" id="leadNote"></div>
@@ -573,7 +574,9 @@ footer b{color:var(--muted);font-weight:600}
       <button type="button" class="linkbtn" id="moreBtn" aria-expanded="false" aria-controls="moreFilters">More filters</button>
     </div>
     <div class="tfilters five" id="moreFilters" hidden>
-      <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option></select></label>
+      <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option><option value="custom">Custom dates…</option></select></label>
+      <label class="f" id="pFromWrap" hidden>From<input id="pFrom" type="date"></label>
+      <label class="f" id="pToWrap" hidden>To<input id="pTo" type="date"></label>
       <label class="f">Payment month<select id="fMonth"></select></label>
       <label class="f">Band<select id="fBand"><option value="">All</option><option value="ok">Top</option><option value="okl">Above median</option><option value="wait">Below median</option><option value="bad">Needs attention</option><option value="none">Not ranked yet</option></select></label>
       <label class="f">Activity<select id="fAct"><option value="">All</option><option value="idle">No claims in last 7 days</option><option value="active">Active in last 7 days</option></select></label>
@@ -933,6 +936,13 @@ function periodWindow(kind){
     return {cur:{from:m, to:null}, prev:{from:pm, to:m}, prevLabel:"last month"};
   }
   if (kind === "30d") return {cur:{from:now - 30 * DAY, to:null}, prev:{from:now - 60 * DAY, to:now - 30 * DAY}, prevLabel:"previous 30 days"};
+  if (kind === "custom"){                                   // From / To dates (both days included)
+    const f = $("pFrom").value ? new Date($("pFrom").value + "T00:00:00").getTime() : null;
+    const t = $("pTo").value ? new Date($("pTo").value + "T00:00:00").getTime() + DAY : null;
+    const len = (f !== null && t !== null && t > f) ? t - f : null;
+    return {cur:{from:f, to:t}, prev: len ? {from:f - len, to:f} : {from:null, to:(f || now) - 7 * DAY},
+            prevLabel: len ? "the same number of days before" : "7 days earlier"};
+  }
   return {cur:{from:null, to:null}, prev:{from:null, to:now - 7 * DAY}, prevLabel:"7 days ago"};   // whole session vs a week ago
 }
 const TREND_WEEKS = 8;
@@ -1132,6 +1142,14 @@ function orderedLists(d, sc, st){
 const rankMap = (list, keyFn) => { const m = new Map(); list.forEach((x, i) => m.set(keyFn(x), {i, scored: x.score !== null && x.score !== undefined})); return m; };
 /* Lead conversion (Meritto, daily): leads assigned to a counselor in the period (Lead Assignment Date) and how many
    of them have a Payment Approved form. Counts only, per counselor UID. */
+function periodText(){
+  const v = $("fPeriod").value, o = {day: "numeric", month: "short"};
+  if (v === "custom"){
+    const f = $("pFrom").value ? new Date($("pFrom").value + "T00:00:00") : null, t = $("pTo").value ? new Date($("pTo").value + "T00:00:00") : null;
+    return f && t ? f.toLocaleDateString("en-IN", o) + " – " + t.toLocaleDateString("en-IN", o) : f ? "from " + f.toLocaleDateString("en-IN", o) : t ? "until " + t.toLocaleDateString("en-IN", o) : "custom dates";
+  }
+  return ({week: "this week", month: "this month", "30d": "last 30 days"})[v] || "session 2027";
+}
 function leadTotals(from, to){
   const m = new Map();
   if (!LEADS) return null;
@@ -1196,14 +1214,18 @@ function render(){
       : selC ? [...d.people.values()].filter(x => x.coordKey === selC && funnelOk(x)).map(x => x.uid)
       : [...d.people.values()].filter(funnelOk).map(x => x.uid);
     let T = sumLeads(LT, uids), outside = null;
-    if (!selP && !selT && !selC && !fSkillV && !fSimV){            // everyone: the full total, incl. counselors not in TL Bifurcation
-      const all = {l: 0, c: 0, a: 0}; for (const x of LT.values()){ all.l += x.l; all.c += x.c; all.a += x.a; }
-      outside = {l: all.l - T.l, c: all.c - T.c}; T = all;
+    const un = LT.get("UNASSIGNED") || {l: 0, c: 0, a: 0};       // leads with no owner in Meritto: shown separately
+    if (!selP && !selT && !selC && !fSkillV && !fSimV){            // everyone: ALL session leads (Telephonic, other teams, unassigned)
+      const all = {l: 0, c: 0, a: 0}, assigned = {l: 0};
+      for (const [k, x] of LT){ all.l += x.l; all.c += x.c; all.a += x.a; if (k !== "UNASSIGNED") assigned.l += x.l; }
+      outside = {l: assigned.l - T.l}; T = all;                    // percentages below use this full total
     }
+    const range = $("fPeriod").value ? " · " + periodText() : " · session 2027";
     $("fbLeads").textContent = fmt(T.l);
-    $("fbLeadsSub").innerHTML = outside && outside.l > 0
-      ? 'session 2027 · <span class="warnx" title="Leads owned by counselor UIDs that are not in TL Bifurcation (e.g. left or moved). Add them there to place them under a coordinator.">' + fmt(outside.l) + ' with counselors not in TL Bifurcation</span>'
-      : "session 2027";
+    $("fbLeadsSub").innerHTML = range.slice(3) +
+      (outside && outside.l > 0 ? '<br><span class="warnx" title="Leads owned by counselors who are not in TL Bifurcation">incl. ' + fmt(outside.l) + ' assigned to teams not in Division of Telephonic</span>' : "") +
+      (outside && un.l > 0 ? '<br><span class="faint" title="Leads with no Lead Owner in Meritto">incl. ' + fmt(un.l) + ' unassigned</span>' : "");
+    $("fbLeadsLabel").textContent = outside ? "👥 Total leads" : "👥 Leads assigned";
     $("fbApps").textContent = fmt(T.c); $("fbAppsPct").textContent = pctTxt(T.c, T.l) + " of leads (L→App)";
     $("fbAdm").textContent = fmt(T.a); $("fbAdmPct").textContent = pctTxt(T.a, T.l) + " of leads (L→Adm)";
     $("leadNote").innerHTML = '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Leads registered from 1 Sep 2026 (plus older leads that paid on a 2027 form) · online Payment Approved forms only · leads with an N application not counted' +
@@ -1471,14 +1493,17 @@ function render(){
 }
 
 /* Events */
-["fSkill","fSim","fMonth","fPeriod","fBand","fAct"].forEach(id => $(id).addEventListener("change", () => { pg = 1; render(); }));
+["fSkill","fSim","fMonth","fPeriod","fBand","fAct","pFrom","pTo"].forEach(id => $(id).addEventListener("change", () => {
+  const custom = $("fPeriod").value === "custom"; $("pFromWrap").hidden = $("pToWrap").hidden = !custom;
+  pg = 1; render();
+}));
 $("fTeam").addEventListener("change", () => { $("fPerson").value = ""; if ($("fTeam").value) view = "teams"; pg = 1; jumpToHighlight = true; render(); });
 $("fCoord").addEventListener("change", () => { $("fTeam").value = ""; $("fPerson").value = ""; if ($("fCoord").value) view = "coords"; pg = 1; jumpToHighlight = true; render(); });
 $("fPerson").addEventListener("change", () => { if ($("fPerson").value) view = "people"; pg = 1; jumpToHighlight = true; render(); });
 $("moreBtn").addEventListener("click", () => { const open = $("moreFilters").hidden; $("moreFilters").hidden = !open; $("moreBtn").setAttribute("aria-expanded", open ? "true" : "false"); });
 document.querySelectorAll("#modeBar button").forEach(b => b.addEventListener("click", () => { mode = b.dataset.mode; pg = 1; jumpToHighlight = true; render(); }));
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 200); });
-$("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].forEach(id => $(id).value = ""); pg = 1; render(); });
+$("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q","pFrom","pTo"].forEach(id => $(id).value = ""); $("pFromWrap").hidden = $("pToWrap").hidden = true; pg = 1; render(); });
 $("refreshBtn").addEventListener("click", () => load(false));
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; $("q").value = ""; pg = 1; jumpToHighlight = true; render(); }));
 function drill(tr){
