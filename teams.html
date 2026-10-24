@@ -296,12 +296,13 @@ tbody tr.hl td b{color:var(--ink)}
 .fskills i{font-style:normal;color:var(--muted);font-weight:600}
 .fskills b{color:var(--muted)}
 .funnelbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;margin:0 0 16px;overflow:hidden}
-.funnelbar .fbtile{display:flex;flex-direction:column;gap:2px;padding:14px 18px}
+.funnelbar .fbtile{display:flex;flex-direction:column;gap:0;padding:9px 16px}
 .funnelbar .fbtile + .fbtile{border-left:1px solid var(--line-2)}
-.fbl{font-size:13px;font-weight:600;color:var(--muted)}
-.fbn{font-family:var(--serif);font-size:28px;font-weight:700;line-height:1.15}
-.fbs{font-size:12.5px;color:var(--faint)}
-.fbnote{grid-column:1/-1;border-top:1px solid var(--line-2);padding:8px 18px}
+.fbl{font-size:12.5px;font-weight:600;color:var(--muted)}
+.fbn{font-family:var(--serif);font-size:23px;font-weight:700;line-height:1.2}
+.fbs{font-size:12px;color:var(--faint);line-height:1.35}
+.fbnote{grid-column:1/-1;border-top:1px solid var(--line-2);padding:5px 16px;font-size:11.5px}
+.fbnote .leadnote{font-size:11.5px;cursor:help}
 .fbnote .leadnote{margin:0}
 @media (max-width: 720px){ .funnelbar{grid-template-columns:1fr} .funnelbar .fbtile + .fbtile{border-left:none;border-top:1px solid var(--line-2)} }
 .fbs .warnx{color:var(--wait);font-weight:600}
@@ -1223,14 +1224,16 @@ function render(){
     const range = $("fPeriod").value ? " · " + periodText() : " · session 2027";
     $("fbLeads").textContent = fmt(T.l);
     $("fbLeadsSub").innerHTML = range.slice(3) +
-      (outside && outside.l > 0 ? '<br><span class="warnx" title="Leads owned by counselors who are not in TL Bifurcation">incl. ' + fmt(outside.l) + ' assigned to teams not in Division of Telephonic</span>' : "") +
-      (outside && un.l > 0 ? '<br><span class="faint" title="Leads with no Lead Owner in Meritto">incl. ' + fmt(un.l) + ' unassigned</span>' : "");
+      (outside && outside.l > 0 ? ' · <span class="warnx" title="Leads owned by counselors who are not in TL Bifurcation">incl. ' + fmt(outside.l) + ' assigned to teams not in Division of Telephonic</span>' : "") +
+      (outside && un.l > 0 ? ' · <span class="faint" title="Leads with no Lead Owner in Meritto">incl. ' + fmt(un.l) + ' unassigned</span>' : "");
     $("fbLeadsLabel").textContent = outside ? "👥 Total leads" : "👥 Leads assigned";
     $("fbApps").textContent = fmt(T.c); $("fbAppsPct").textContent = pctTxt(T.c, T.l) + " of leads (L→App)";
     $("fbAdm").textContent = fmt(T.a); $("fbAdmPct").textContent = pctTxt(T.a, T.l) + " of leads (L→Adm)";
-    $("leadNote").innerHTML = '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Leads registered from 1 Sep 2026 (plus older leads that paid on a 2027 form) · online Payment Approved forms only · leads with an N application not counted' +
-      (fSimV ? " · " + fSimV + " counselors only" : "") +
-      (LEADS_INFO.asOf ? " · data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
+    const fullNote = "Leads registered from 1 Sep 2026 (plus older leads that paid on a 2027 form). Applications: online Payment Approved forms on 2027-session forms only. Leads with an application number starting with N are not counted." +
+      (fSimV ? " " + fSimV + " counselors only." : "");
+    $("leadNote").innerHTML = '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '" title="' + esc(fullNote) + '">ⓘ Session 2027 · N applications excluded' +
+      (fSimV ? " · " + fSimV + " only" : "") +
+      (LEADS_INFO.asOf ? " · data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (last saved numbers)" : "") : "") + '</span>';
   }
   const isIdle = p => !(lastClaim.get(String(p.uid)) >= idleSince);
 
