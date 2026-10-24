@@ -295,6 +295,15 @@ tbody tr.hl td b{color:var(--ink)}
 .fskills{display:flex;flex-direction:column;margin-top:5px;padding-top:4px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--faint);white-space:nowrap}
 .fskills i{font-style:normal;color:var(--muted);font-weight:600}
 .fskills b{color:var(--muted)}
+.funnelbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;margin:-8px 0 22px;overflow:hidden}
+.funnelbar .fbtile{display:flex;flex-direction:column;gap:2px;padding:14px 18px}
+.funnelbar .fbtile + .fbtile{border-left:1px solid var(--line-2)}
+.fbl{font-size:13px;font-weight:600;color:var(--muted)}
+.fbn{font-family:var(--serif);font-size:28px;font-weight:700;line-height:1.15}
+.fbs{font-size:12.5px;color:var(--faint)}
+.fbnote{grid-column:1/-1;border-top:1px solid var(--line-2);padding:8px 18px}
+.fbnote .leadnote{margin:0}
+@media (max-width: 720px){ .funnelbar{grid-template-columns:1fr} .funnelbar .fbtile + .fbtile{border-left:none;border-top:1px solid var(--line-2)} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -538,6 +547,12 @@ footer b{color:var(--muted);font-weight:600}
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-admission"/></svg>Teams</h2><div class="big" id="oTeams">–</div><div class="sub" id="oTeamsSub">&nbsp;</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Counselors</h2><div class="big" id="oPeople">–</div><div class="sub" id="oPeopleSub">&nbsp;</div></div>
   </section>
+  <section class="panel funnelbar" id="funnelBar" hidden aria-label="Lead funnel for the current selection">
+    <div class="fbtile"><span class="fbl">👥 Leads assigned</span><span class="fbn" id="fbLeads">–</span><span class="fbs">session 2027</span></div>
+    <div class="fbtile"><span class="fbl">🎯 LPUNEST applications</span><span class="fbn" id="fbApps">–</span><span class="fbs" id="fbAppsPct">&nbsp;</span></div>
+    <div class="fbtile"><span class="fbl">🏹 Admissions</span><span class="fbn" id="fbAdm">–</span><span class="fbs" id="fbAdmPct">&nbsp;</span></div>
+    <div class="fbnote" id="leadNote"></div>
+  </section>
 
   <section class="panel filterpanel" aria-label="Filters">
     <div class="filterhead">
@@ -581,7 +596,6 @@ footer b{color:var(--muted);font-weight:600}
   <div id="zeroNote"></div>
   <p class="note" id="periodNote"></p>
 
-  <div id="leadNote"></div>
   <section class="panel table-panel">
     <div class="tablebox"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
     <div class="pager"><span id="pageInfo"></span><div><button id="prevBtn" type="button">Previous</button><button id="nextBtn" type="button">Next</button></div></div>
@@ -1172,8 +1186,22 @@ function render(){
   const coordUids = c => [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x)).map(x => x.uid);
   const pLead = p => LT ? sumLeads(LT, [p.uid]) : null, tLead = t => LT ? sumLeads(LT, teamUids(t)) : null, cLead = c => LT ? sumLeads(LT, coordUids(c)) : null;
   const cSkills = c => LT ? skillLines(LT, [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x))) : "";   // same people as the total
-  $("leadNote").innerHTML = !LEADS ? "" : '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Lead funnel (session 2027): leads registered from 1 Sep 2026, plus older leads that paid on a 2027-session form → online Payment Approved forms (🎯 L→App %) → admissions (🏹 L→Adm %). Leads with an application number starting with N are not counted' +
-    (fSimV ? " · " + fSimV + " counselors only" : "") + (LEADS_INFO.asOf ? " · lead data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
+  // Lead funnel card: the current selection (counselor > team leader > coordinator > everyone), following Skill / type / period
+  $("funnelBar").hidden = !LEADS;
+  if (LEADS){
+    const selP = $("fPerson").value, selT = $("fTeam").value, selC = $("fCoord").value;
+    const uids = selP ? [selP]
+      : selT ? [...d.people.values()].filter(x => (x.teamUid === selT || x.uid === selT) && funnelOk(x)).map(x => x.uid)
+      : selC ? [...d.people.values()].filter(x => x.coordKey === selC && funnelOk(x)).map(x => x.uid)
+      : [...d.people.values()].filter(funnelOk).map(x => x.uid);
+    const T = sumLeads(LT, uids);
+    $("fbLeads").textContent = fmt(T.l);
+    $("fbApps").textContent = fmt(T.c); $("fbAppsPct").textContent = pctTxt(T.c, T.l) + " of leads (L→App)";
+    $("fbAdm").textContent = fmt(T.a); $("fbAdmPct").textContent = pctTxt(T.a, T.l) + " of leads (L→Adm)";
+    $("leadNote").innerHTML = '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '">Leads registered from 1 Sep 2026 (plus older leads that paid on a 2027 form) · online Payment Approved forms only · leads with an N application not counted' +
+      (fSimV ? " · " + fSimV + " counselors only" : "") +
+      (LEADS_INFO.asOf ? " · data as of " + esc(LEADS_INFO.asOf) + (LEADS_INFO.stale ? " (latest update not available, showing the last saved numbers)" : "") : "") + '</span>';
+  }
   const isIdle = p => !(lastClaim.get(String(p.uid)) >= idleSince);
 
   $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Scores need the team list for skills and SIM; showing claims only.</div>';
