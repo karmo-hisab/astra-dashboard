@@ -559,6 +559,45 @@ td{border-color:var(--line-2)}
   .funnelbar .fbtile:nth-child(3){border-left:1px solid var(--line-2)!important}
   .fbn{font-size:21px!important}
   .topbar h1{font-size:19px}
+  /* never wider than the phone, whatever the text size */
+  html,body{max-width:100%;overflow-x:hidden}
+  .wrap,.panel,.stat,section,main{min-width:0;max-width:100%}
+  /* table rows as cards: label above its value, value uses the full card width, everything wraps */
+  tbody tr{max-width:100%}
+  tbody tr td{display:block!important;padding:8px 14px!important;min-width:0}
+  td::before{display:block;margin-bottom:3px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  td,td *{white-space:normal!important;overflow-wrap:break-word;min-width:0}
+  td > div,td span,td b,td small{max-width:100%}
+  .funnel,.fskills,.hb{white-space:normal!important}
+  .hb,.fparts{flex-wrap:wrap}
+  /* view tabs share the width and may wrap their words */
+  .seg{display:flex;flex-wrap:wrap;width:100%;box-sizing:border-box}
+  .seg button{flex:1 1 auto;white-space:nowrap;line-height:1.2;padding:6px 8px;font-size:12.5px;letter-spacing:-.01em}
+  /* filters: boxes may shrink; date boxes never push past the edge */
+  .cfilters,.rfilters,.tfilters{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .cfilters > *,.rfilters > *,.tfilters > *,label.f{min-width:0;max-width:100%}
+  input[type="date"]{min-width:0;max-width:100%;width:100%;padding-left:8px;padding-right:6px}
+  .printbtn{min-width:0;max-width:100%;white-space:normal}
+  /* Team Structure summary tiles shrink and wrap */
+  .sumtile{min-width:0;gap:10px;padding:12px}
+  .sumtile .sv{font-size:26px}
+  .sumtile .sl{overflow-wrap:break-word}
+  .funnelbar .fbtile,.fbnote{min-width:0}
+  .pager{flex-wrap:wrap;gap:8px}
+  .pager > *{min-width:0}
+  /* bottom tab bar always shows all five pages */
+  .sidenav nav{min-width:0}
+  .sidenav a{min-width:0;overflow:hidden}
+}
+@media (max-width: 400px){
+  /* very small phones or large text: one filter per row, date boxes full width */
+  .cfilters,.rfilters,.tfilters{grid-template-columns:minmax(0,1fr)!important}
+  .cfilters .span2,.rfilters .printbtn{grid-column:auto}
+  .sumstrip{grid-template-columns:minmax(0,1fr)!important}
+  .sumstrip .sumtile:last-child{grid-column:auto}
+  .funnelbar{grid-template-columns:minmax(0,1fr)!important}
+  .funnelbar .fbtile:nth-child(3){border-left:none!important}
+  .funnelbar .fbtile,.fbnote,.leadnote{min-width:0;overflow-wrap:break-word}
 }
 </style>
 <script>
