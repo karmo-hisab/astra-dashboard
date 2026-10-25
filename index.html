@@ -18,7 +18,7 @@
 <meta name="apple-mobile-web-app-title" content="HisabKitab">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --navy:#14234B; --navy-2:#1E3264;
@@ -343,6 +343,86 @@ footer b{color:var(--muted);font-weight:600}
   .sorthint{display:none}
   .pager{border-top:none;padding:6px 2px}
 }
+/* ================= UI refresh (Oct 2026): refined LPU navy + crimson, Inter, light/dark, tablet and mobile ================= */
+:root{
+  --navy:#0B1B3F; --navy-2:#1E3264;
+  --ink:#0F1A33; --paper:#F4F6FA; --card:#FFFFFF; --line:#E2E6EF; --line-2:#EDF0F5; --muted:#4A5570; --faint:#5F6982;
+  --accent:#B5121B;
+  --ok:#12703F; --ok-bg:#E7F4EC; --bad:#B42318; --bad-bg:#FDECEA; --wait:#9A5B00; --wait-bg:#FDF3E2;
+  --neutral:#4A5570; --neutral-bg:#EEF0F5;
+  --sans:"Inter","Segoe UI",Roboto,Arial,sans-serif;
+  --radius:12px; --shadow:0 1px 2px rgba(15,26,51,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --navy:#070E1C; --navy-2:#2A3760;
+    --ink:#E8ECF4; --paper:#0B1222; --card:#131C31; --line:#26324D; --line-2:#222D46; --muted:#A9B3C8; --faint:#8E98AF;
+    --accent:#FF7A7F;
+    --ok:#6FD39C; --ok-bg:#12301F; --bad:#FF8A84; --bad-bg:#3A1716; --wait:#F0B44C; --wait-bg:#33260E;
+    --neutral:#A9B3C8; --neutral-bg:#1E2740; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --navy:#070E1C; --navy-2:#2A3760;
+  --ink:#E8ECF4; --paper:#0B1222; --card:#131C31; --line:#26324D; --line-2:#222D46; --muted:#A9B3C8; --faint:#8E98AF;
+  --accent:#FF7A7F;
+  --ok:#6FD39C; --ok-bg:#12301F; --bad:#FF8A84; --bad-bg:#3A1716; --wait:#F0B44C; --wait-bg:#33260E;
+  --neutral:#A9B3C8; --neutral-bg:#1E2740; --shadow:none;
+}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1,"cv11" 1}
+/* top bar */
+.topbar{border-bottom:none;box-shadow:0 1px 0 rgba(255,255,255,.06),0 2px 10px rgba(7,14,28,.18)}
+.topbar .in{padding:12px 24px}
+/* side menu */
+.sidenav{border-right:none}
+.sidenav a{border-radius:10px;min-height:44px;box-sizing:border-box;font-weight:500;color:#D2D8E6}
+.sidenav a[aria-current="page"]{background:#FFFFFF;color:#0B1B3F;font-weight:600}
+:root[data-theme="dark"] .sidenav a[aria-current="page"]{background:#1D2A4A;color:#FFFFFF}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .sidenav a[aria-current="page"]{background:#1D2A4A;color:#FFFFFF} }
+.sidenav .collapse{border-radius:10px}
+/* cards and panels */
+.panel,.stat{border-radius:var(--radius);border-color:var(--line);box-shadow:var(--shadow)}
+.stat .big,.fbn{font-family:var(--sans);font-weight:700;letter-spacing:-.01em}
+.section-title{font-size:18px}
+/* controls */
+button{border-radius:8px}
+input,select{height:40px;border-radius:8px;padding:6px 12px;font-size:13.5px}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;appearance:none;-webkit-appearance:none;padding-right:30px}
+input:focus,select:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.chip{border-radius:999px;padding:2px 10px}
+/* segmented view switch */
+.seg{background:var(--line-2);border:none;border-radius:10px;padding:4px;gap:4px}
+.seg button{border:none;border-radius:8px;min-height:36px;background:none;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(15,26,51,.10)}
+/* tables */
+th{background:var(--line-2);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+td{border-color:var(--line-2)}
+/* mobile: the side menu becomes a bottom tab bar */
+@media (max-width: 720px){
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .topbar{position:sticky;top:0;z-index:20}
+  .topbar .in{padding:10px 14px}
+  .topbar .menubtn,.navshade{display:none!important}
+  .sidenav{top:auto;bottom:0;left:0;right:0;width:100%;height:calc(64px + env(safe-area-inset-bottom,0px));transform:none!important;padding:0 0 env(safe-area-inset-bottom,0px);flex-direction:row;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -2px 10px rgba(15,26,51,.06)}
+  .sidenav nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;width:100%}
+  .sidenav a,.sidenav a[aria-current="page"]{flex-direction:column;justify-content:center;gap:2px;padding:6px 2px;min-height:64px;border-radius:0;background:none!important;color:var(--muted);font-size:10.5px;font-weight:600}
+  .sidenav a[aria-current="page"]{color:var(--accent)}
+  .sidenav a > span{display:none!important}
+  .sidenav a::after{content:attr(data-short);font-size:10.5px;line-height:1.1}
+  .sidenav .collapse{display:none}
+  .wrap{padding-left:12px;padding-right:12px}
+  .panel,.stat{border-radius:12px}
+  .stats.stats4 .stat:first-child{grid-column:auto}             /* summary cards: an even 2 x 2 */
+  .stats:has(> .stat:nth-child(6)) .stat:first-child{grid-column:auto}   /* six cards: an even 2 x 3 */
+  .stat{padding:10px 12px}
+  .stat .big{font-size:22px}
+  .funnelbar{grid-template-columns:1fr 1fr!important}           /* lead funnel: total on top, apps + admissions side by side */
+  .funnelbar .fbtile:first-child{grid-column:1/-1}
+  .funnelbar .fbtile + .fbtile{border-top:1px solid var(--line-2)!important;border-left:none!important}
+  .funnelbar .fbtile:nth-child(3){border-left:1px solid var(--line-2)!important}
+  .fbn{font-size:21px!important}
+  .topbar h1{font-size:19px}
+}
 </style>
 <script>
   /* Google's sign-in library may finish loading before the page code; start it whenever both are ready */
@@ -388,11 +468,11 @@ footer b{color:var(--muted);font-weight:600}
 <aside class="sidenav needs-auth" id="sidenav" aria-label="Pages">
   <nav>
     <!-- Add new pages here: one line each -->
-    <a href="structure.html" data-page="structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
-    <a href="./" data-page="index" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
-    <a href="teams.html" data-page="teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
-    <a href="report.html" data-page="report" title="Verification Report"><svg class="ic lg" aria-hidden="true"><use href="#i-hit"/></svg><span>Verification Report</span></a>
-    <a href="apps.html" data-page="apps" title="Team Leaders Stats (Application Follow Up)"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg><span class="two">Team Leaders Stats<small>Application Follow Up</small></span></a>
+    <a href="structure.html" data-page="structure" data-short="Structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
+    <a href="./" data-page="index" data-short="Claims" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
+    <a href="teams.html" data-page="teams" data-short="Teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
+    <a href="report.html" data-page="report" data-short="Report" title="Verification Report"><svg class="ic lg" aria-hidden="true"><use href="#i-hit"/></svg><span>Verification Report</span></a>
+    <a href="apps.html" data-page="apps" data-short="TL Stats" title="Team Leaders Stats (Application Follow Up)"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg><span class="two">Team Leaders Stats<small>Application Follow Up</small></span></a>
   </nav>
   <button type="button" class="collapse" id="navCollapse" aria-label="Collapse menu"><svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg><span>Collapse</span></button>
 </aside>
