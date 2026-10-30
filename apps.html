@@ -541,7 +541,7 @@ td{border-color:var(--line-2)}
   .topbar .in{padding:10px 14px}
   .topbar .menubtn,.navshade{display:none!important}
   .sidenav{top:auto;bottom:0;left:0;right:0;width:100%;height:calc(64px + env(safe-area-inset-bottom,0px));transform:none!important;padding:0 0 env(safe-area-inset-bottom,0px);flex-direction:row;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -2px 10px rgba(15,26,51,.06)}
-  .sidenav nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;width:100%}
+  .sidenav nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;width:100%}
   .sidenav a,.sidenav a[aria-current="page"]{flex-direction:column;justify-content:center;gap:2px;padding:6px 2px;min-height:64px;border-radius:0;background:none!important;color:var(--muted);font-size:10.5px;font-weight:600}
   .sidenav a[aria-current="page"]{color:var(--accent)}
   .sidenav a > span{display:none!important}
@@ -610,6 +610,7 @@ td{border-color:var(--line-2)}
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></symbol>
     <symbol id="i-total" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
     <symbol id="i-hit" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.9-4.3-1.6-7.5-5.3-7.5-9.9V6z"/><path d="M8.8 12.2l2.3 2.3 4.2-4.4"/></symbol>
     <symbol id="i-miss" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.9-4.3-1.6-7.5-5.3-7.5-9.9V6z"/><path d="M9.6 9.8l4.8 4.8M14.4 9.8l-4.8 4.8"/></symbol>
@@ -646,6 +647,7 @@ td{border-color:var(--line-2)}
     <!-- Add new pages here: one line each -->
     <a href="structure.html" data-page="structure" data-short="Structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
     <a href="./" data-page="index" data-short="Claims" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
+    <a href="claim.html" data-page="claim" data-short="Claim" title="Submit a Claim"><svg class="ic lg" aria-hidden="true"><use href="#i-send"/></svg><span>Submit a Claim</span></a>
     <a href="teams.html" data-page="teams" data-short="Teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
     <a href="report.html" data-page="report" data-short="Report" title="Verification Report"><svg class="ic lg" aria-hidden="true"><use href="#i-hit"/></svg><span>Verification Report</span></a>
     <a href="apps.html" data-page="apps" data-short="TL Stats" title="Team Leaders Stats (Application Follow Up)"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg><span class="two">Team Leaders Stats<small>Application Follow Up</small></span></a>
