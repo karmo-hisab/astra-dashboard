@@ -295,6 +295,11 @@ tbody tr.hl td b{color:var(--ink)}
 .vs.up{color:var(--ok)} .vs.down{color:var(--bad)} .vs.eq,.vs.few{color:var(--faint);font-weight:600}
 .vs.few{margin-left:0;font-size:11px}
 .vs i{font-style:normal;font-weight:500;color:var(--faint)}
+.cmpseg{display:flex;align-items:center;gap:4px;background:var(--line-2);border-radius:10px;padding:4px}
+.cmpseg span{font-size:12px;font-weight:600;color:var(--muted);padding:0 6px}
+.cmpseg button{border:none;background:none;border-radius:8px;min-height:32px;padding:0 10px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.cmpseg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(15,26,51,.10)}
+@media (max-width: 720px){ .cmpseg{width:100%;box-sizing:border-box} .cmpseg button{flex:1 1 auto} }
 .funnel .fl{font-size:13.5px;color:var(--ink)}
 .funnel b{color:var(--ink)}
 .fskills{display:flex;flex-direction:column;margin-top:5px;padding-top:4px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--faint);white-space:nowrap}
@@ -723,6 +728,11 @@ td{border-color:var(--line-2)}
       <button type="button" role="tab" data-view="people" aria-selected="true">Counselors</button>
       <button type="button" role="tab" data-view="teams" aria-selected="false">Team leaders</button>
       <button type="button" role="tab" data-view="coords" aria-selected="false">Coordinators</button>
+    </div>
+    <div class="cmpseg" id="cmpSeg" role="group" aria-label="Compare conversion with the group" hidden>
+      <span>Compare</span>
+      <button type="button" data-cmp="app" aria-pressed="true" title="Arrows on Lead to Application %">🎯 L→App</button>
+      <button type="button" data-cmp="adm" aria-pressed="false" title="Arrows on Lead to Admission %">🏹 L→Adm</button>
     </div>
     <span class="resultbar" id="viewCount"></span>
   </div>
@@ -1303,6 +1313,7 @@ const pctTxt = (a, b) => b ? (Math.round(1000 * a / b) / 10) + "%" : "–";
 /* Conversion vs the peer group: group rate = all the group's applications (or admissions) ÷ all its leads.
    Green ▲ above, red ▼ below, grey ≈ within 0.5 percentage points. Fewer than MIN_LEADS leads: not compared. */
 const MIN_LEADS = 20;
+let CMP = (() => { try { return localStorage.getItem("hk_cmp") === "adm" ? "adm" : "app"; } catch (_) { return "app"; } })();   // which % gets the arrows
 function vsPeer(mine, grp, what, n, against){
   const diff = (mine - grp) * 100, g = (grp * 100).toFixed(1);
   const k = Math.abs(diff) < 0.5 ? "eq" : diff > 0 ? "up" : "down";
@@ -1313,8 +1324,8 @@ function leadCell(t, extra, peer, against){
   if (!LEADS) return '<span class="faint">–</span>';
   if (!t || !t.l) return '<span class="faint">No leads</span>' + (extra || "");
   const can = peer && peer.n >= 2 && peer.l > 0 && t.l >= MIN_LEADS;
-  const vsApp = can ? vsPeer(t.c / t.l, peer.c / peer.l, "Lead to Application", peer.n, against) : "";
-  const vsAdm = can && (peer.a > 0 || t.a > 0) ? vsPeer(t.a / t.l, peer.a / peer.l, "Lead to Admission", peer.n, against) : "";
+  const vsApp = can && CMP === "app" ? vsPeer(t.c / t.l, peer.c / peer.l, "Lead to Application", peer.n, against) : "";
+  const vsAdm = can && CMP === "adm" && (peer.a > 0 || t.a > 0) ? vsPeer(t.a / t.l, peer.a / peer.l, "Lead to Admission", peer.n, against) : "";
   return '<div class="funnel"><span class="fl"><b>' + fmt(t.l) + '</b> leads</span>' +
     '<span class="fa" title="Lead to Application">🎯 <b>' + fmt(t.c) + '</b> apps · <b>' + pctTxt(t.c, t.l) + '</b>' + vsApp + '</span>' +
     '<span class="fd" title="Lead to Admission (Enrolment)">🏹 <b>' + fmt(t.a) + '</b> adm · <b>' + pctTxt(t.a, t.l) + '</b>' + vsAdm + '</span>' +
@@ -1329,11 +1340,17 @@ function skillLines(m, people, skillBase){
   const cmp = (k, t) => {
     const g = skillBase && skillBase.get(k);
     if (!g || g.n < 2 || !g.l || t.l < MIN_LEADS) return "";
-    return vsPeer(t.c / t.l, g.c / g.l, "Lead to Application (" + k + ")", g.n, "this skill across the division") +
-      ((g.a > 0 || t.a > 0) ? vsPeer(t.a / t.l, g.a / g.l, "Lead to Admission (" + k + ")", g.n, "this skill across the division") : "");
+    return CMP === "app" ? vsPeer(t.c / t.l, g.c / g.l, "Lead to Application (" + k + ")", g.n, "this skill across the division")
+      : (g.a > 0 || t.a > 0) ? vsPeer(t.a / t.l, g.a / g.l, "Lead to Admission (" + k + ")", g.n, "this skill across the division") : "";
   };
   return '<div class="fskills">' + lines.map(([k, t]) => '<span title="' + esc(k) + ': ' + fmt(t.l) + ' leads, ' + fmt(t.c) + ' apps, ' + fmt(t.a) + ' adm"><i>' + esc(k) + '</i> <b>' + fmt(t.l) + '</b> leads · 🎯 <b>' + fmt(t.c) + '</b> (' + pctTxt(t.c, t.l) + ') · 🏹 <b>' + fmt(t.a) + '</b> (' + pctTxt(t.a, t.l) + ')' + cmp(k, t) + '</span>').join("") + '</div>';
 }
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("#cmpSeg button"); if (!b) return;
+  CMP = b.dataset.cmp; try { localStorage.setItem("hk_cmp", CMP); } catch (_) {}
+  render();
+});
 
 function movement(prevMap, key, i, score){
   if (score === null || score === undefined) return null;
@@ -1390,6 +1407,8 @@ function render(){
   });
   // Lead funnel card: the current selection (counselor > team leader > coordinator > everyone), following Skill / type / period
   $("funnelBar").hidden = !LEADS;
+  $("cmpSeg").hidden = !LEADS;
+  document.querySelectorAll("#cmpSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.cmp === CMP ? "true" : "false"));
   if (LEADS){
     const selP = $("fPerson").value, selT = $("fTeam").value, selC = $("fCoord").value;
     const uids = selP ? [selP]
@@ -1418,7 +1437,7 @@ function render(){
     $("fbLeadsLabel").textContent = outside ? "👥 Total leads" : "👥 Leads assigned";
     $("fbApps").textContent = fmt(T.c); $("fbAppsPct").textContent = pctTxt(T.c, T.l) + " of leads (L→App)";
     $("fbAdm").textContent = fmt(T.a); $("fbAdmPct").textContent = pctTxt(T.a, T.l) + " of leads (L→Adm)";
-    const fullNote = "Leads registered from 1 Sep 2026 (plus older leads that paid on a 2027 form). Applications: online Payment Approved forms on 2027-session forms only. Leads with an application number starting with N are not counted. ▲▼ in the table compare each person's L→App % and L→Adm % with their peer group (counselors: same skill and SIM/Normal; team leaders: same skill), in percentage points; coordinators: total vs the whole Division of Telephonic, and each skill line vs that skill across the division; fewer than 20 leads are not compared." +
+    const fullNote = "Leads registered from 1 Sep 2026 (plus older leads that paid on a 2027 form). Applications: online Payment Approved forms on 2027-session forms only. Leads with an application number starting with N are not counted. ▲▼ in the table compare each person's L→App % (or L→Adm %, chosen with the Compare switch) with their peer group (counselors: same skill and SIM/Normal; team leaders: same skill), in percentage points; coordinators: total vs the whole Division of Telephonic, and each skill line vs that skill across the division; fewer than 20 leads are not compared." +
       (fSimV ? " " + fSimV + " counselors only." : "");
     $("leadNote").innerHTML = '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '" title="' + esc(fullNote) + '">ⓘ Session 2027 · N applications excluded' +
       (fSimV ? " · " + fSimV + " only" : "") +
