@@ -913,7 +913,7 @@ async function loadClaimInfo(){
   try {
     const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, what:"claimInfo"})});
     const j = await res.json();
-    if (!j.ok){ $("whoGrid").innerHTML = '<span class="cf-err">' + esc(j.error || "Could not load your details.") + '</span>'; return; }
+    if (!j.ok){ $("whoGrid").innerHTML = '<span class="cf-err">' + esc(j.message || j.error || "Could not load your details.") + '</span>'; return; }
     CINFO = j; showWho(); buildChoices(); $("claimForm").hidden = false;
   } catch (e) {
     $("whoGrid").innerHTML = '<span class="cf-err">Could not load your details. Please check your connection and reload.</span>';
@@ -973,7 +973,7 @@ $("claimForm").addEventListener("submit", async e => {
     const res = await fetch(API_URL, {method:"POST", body: JSON.stringify(body)});
     const j = await res.json();
     if (!j.ok){
-      if (j.field) fieldError(j.field, j.error); else { $("cMsg").textContent = j.error || "Could not submit."; $("cMsg").className = "cf-msg bad"; }
+      if (j.field) fieldError(j.field, j.error); else { $("cMsg").textContent = j.message || j.error || "Could not submit."; $("cMsg").className = "cf-msg bad"; }
       return;
     }
     $("doneText").textContent = j.message; $("claimForm").hidden = true; $("claimDone").hidden = false;
