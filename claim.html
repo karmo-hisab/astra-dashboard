@@ -207,6 +207,12 @@ html.nav-mini .sidenav span.two{display:none}
 .vsep{color:var(--faint);margin:0 4px}
 @media (max-width: 720px){ .vmini{order:3;flex-basis:100%} }
 .modetag{display:block;margin-top:4px;font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+/* link to the claim page */
+.claimcta{display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:12px 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none;font-size:14px;box-shadow:var(--shadow)}
+.claimcta .ic{width:18px;height:18px;color:var(--accent);flex:none}
+.claimcta b{color:var(--accent)}
+.claimcta .arrow{margin-left:auto;font-weight:700;color:var(--accent)}
+.claimcta:hover{border-color:var(--accent)}
 /* Submit a Claim page */
 .claimwho{padding:14px 18px;margin-bottom:16px}
 .cw-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:var(--ink);margin-bottom:10px}
@@ -219,10 +225,12 @@ html.nav-mini .sidenav span.two{display:none}
 .cf-field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .cf-label{font-size:13px;font-weight:700;color:var(--ink)}
 .req{color:var(--accent)}
-.cf-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cf-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .cf-row input{width:100%;box-sizing:border-box;height:44px;font-size:15px}
 #cApp{text-transform:uppercase;letter-spacing:.03em;font-variant-numeric:tabular-nums}
 #cApp::placeholder{text-transform:none;letter-spacing:0}
+#cLead{letter-spacing:.06em;font-variant-numeric:tabular-nums}
+#cLead::placeholder{letter-spacing:0}
 .cf-choices{display:grid;gap:10px}
 .cf-choices.four{grid-template-columns:repeat(4,minmax(0,1fr))}
 .cf-choices.two{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -250,7 +258,7 @@ html.nav-mini .sidenav span.two{display:none}
 .claimdone h2{margin:6px 0 0;font-family:var(--serif)}
 .claimdone .cf-actions{justify-content:center;margin-top:10px}
 .cd-icon{width:56px;height:56px;border-radius:50%;background:var(--ok-bg);color:var(--ok);font-size:30px;font-weight:700;display:flex;align-items:center;justify-content:center}
-@media (max-width: 980px){ .cw-grid{grid-template-columns:repeat(3,minmax(0,1fr))} .cf-choices.four{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width: 980px){ .cf-row{grid-template-columns:repeat(2,minmax(0,1fr))} .cw-grid{grid-template-columns:repeat(3,minmax(0,1fr))} .cf-choices.four{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width: 720px){ .cw-grid{grid-template-columns:repeat(2,minmax(0,1fr))} .cf-row{grid-template-columns:minmax(0,1fr)} .claimform{padding:14px} .cf-submit{width:100%} .cf-actions{flex-direction:column;align-items:stretch;text-align:center} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
@@ -555,8 +563,8 @@ td{border-color:var(--line-2)}
   <nav>
     <!-- Add new pages here: one line each -->
     <a href="structure.html" data-page="structure" data-short="Structure" title="Team Structure"><svg class="ic lg" aria-hidden="true"><use href="#i-tree"/></svg><span>Team Structure</span></a>
-    <a href="./" data-page="index" data-short="Claims" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
     <a href="claim.html" data-page="claim" data-short="Claim" title="Submit a Claim"><svg class="ic lg" aria-hidden="true"><use href="#i-send"/></svg><span>Submit a Claim</span></a>
+    <a href="./" data-page="index" data-short="Claims" title="Astra Claim Status"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg><span>Astra Claim Status</span></a>
     <a href="teams.html" data-page="teams" data-short="Teams" title="Team Performance"><svg class="ic lg" aria-hidden="true"><use href="#i-chart"/></svg><span>Team Performance</span></a>
     <a href="report.html" data-page="report" data-short="Report" title="Verification Report"><svg class="ic lg" aria-hidden="true"><use href="#i-hit"/></svg><span>Verification Report</span></a>
     <a href="apps.html" data-page="apps" data-short="TL Stats" title="Team Leaders Stats (Application Follow Up)"><svg class="ic lg" aria-hidden="true"><use href="#i-app"/></svg><span class="two">Team Leaders Stats<small>Application Follow Up</small></span></a>
@@ -625,8 +633,13 @@ td{border-color:var(--line-2)}
     <div class="cf-row">
       <label class="cf-field">
         <span class="cf-label">Application Number <b class="req">*</b></span>
-        <input id="cApp" type="text" inputmode="text" autocomplete="off" maxlength="12" placeholder="e.g. C26906642" aria-describedby="err-app">
+        <input id="cApp" type="text" inputmode="text" autocomplete="off" maxlength="9" placeholder="e.g. C26906642" aria-describedby="err-app">
         <span class="cf-err" id="err-app"></span>
+      </label>
+      <label class="cf-field">
+        <span class="cf-label">Who is the Lead Owner? (UID) <b class="req">*</b></span>
+        <input id="cLead" type="text" inputmode="numeric" pattern="\d{5}" maxlength="5" autocomplete="off" placeholder="5-digit UID, e.g. 29187" aria-describedby="err-leadUid">
+        <span class="cf-err" id="err-leadUid"></span>
       </label>
       <label class="cf-field">
         <span class="cf-label">Date of payment <b class="req">*</b></span>
@@ -913,7 +926,7 @@ async function loadClaimInfo(){
   try {
     const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, what:"claimInfo"})});
     const j = await res.json();
-    if (!j.ok){ $("whoGrid").innerHTML = '<span class="cf-err">' + esc(j.error || "Could not load your details.") + '</span>'; return; }
+    if (!j.ok){ $("whoGrid").innerHTML = '<span class="cf-err">' + esc(j.message || j.error || "Could not load your details.") + '</span>'; return; }
     CINFO = j; showWho(); buildChoices(); $("claimForm").hidden = false;
   } catch (e) {
     $("whoGrid").innerHTML = '<span class="cf-err">Could not load your details. Please check your connection and reload.</span>';
@@ -922,7 +935,7 @@ async function loadClaimInfo(){
 function showWho(){
   const w = CINFO.who;
   const item = (k, v) => '<div class="cw-item"><small>' + k + '</small><b>' + esc(v || "–") + '</b></div>';
-  $("whoGrid").innerHTML = item("Name", w.name) + item("Lead Owner (UID)", w.uid) + item("You are", CINFO.youAre) +
+  $("whoGrid").innerHTML = item("Name", w.name) + item("Your UID", w.uid) + item("You are", CINFO.youAre) +
     item("Sarathi (Team Leader)", w.isTL ? "– (you are a team leader)" : w.sarathi) + item("Dronacharya", w.coord);
 }
 const EMO = {arrow:"🎯", brahmastra:"🏹", naga:"🐍", akshaya:"🍜", ameyo:"📞", others:"💬"};
@@ -945,10 +958,19 @@ function fieldError(name, msg){
   const e = $("err-" + name); if (e) e.textContent = msg || "";
   const f = e && e.closest(".cf-field"); if (f) f.classList.toggle("bad", !!msg);
 }
-function clearErrors(){ ["claim","app","payDate","mode","proof"].forEach(n => fieldError(n, "")); $("cMsg").textContent = ""; $("cMsg").className = "cf-msg"; }
+function clearErrors(){ ["claim","app","leadUid","payDate","mode","proof"].forEach(n => fieldError(n, "")); $("cMsg").textContent = ""; $("cMsg").className = "cf-msg"; }
 $("claimChoices").addEventListener("click", e => { const b = e.target.closest(".cf-choice"); if (!b) return; cClaim = b.dataset.claim; pick("claimChoices", "claim", cClaim); fieldError("claim", ""); });
 $("modeChoices").addEventListener("click", e => { const b = e.target.closest(".cf-choice"); if (!b) return; cMode = b.dataset.mode; pick("modeChoices", "mode", cMode); fieldError("mode", ""); });
-$("cApp").addEventListener("input", () => { const v = $("cApp").value.toUpperCase().replace(/\s+/g, ""); if (v !== $("cApp").value) $("cApp").value = v; fieldError("app", ""); });
+$("cApp").addEventListener("input", () => {
+  const v = $("cApp").value.toUpperCase().replace(/\s+/g, ""); if (v !== $("cApp").value) $("cApp").value = v;
+  // as soon as the start is wrong, say so (C26 / C27 / N26 / N27 + 6 digits)
+  const okSoFar = /^$|^[ACN]$|^[ACN]2$|^[ACN]2[67]\d{0,6}$/.test(v);
+  fieldError("app", okSoFar ? "" : "Must start with A26, A27, C26, C27, N26 or N27, followed by 6 digits.");
+});
+$("cLead").addEventListener("input", () => {
+  const v = $("cLead").value.replace(/\D+/g, "").slice(0, 5); if (v !== $("cLead").value) $("cLead").value = v;   // digits only
+  fieldError("leadUid", "");
+});
 $("cProof").addEventListener("change", () => {
   const f = $("cProof").files[0]; fieldError("proof", "");
   $("proofBox").classList.toggle("has", !!f);
@@ -958,22 +980,23 @@ $("cProof").addEventListener("change", () => {
 const readFile = f => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = () => no(r.error); r.readAsDataURL(f); });
 $("claimForm").addEventListener("submit", async e => {
   e.preventDefault(); clearErrors();
-  const app = $("cApp").value.trim().toUpperCase(), pay = $("cPay").value, file = $("cProof").files[0];
+  const app = $("cApp").value.trim().toUpperCase(), lead = $("cLead").value.trim(), pay = $("cPay").value, file = $("cProof").files[0];
   let bad = false;
   if (!cClaim){ fieldError("claim", "Please choose the claim."); bad = true; }
-  if (!/^[A-Z]\d{7,9}$/.test(app)){ fieldError("app", "One letter followed by 7 to 9 digits, e.g. C26906642."); bad = true; }
+  if (!/^[ACN](26|27)\d{6}$/.test(app)){ fieldError("app", "Must start with A26, A27, C26, C27, N26 or N27, followed by 6 digits (e.g. C26906642)."); bad = true; }
+  if (!/^\d{5}$/.test(lead)){ fieldError("leadUid", "Enter the Lead Owner's UID: exactly 5 digits."); bad = true; }
   if (!pay){ fieldError("payDate", "Please choose the date of payment."); bad = true; }
   if (!cMode){ fieldError("mode", "Please choose the mode of conversion."); bad = true; }
   if (file && file.size > CINFO.maxProofMB * 1048576){ fieldError("proof", "This file is larger than " + CINFO.maxProofMB + " MB."); bad = true; }
   if (bad){ const first = document.querySelector(".cf-field.bad"); if (first) first.scrollIntoView({behavior:"smooth", block:"center"}); return; }
   $("cSubmit").disabled = true; $("cSubmit").textContent = "Submitting…";
   try {
-    const body = {token: idToken, what:"claim", app, claim: cClaim, mode: cMode, payDate: pay};
+    const body = {token: idToken, what:"claim", app, leadUid: lead, claim: cClaim, mode: cMode, payDate: pay};
     if (file) body.proof = {name: file.name, type: file.type, data: await readFile(file)};
     const res = await fetch(API_URL, {method:"POST", body: JSON.stringify(body)});
     const j = await res.json();
     if (!j.ok){
-      if (j.field) fieldError(j.field, j.error); else { $("cMsg").textContent = j.error || "Could not submit."; $("cMsg").className = "cf-msg bad"; }
+      if (j.field) fieldError(j.field, j.error); else { $("cMsg").textContent = j.message || j.error || "Could not submit."; $("cMsg").className = "cf-msg bad"; }
       return;
     }
     $("doneText").textContent = j.message; $("claimForm").hidden = true; $("claimDone").hidden = false;
