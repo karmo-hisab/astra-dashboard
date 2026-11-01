@@ -1344,9 +1344,11 @@ const MIN_LEADS = 20;
 let CMP = (() => { try { return localStorage.getItem("hk_cmp") === "adm" ? "adm" : "app"; } catch (_) { return "app"; } })();   // which % gets the arrows
 function vsPeer(mine, grp, what, n, against, compact){
   const diff = (mine - grp) * 100, g = (grp * 100).toFixed(1);
-  const k = Math.abs(diff) < 0.5 ? "eq" : diff > 0 ? "up" : "down";
+  // "about the same" only within 10% of the average itself (e.g. 1.17%–1.43% around 1.3%), so small rates still show real gaps
+  const k = Math.abs(diff) < Math.max(0.05, 0.1 * grp * 100) ? "eq" : diff > 0 ? "up" : "down";
+  const rel = grp > 0 ? Math.round((mine - grp) / grp * 100) : 0;
   const avg = /division/i.test(against || "") ? "division avg" : /skill/i.test(against || "") ? "skill avg" : "group avg";
-  const tip = what + ': ' + (mine * 100).toFixed(1) + '% vs ' + g + '% (' + avg + ', ' + n + ' with leads)';
+  const tip = what + ': ' + (mine * 100).toFixed(1) + '% vs ' + g + '% (' + avg + ', ' + n + ' with leads)' + (grp > 0 ? ' · ' + (rel > 0 ? '+' : '') + rel + '% relative to the average' : '');
   const chip = '<span class="vschip ' + k + '" title="' + tip + '">' + (k === "eq" ? "≈ avg" : (k === "up" ? "▲ " : "▼ ") + Math.abs(diff).toFixed(1) + " pts") + '</span>';
   return compact ? chip : '<span class="vsrow">' + chip + '<span class="vsavg">' + avg + ' ' + g + '%</span></span>';
 }
