@@ -286,7 +286,7 @@ html.nav-mini .sidenav span.two{display:none}
 .cw-pen{font-weight:600;text-transform:none;letter-spacing:0;color:var(--accent);margin-left:4px}
 .cw-changed{font-size:11.5px;font-weight:700;color:var(--wait)}
 .cw-changed:empty{display:none}
-.cw-hint{font-size:11.5px;color:var(--faint);line-height:1.35}
+.cw-hint{font-size:11.5px;font-weight:600;color:var(--accent);line-height:1.35}
 .cw-hint[hidden]{display:none}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
@@ -647,7 +647,7 @@ td{border-color:var(--line-2)}
   <div id="notice"></div>
 
   <section class="panel claimwho" id="whoCard" aria-label="Submitting as">
-    <div class="cw-head"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Submitting as <span class="faint">(from TL Bifurcation; if your role, team leader or coordinator is incorrect or not updated, change it here)</span></div>
+    <div class="cw-head"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Submitting as <span class="faint">(from TL Bifurcation; if your team leader or coordinator is incorrect or not updated, change it here)</span></div>
     <div class="cw-grid" id="whoGrid"><span class="faint">Loading your details…</span></div>
   </section>
 
@@ -970,10 +970,10 @@ function showWho(){
   const pickBox = (id, label, list, cur, blank) => '<label class="cw-item cw-edit" for="' + id + '"><small>' + label + '</small>' +
     '<select id="' + id + '" data-default="' + esc(cur || "") + '">' + opts(list, cur, blank) + '</select><span class="cw-hint" id="' + id + 'Hint">Not correct or not updated? Pick the right one.</span><span class="cw-changed" id="' + id + 'Note"></span><span class="cf-err" id="err-' + errId(id) + '"></span></label>';
   $("whoGrid").innerHTML = item("Name", w.name) + item("Your UID", w.uid) +
-    pickBox("cYou", "You are", CINFO.youAreOptions || [CINFO.youAre], CINFO.youAre, "") +
-    pickBox("cSar", "Sarathi (Team Leader)", CINFO.tlOptions || [], w.isTL ? "" : w.sarathi, "– (I am a team leader)") +
+    item("You are", CINFO.youAre) +
+    pickBox("cSar", "Sarathi (Team Leader)", CINFO.tlOptions || [], w.isTL ? "" : w.sarathi, w.isTL ? "– (I am a team leader)" : "Choose your team leader") +
     pickBox("cCoord", "Dronacharya", CINFO.coordOptions || [], w.coord, "Choose your coordinator");
-  ["cYou", "cSar", "cCoord"].forEach(id => $(id).addEventListener("change", () => {
+  ["cSar", "cCoord"].forEach(id => $(id).addEventListener("change", () => {
     const d = $(id).dataset.default, v = $(id).value;
     $(id + "Note").textContent = v !== d ? "Changed from TL Bifurcation" + (d ? " (" + d + ")" : " (none)") : "";
     $(id + "Hint").hidden = v !== d;
@@ -1028,8 +1028,7 @@ $("claimForm").addEventListener("submit", async e => {
   if (!/^[ACN](26|27)\d{6}$/.test(app)){ fieldError("app", "Must start with A26, A27, C26, C27, N26 or N27, followed by 6 digits (e.g. C26906642)."); bad = true; }
   if (!/^\d{5}$/.test(lead)){ fieldError("leadUid", "Enter the Lead Owner's UID: exactly 5 digits."); bad = true; }
   if (!pay){ fieldError("payDate", "Please choose the date of payment."); bad = true; }
-  const asTL = $("cYou").value === (CINFO.youAreOptions || [])[1];
-  if (!asTL && !$("cSar").value){ fieldError("sarathi", "Please choose your team leader (or choose Team Leader under You are)."); bad = true; }
+  if (!CINFO.who.isTL && !$("cSar").value){ fieldError("sarathi", "Please choose your team leader."); bad = true; }
   if (!$("cCoord").value){ fieldError("coord", "Please choose your coordinator."); bad = true; }
   if (!cMode){ fieldError("mode", "Please choose the mode of conversion."); bad = true; }
   if (file && file.size > CINFO.maxProofMB * 1048576){ fieldError("proof", "This file is larger than " + CINFO.maxProofMB + " MB."); bad = true; }
@@ -1037,7 +1036,7 @@ $("claimForm").addEventListener("submit", async e => {
   $("cSubmit").disabled = true; $("cSubmit").textContent = "Submitting…";
   try {
     const body = {token: idToken, what:"claim", app, leadUid: lead, claim: cClaim, mode: cMode, payDate: pay,
-                  youAre: $("cYou").value, sarathi: $("cSar").value, coord: $("cCoord").value};
+                  sarathi: $("cSar").value, coord: $("cCoord").value};
     if (file) body.proof = {name: file.name, type: file.type, data: await readFile(file)};
     const res = await fetch(API_URL, {method:"POST", body: JSON.stringify(body)});
     const j = await res.json();
