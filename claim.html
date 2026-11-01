@@ -213,11 +213,32 @@ html.nav-mini .sidenav span.two{display:none}
 .claimcta b{color:var(--accent)}
 .claimcta .arrow{margin-left:auto;font-weight:700;color:var(--accent)}
 .claimcta:hover{border-color:var(--accent)}
+/* Multi-select dropdowns */
+.ms{position:relative;min-width:0}
+.ms-native{display:none!important}
+.ms-btn{width:100%;height:40px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 30px 0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.ms-btn .ms-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ms-btn.on{border-color:var(--accent);border-width:1.5px;font-weight:600}
+.ms-btn[aria-expanded="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.ms-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;min-width:100%;width:max-content;max-width:min(360px,92vw);background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(7,14,28,.22);padding:6px}
+.ms-search{padding:2px 2px 6px}
+.ms-search input{width:100%;box-sizing:border-box;height:36px}
+.ms-acts{display:flex;gap:6px;padding:0 2px 6px;border-bottom:1px solid var(--line-2);margin-bottom:4px}
+.ms-acts button{flex:1;min-height:32px;border:1px solid var(--line);border-radius:8px;background:var(--line-2);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.ms-list{max-height:280px;overflow:auto;display:flex;flex-direction:column}
+.ms-opt{display:flex;align-items:center;gap:10px;min-height:38px;padding:4px 8px;border-radius:6px;font-size:13.5px;color:var(--ink);cursor:pointer}
+.ms-opt:hover{background:var(--line-2)}
+.ms-opt input{width:18px;height:18px;margin:0;accent-color:var(--accent);flex:none}
+.ms-opt span{overflow-wrap:anywhere}
+.ms-opt.dim{opacity:.5;cursor:default}
+.ms-none{padding:10px;font-size:13px;color:var(--faint)}
+@media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
 /* Submit a Claim page */
 .claimwho{padding:14px 18px;margin-bottom:16px}
 .cw-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:var(--ink);margin-bottom:10px}
 .cw-head .ic{width:16px;height:16px;color:var(--muted)}
-.cw-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.7fr) minmax(0,1fr) minmax(0,1.5fr) minmax(0,1.3fr);gap:10px}
+.cw-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.7fr) minmax(0,1.2fr) minmax(0,1.5fr) minmax(0,1.3fr);gap:10px}
 .cw-item{background:var(--line-2);border-radius:10px;padding:8px 12px;min-width:0}
 .cw-item small{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .cw-item b{display:block;font-size:14px;overflow-wrap:break-word}
@@ -265,6 +286,8 @@ html.nav-mini .sidenav span.two{display:none}
 .cw-pen{font-weight:600;text-transform:none;letter-spacing:0;color:var(--accent);margin-left:4px}
 .cw-changed{font-size:11.5px;font-weight:700;color:var(--wait)}
 .cw-changed:empty{display:none}
+.cw-hint{font-size:11.5px;color:var(--faint);line-height:1.35}
+.cw-hint[hidden]{display:none}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -624,7 +647,7 @@ td{border-color:var(--line-2)}
   <div id="notice"></div>
 
   <section class="panel claimwho" id="whoCard" aria-label="Submitting as">
-    <div class="cw-head"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Submitting as <span class="faint">(from TL Bifurcation; team leader and coordinator can be changed if the sheet is not up to date)</span></div>
+    <div class="cw-head"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Submitting as <span class="faint">(from TL Bifurcation; if your role, team leader or coordinator is incorrect or not updated, change it here)</span></div>
     <div class="cw-grid" id="whoGrid"><span class="faint">Loading your details…</span></div>
   </section>
 
@@ -660,7 +683,7 @@ td{border-color:var(--line-2)}
     </div>
 
     <div class="cf-field">
-      <span class="cf-label">Proof of claim <span class="faint">(optional · screenshot or PDF, up to 5 MB)</span></span>
+      <span class="cf-label">Proof of claim <span class="faint">(optional · screenshot or PDF, up to 1 MB)</span></span>
       <label class="cf-file" id="proofBox">
         <input id="cProof" type="file" accept="image/png,image/jpeg,image/webp,application/pdf">
         <svg class="ic" aria-hidden="true"><use href="#i-install"/></svg>
@@ -943,15 +966,18 @@ function showWho(){
   const opts = (list, cur, blank) => (blank ? '<option value="">' + esc(blank) + '</option>' : "") +
     (cur && !list.includes(cur) ? '<option value="' + esc(cur) + '">' + esc(cur) + '</option>' : "") +
     list.map(v => '<option value="' + esc(v) + '"' + (v === cur ? " selected" : "") + '>' + esc(v) + '</option>').join("");
-  const pickBox = (id, label, list, cur, blank) => '<label class="cw-item cw-edit" for="' + id + '"><small>' + label + ' <span class="cw-pen">✎ editable</span></small>' +
-    '<select id="' + id + '" data-default="' + esc(cur || "") + '">' + opts(list, cur, blank) + '</select><span class="cw-changed" id="' + id + 'Note"></span><span class="cf-err" id="err-' + (id === "cSar" ? "sarathi" : "coord") + '"></span></label>';
-  $("whoGrid").innerHTML = item("Name", w.name) + item("Your UID", w.uid) + item("You are", CINFO.youAre) +
-    pickBox("cSar", "Sarathi (Team Leader)", CINFO.tlOptions || [], w.isTL ? "" : w.sarathi, w.isTL ? "– (I am a team leader)" : "Choose your team leader") +
+  const errId = id => id === "cSar" ? "sarathi" : id === "cCoord" ? "coord" : "youAre";
+  const pickBox = (id, label, list, cur, blank) => '<label class="cw-item cw-edit" for="' + id + '"><small>' + label + '</small>' +
+    '<select id="' + id + '" data-default="' + esc(cur || "") + '">' + opts(list, cur, blank) + '</select><span class="cw-hint" id="' + id + 'Hint">Not correct or not updated? Pick the right one.</span><span class="cw-changed" id="' + id + 'Note"></span><span class="cf-err" id="err-' + errId(id) + '"></span></label>';
+  $("whoGrid").innerHTML = item("Name", w.name) + item("Your UID", w.uid) +
+    pickBox("cYou", "You are", CINFO.youAreOptions || [CINFO.youAre], CINFO.youAre, "") +
+    pickBox("cSar", "Sarathi (Team Leader)", CINFO.tlOptions || [], w.isTL ? "" : w.sarathi, "– (I am a team leader)") +
     pickBox("cCoord", "Dronacharya", CINFO.coordOptions || [], w.coord, "Choose your coordinator");
-  ["cSar", "cCoord"].forEach(id => $(id).addEventListener("change", () => {
+  ["cYou", "cSar", "cCoord"].forEach(id => $(id).addEventListener("change", () => {
     const d = $(id).dataset.default, v = $(id).value;
-    $(id + "Note").textContent = v !== d ? "Changed from TL Bifurcation" + (d ? " (" + d + ")" : "") : "";
-    fieldError(id === "cSar" ? "sarathi" : "coord", "");
+    $(id + "Note").textContent = v !== d ? "Changed from TL Bifurcation" + (d ? " (" + d + ")" : " (none)") : "";
+    $(id + "Hint").hidden = v !== d;
+    fieldError(errId(id), "");
   }));
 }
 const EMO = {arrow:"🎯", brahmastra:"🏹", naga:"🐍", akshaya:"🍜", ameyo:"📞", others:"💬"};
@@ -974,7 +1000,7 @@ function fieldError(name, msg){
   const e = $("err-" + name); if (e) e.textContent = msg || "";
   const f = e && e.closest(".cf-field"); if (f) f.classList.toggle("bad", !!msg);
 }
-function clearErrors(){ ["claim","app","leadUid","payDate","mode","proof","sarathi","coord"].forEach(n => fieldError(n, "")); $("cMsg").textContent = ""; $("cMsg").className = "cf-msg"; }
+function clearErrors(){ ["claim","app","leadUid","payDate","mode","proof","sarathi","coord","youAre"].forEach(n => fieldError(n, "")); $("cMsg").textContent = ""; $("cMsg").className = "cf-msg"; }
 $("claimChoices").addEventListener("click", e => { const b = e.target.closest(".cf-choice"); if (!b) return; cClaim = b.dataset.claim; pick("claimChoices", "claim", cClaim); fieldError("claim", ""); });
 $("modeChoices").addEventListener("click", e => { const b = e.target.closest(".cf-choice"); if (!b) return; cMode = b.dataset.mode; pick("modeChoices", "mode", cMode); fieldError("mode", ""); });
 $("cApp").addEventListener("input", () => {
@@ -991,7 +1017,7 @@ $("cProof").addEventListener("change", () => {
   const f = $("cProof").files[0]; fieldError("proof", "");
   $("proofBox").classList.toggle("has", !!f);
   $("proofName").textContent = f ? f.name + " · " + (f.size / 1048576).toFixed(1) + " MB" : "Choose a file";
-  if (f && f.size > (CINFO ? CINFO.maxProofMB : 5) * 1048576) fieldError("proof", "This file is larger than " + (CINFO ? CINFO.maxProofMB : 5) + " MB.");
+  if (f && f.size > (CINFO ? CINFO.maxProofMB : 1) * 1048576) fieldError("proof", "This file is larger than " + (CINFO ? CINFO.maxProofMB : 1) + " MB.");
 });
 const readFile = f => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = () => no(r.error); r.readAsDataURL(f); });
 $("claimForm").addEventListener("submit", async e => {
@@ -1002,7 +1028,8 @@ $("claimForm").addEventListener("submit", async e => {
   if (!/^[ACN](26|27)\d{6}$/.test(app)){ fieldError("app", "Must start with A26, A27, C26, C27, N26 or N27, followed by 6 digits (e.g. C26906642)."); bad = true; }
   if (!/^\d{5}$/.test(lead)){ fieldError("leadUid", "Enter the Lead Owner's UID: exactly 5 digits."); bad = true; }
   if (!pay){ fieldError("payDate", "Please choose the date of payment."); bad = true; }
-  if (!CINFO.who.isTL && !$("cSar").value){ fieldError("sarathi", "Please choose your team leader."); bad = true; }
+  const asTL = $("cYou").value === (CINFO.youAreOptions || [])[1];
+  if (!asTL && !$("cSar").value){ fieldError("sarathi", "Please choose your team leader (or choose Team Leader under You are)."); bad = true; }
   if (!$("cCoord").value){ fieldError("coord", "Please choose your coordinator."); bad = true; }
   if (!cMode){ fieldError("mode", "Please choose the mode of conversion."); bad = true; }
   if (file && file.size > CINFO.maxProofMB * 1048576){ fieldError("proof", "This file is larger than " + CINFO.maxProofMB + " MB."); bad = true; }
@@ -1010,7 +1037,7 @@ $("claimForm").addEventListener("submit", async e => {
   $("cSubmit").disabled = true; $("cSubmit").textContent = "Submitting…";
   try {
     const body = {token: idToken, what:"claim", app, leadUid: lead, claim: cClaim, mode: cMode, payDate: pay,
-                  sarathi: $("cSar").value, coord: $("cCoord").value};
+                  youAre: $("cYou").value, sarathi: $("cSar").value, coord: $("cCoord").value};
     if (file) body.proof = {name: file.name, type: file.type, data: await readFile(file)};
     const res = await fetch(API_URL, {method:"POST", body: JSON.stringify(body)});
     const j = await res.json();
