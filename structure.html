@@ -390,6 +390,27 @@ tbody tr.hl td b{color:var(--ink)}
 @media (max-width: 720px){ .hitsbox .hb{justify-content:flex-start} }
 .tlhb{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line-2)}
 .tlhb .hb{margin-top:0}
+/* Multi-select dropdowns */
+.ms{position:relative;min-width:0}
+.ms-native{display:none!important}
+.ms-btn{width:100%;height:40px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 30px 0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.ms-btn .ms-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ms-btn.on{border-color:var(--accent);border-width:1.5px;font-weight:600}
+.ms-btn[aria-expanded="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.ms-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;min-width:100%;width:max-content;max-width:min(360px,92vw);background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(7,14,28,.22);padding:6px}
+.ms-search{padding:2px 2px 6px}
+.ms-search input{width:100%;box-sizing:border-box;height:36px}
+.ms-acts{display:flex;gap:6px;padding:0 2px 6px;border-bottom:1px solid var(--line-2);margin-bottom:4px}
+.ms-acts button{flex:1;min-height:32px;border:1px solid var(--line);border-radius:8px;background:var(--line-2);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.ms-list{max-height:280px;overflow:auto;display:flex;flex-direction:column}
+.ms-opt{display:flex;align-items:center;gap:10px;min-height:38px;padding:4px 8px;border-radius:6px;font-size:13.5px;color:var(--ink);cursor:pointer}
+.ms-opt:hover{background:var(--line-2)}
+.ms-opt input{width:18px;height:18px;margin:0;accent-color:var(--accent);flex:none}
+.ms-opt span{overflow-wrap:anywhere}
+.ms-opt.dim{opacity:.5;cursor:default}
+.ms-none{padding:10px;font-size:13px;color:var(--faint)}
+@media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1043,10 +1064,10 @@ const OTHER = "other:", NOSKILL = "(No skill listed)";
 
 function buildOptions(){
   const fill = (id, vals) => {
-    const el = $(id), cur = el.value;
+    const el = $(id), cur = msVals(el);
     const list = [...new Set(vals.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
     el.innerHTML = '<option value="">All</option>' + list.map(v => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join("");
-    if (list.includes(cur)) el.value = cur;
+    if (el.multiple) msSet(el, cur.filter(v => list.includes(v))); else if (list.includes(cur[0])) el.value = cur[0];
   };
   fill("fMonth", ALL.map(r => r.month));
   fill("fSkill", ROSTER.filter(p => p.active).map(p => p.skill));
@@ -1098,9 +1119,9 @@ function compute(opts){
   const trendStart = mondayOf(Date.now()) - (TREND_WEEKS - 1) * WEEK;
   const byUid = new Map(); for (const p of ROSTER) byUid.set(String(p.uid), p);
   const haveRoster = ROSTER.length > 0;
-  const f = {month:$("fMonth").value, skill:$("fSkill").value, sim:$("fSim").value};
-  if (opts.allPeople){ f.skill = ""; f.sim = ""; }
-  const personOk = p => (!f.skill || (p && p.skill === f.skill)) && (!f.sim || (p && (f.sim === "SIM") === (p.sim === "Yes")));
+  const f = {month:$("fMonth").value, skills: msVals("fSkill"), sim:$("fSim").value};
+  if (opts.allPeople){ f.skills = []; f.sim = ""; }
+  const personOk = p => (!f.skills.length || (p && f.skills.includes(p.skill))) && (!f.sim || (p && (f.sim === "SIM") === (p.sim === "Yes")));
   const coords = new Map(), teams = new Map(), people = new Map(), coordName = new Map();
   for (const p of ROSTER) if (p.coord) coordName.set(normName(p.coord), p.coord);
   const coordOf = n => { const k = normName(n) || "(none)"; if (!coordName.has(k)) coordName.set(k, n || "(No coordinator)"); return k; };
@@ -1150,7 +1171,7 @@ function compute(opts){
     if (opts.from !== null && opts.from !== undefined && r._ts < opts.from) continue;
     if (opts.to !== null && opts.to !== undefined && r._ts >= opts.to) continue;
     const p = byUid.get(String(r.uid));
-    if ((f.skill || f.sim) && !personOk(p)) continue;
+    if ((f.skills.length || f.sim) && !personOk(p)) continue;
     const ck = coordOf(r.drona); add(getCoord(ck), r);
     const t = getTeam(teamFor(r, ck), r._teamLabel ? r._teamLabel.replace(/\s*:\s*\d+\s*$/, "") : "", ck); add(t, r);
     const person = getPerson(String(r.uid), r.name); add(person, r);
@@ -1348,18 +1369,18 @@ function render(){
   if (!ALL.length && !ROSTER.length) return;
   if (ALL !== lastAllRef){ lastAllRef = ALL; dataStamp++; }
   const P = periodWindow($("fPeriod").value);
-  const d = cached("cur", [dataStamp, $("fSkill").value, $("fSim").value, JSON.stringify(P.cur)].join("|"), () => compute(P.cur));
+  const d = cached("cur", [dataStamp, msVals("fSkill").join(","), $("fSim").value, JSON.stringify(P.cur)].join("|"), () => compute(P.cur));
   const lastClaim = cached("last", String(dataStamp), () => { const m = new Map(); for (const r of ALL){ const u = String(r.uid); if (!m.has(u) || m.get(u) < r._ts) m.set(u, r._ts); } return m; });
   const isIdle = p => !(lastClaim.get(String(p.uid)) >= Date.now() - 7 * DAY);
   $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>The structure needs the team list.</div>';
 
   // Coordinator dropdown: only coordinators with people in the chosen skill / type (with counts)
-  const cSel = $("fCoord"), curC = cSel.value;
+  const cSel = $("fCoord"), curC = msVals(cSel);
   const counselors = [...d.people.values()].filter(p => !p.isTL && p.active);
   const coordItems = [...d.coords.values()].map(c => ({v:c.key, l:c.name, n:counselors.filter(p => p.coordKey === c.key).length + [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && t.coordKey === c.key).length}))
-    .filter(it => it.n || it.v === curC).sort((a, b) => a.l.localeCompare(b.l));
+    .filter(it => it.n || curC.includes(it.v)).sort((a, b) => a.l.localeCompare(b.l));
   cSel.innerHTML = '<option value="">All</option>' + coordItems.map(it => '<option value="' + esc(it.v) + '">' + esc(it.l) + '</option>').join("");
-  cSel.value = coordItems.some(it => it.v === curC) ? curC : "";
+  msSet(cSel, curC.filter(v => coordItems.some(it => it.v === v)));
 
   // Ranks: coordinators overall, team leaders within skill, counselors within their peer group
   const coordsRanked = [...d.coords.values()].filter(c => c.score !== null && c.score !== undefined).sort((a, b) => b.score - a.score || b.ok - a.ok);
@@ -1376,10 +1397,10 @@ function render(){
   // Search: highlight matches and show only branches that contain them
   const q = $("q").value.trim().toLowerCase();
   const hit = (name, uid) => !!q && (String(name) + " " + String(uid || "")).toLowerCase().includes(q);
-  const sc = cSel.value;
+  const scs = msVals(cSel);
   const blocks = [];
   for (const c of [...d.coords.values()]){
-    if (sc && c.key !== sc) continue;
+    if (scs.length && !scs.includes(c.key)) continue;
     const teams = realTeams.filter(t => t.coordKey === c.key).sort((a, b) => ((b.score ?? -1) - (a.score ?? -1)) || b.ok - a.ok);
     const cols = teams.map(t => ({t, members: counselors.filter(p => p.teamUid === t.uid).sort(d.byScore)}));
     const loose = counselors.filter(p => p.coordKey === c.key && !teams.some(t => t.uid === p.teamUid));
@@ -1470,6 +1491,74 @@ $("tree").addEventListener("click", e => {
 });
 $("expandAll").addEventListener("click", () => { document.querySelectorAll("#tree .chead").forEach(h => expanded.add(h.dataset.coord)); autoOpen = false; render(); });
 $("collapseAll").addEventListener("click", () => { expanded.clear(); autoOpen = false; render(); });
+
+/* ================== Multi-select dropdowns ==================
+   A filter <select> becomes a checkbox list (search, Select all, Clear). The original <select> stays in the page,
+   switched to "multiple" and hidden, so the page keeps building its options and counts as before.
+   msVals(id) = chosen values ([] = All); msHas(id, v) = passes the filter; msSet(id, values) = choose. */
+const MS = {};
+function msVals(id){ const s = typeof id === "string" ? $(id) : id; return s ? [...s.options].filter(o => o.selected && o.value !== "").map(o => o.value) : []; }
+function msHas(id, v){ const a = msVals(id); return !a.length || a.includes(v); }
+function msSet(id, vals){
+  const s = typeof id === "string" ? $(id) : id; if (!s) return;
+  const want = new Set((Array.isArray(vals) ? vals : [vals]).filter(v => v !== "" && v !== null && v !== undefined));
+  for (const o of s.options) o.selected = o.value !== "" && want.has(o.value);
+  msText(s);
+}
+function msText(s){
+  const m = MS[s.id]; if (!m) return;
+  const sel = [...s.options].filter(o => o.selected && o.value !== "");
+  const clean = o => o.textContent.replace(/\s*\(\d[\d,]*\)\s*$/, "");
+  m.text.textContent = !sel.length ? (s.options[0] && s.options[0].value === "" ? s.options[0].textContent : "All") : sel.length === 1 ? clean(sel[0]) : clean(sel[0]) + " +" + (sel.length - 1);
+  m.btn.classList.toggle("on", sel.length > 0);
+  m.btn.title = sel.length > 1 ? sel.map(clean).join(", ") : "";
+  if (m.open) msList(s);
+}
+function msList(s){
+  const m = MS[s.id], q = m.search.value.trim().toLowerCase();
+  const opts = [...s.options].filter(o => o.value !== "" && (!q || o.textContent.toLowerCase().includes(q)));
+  m.list.innerHTML = opts.length ? opts.map(o => '<label class="ms-opt' + (o.disabled && !o.selected ? " dim" : "") + '"><input type="checkbox" value="' + esc(o.value) + '"' +
+    (o.selected ? " checked" : "") + (o.disabled && !o.selected ? " disabled" : "") + '><span>' + esc(o.textContent) + '</span></label>').join("") : '<div class="ms-none">No matches</div>';
+  m.search.parentNode.hidden = s.options.length <= 8;
+}
+function msFire(s){ msText(s); s.dispatchEvent(new Event("change", {bubbles: true})); }
+function msClose(except){ for (const id in MS){ const m = MS[id]; if (m.open && m !== except){ m.open = false; m.panel.hidden = true; m.btn.setAttribute("aria-expanded", "false"); } } }
+function msEnhance(id){
+  const s = $(id); if (!s || MS[id]) return;
+  const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+  s.multiple = true; s.classList.add("ms-native"); s.tabIndex = -1; s.setAttribute("aria-hidden", "true");
+  Object.defineProperty(s, "value", {configurable: true, get(){ const v = msVals(s); return v.length ? v[0] : ""; },
+    set(v){ desc.set.call(s, v); if (v === "" || v === null) for (const o of s.options) o.selected = false; msText(s); }});
+  const box = document.createElement("div"); box.className = "ms";
+  s.parentNode.insertBefore(box, s); box.appendChild(s);
+  box.insertAdjacentHTML("beforeend", '<button type="button" class="ms-btn" aria-haspopup="true" aria-expanded="false"><span class="ms-text">All</span></button>' +
+    '<div class="ms-panel" hidden><div class="ms-search"><input type="search" placeholder="Search…" aria-label="Search options"></div>' +
+    '<div class="ms-acts"><button type="button" data-ms="all">Select all</button><button type="button" data-ms="none">Clear</button></div><div class="ms-list" role="group"></div></div>');
+  const m = MS[id] = {box, btn: box.querySelector(".ms-btn"), text: box.querySelector(".ms-text"), panel: box.querySelector(".ms-panel"),
+                      list: box.querySelector(".ms-list"), search: box.querySelector(".ms-search input"), open: false};
+  const lab = s.closest("label"); if (lab){ const t = (lab.childNodes[0] && lab.childNodes[0].textContent || "").trim(); if (t) m.btn.setAttribute("aria-label", t + ": choose one or more"); }
+  m.btn.addEventListener("click", e => { e.preventDefault(); const open = !m.open; msClose(); m.open = open; m.panel.hidden = !open; m.btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open){ m.search.value = ""; msList(s); if (!m.search.parentNode.hidden) m.search.focus(); } });
+  m.search.addEventListener("input", () => msList(s));
+  m.list.addEventListener("change", e => { const c = e.target.closest("input[type=checkbox]"); if (!c) return;
+    for (const o of s.options) if (o.value === c.value) o.selected = c.checked;
+    if (s.options[0] && s.options[0].value === "") s.options[0].selected = false;
+    msFire(s); });
+  m.panel.querySelector(".ms-acts").addEventListener("click", e => { const b = e.target.closest("button[data-ms]"); if (!b) return;
+    const q = m.search.value.trim().toLowerCase();
+    for (const o of s.options){ if (o.value === "") { o.selected = false; continue; }
+      if (b.dataset.ms === "none") o.selected = false;
+      else if ((!q || o.textContent.toLowerCase().includes(q)) && !o.disabled) o.selected = true; }
+    msFire(s); });
+  new MutationObserver(() => msText(s)).observe(s, {childList: true, subtree: true, characterData: true, attributes: true});
+  for (const o of s.options) if (o.value === "") o.selected = false;
+  msText(s);
+}
+document.addEventListener("click", e => { if (!e.target.closest(".ms")) msClose(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") msClose(); });
+
+msEnhance("fSkill");
+msEnhance("fCoord");
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){

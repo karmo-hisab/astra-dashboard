@@ -239,6 +239,27 @@ html.nav-mini .sidenav span.two{display:none}
   td{display:table-cell!important}
   td::before{content:none!important}
 }
+/* Multi-select dropdowns */
+.ms{position:relative;min-width:0}
+.ms-native{display:none!important}
+.ms-btn{width:100%;height:40px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 30px 0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.ms-btn .ms-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ms-btn.on{border-color:var(--accent);border-width:1.5px;font-weight:600}
+.ms-btn[aria-expanded="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.ms-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;min-width:100%;width:max-content;max-width:min(360px,92vw);background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(7,14,28,.22);padding:6px}
+.ms-search{padding:2px 2px 6px}
+.ms-search input{width:100%;box-sizing:border-box;height:36px}
+.ms-acts{display:flex;gap:6px;padding:0 2px 6px;border-bottom:1px solid var(--line-2);margin-bottom:4px}
+.ms-acts button{flex:1;min-height:32px;border:1px solid var(--line);border-radius:8px;background:var(--line-2);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.ms-list{max-height:280px;overflow:auto;display:flex;flex-direction:column}
+.ms-opt{display:flex;align-items:center;gap:10px;min-height:38px;padding:4px 8px;border-radius:6px;font-size:13.5px;color:var(--ink);cursor:pointer}
+.ms-opt:hover{background:var(--line-2)}
+.ms-opt input{width:18px;height:18px;margin:0;accent-color:var(--accent);flex:none}
+.ms-opt span{overflow-wrap:anywhere}
+.ms-opt.dim{opacity:.5;cursor:default}
+.ms-none{padding:10px;font-size:13px;color:var(--faint)}
+@media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -907,22 +928,22 @@ const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
 const daysTxt = v => { if (v === null) return "–"; if (v < 1){ const h = Math.round(v * 24); return h + (h === 1 ? " hr" : " hrs"); } const d = Math.round(v * 10) / 10; return d + (d === 1 ? " day" : " days"); };
 
 function buildOptions(){
-  const sel = $("fMonth"), cur = sel.value;
+  const sel = $("fMonth"), cur = msVals(sel);
   const months = [...new Set(ALL.map(r => r.month).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
   sel.innerHTML = '<option value="">All months</option>' + months.map(m => '<option value="' + esc(m) + '">' + esc(m) + ' (' + fmt(ALL.filter(r => r.month === m).length) + ')</option>').join("");
-  if (months.includes(cur)) sel.value = cur;
+  msSet(sel, cur.filter(m => months.includes(m)));
 }
 
 function render(){
   if (!ALL.length) return;
-  const month = $("fMonth").value;
+  const months = msVals("fMonth"), month = months.join(", ");
   const from = $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null;
   const to = $("dTo").value ? new Date($("dTo").value + "T23:59:59").getTime() : null;
-  const list = ALL.filter(r => (!month || r.month === month) && (from === null || r._ts >= from) && (to === null || r._ts <= to));
+  const list = ALL.filter(r => (!months.length || months.includes(r.month)) && (from === null || r._ts >= from) && (to === null || r._ts <= to));
   const now = Date.now();
 
   $("rDate").textContent = "Report date: " + new Date().toLocaleDateString("en-IN", {day:"2-digit", month:"short", year:"numeric"});
-  $("rScope").textContent = "Showing " + fmt(list.length) + " claims" + (month ? ", payment month " + month : ", all payment months") +
+  $("rScope").textContent = "Showing " + fmt(list.length) + " claims" + (months.length ? ", payment month" + (months.length > 1 ? "s " : " ") + month : ", all payment months") +
     (from !== null || to !== null ? ", claims submitted " + ($("dFrom").value || "…") + " to " + ($("dTo").value || "…") : "") + ".";
 
   const blankRow = () => ({n:0, ok:0, bad:0, s1p:0, s2p:0, t1:[], t2:[]});
@@ -974,6 +995,73 @@ const td = (label, html, cls) => '<td' + (cls ? ' class="' + cls + '"' : '') + '
 ["fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", render));
 $("resetBtn").addEventListener("click", () => { ["fMonth","dFrom","dTo"].forEach(id => $(id).value = ""); render(); });
 $("printBtn").addEventListener("click", () => window.print());
+
+/* ================== Multi-select dropdowns ==================
+   A filter <select> becomes a checkbox list (search, Select all, Clear). The original <select> stays in the page,
+   switched to "multiple" and hidden, so the page keeps building its options and counts as before.
+   msVals(id) = chosen values ([] = All); msHas(id, v) = passes the filter; msSet(id, values) = choose. */
+const MS = {};
+function msVals(id){ const s = typeof id === "string" ? $(id) : id; return s ? [...s.options].filter(o => o.selected && o.value !== "").map(o => o.value) : []; }
+function msHas(id, v){ const a = msVals(id); return !a.length || a.includes(v); }
+function msSet(id, vals){
+  const s = typeof id === "string" ? $(id) : id; if (!s) return;
+  const want = new Set((Array.isArray(vals) ? vals : [vals]).filter(v => v !== "" && v !== null && v !== undefined));
+  for (const o of s.options) o.selected = o.value !== "" && want.has(o.value);
+  msText(s);
+}
+function msText(s){
+  const m = MS[s.id]; if (!m) return;
+  const sel = [...s.options].filter(o => o.selected && o.value !== "");
+  const clean = o => o.textContent.replace(/\s*\(\d[\d,]*\)\s*$/, "");
+  m.text.textContent = !sel.length ? (s.options[0] && s.options[0].value === "" ? s.options[0].textContent : "All") : sel.length === 1 ? clean(sel[0]) : clean(sel[0]) + " +" + (sel.length - 1);
+  m.btn.classList.toggle("on", sel.length > 0);
+  m.btn.title = sel.length > 1 ? sel.map(clean).join(", ") : "";
+  if (m.open) msList(s);
+}
+function msList(s){
+  const m = MS[s.id], q = m.search.value.trim().toLowerCase();
+  const opts = [...s.options].filter(o => o.value !== "" && (!q || o.textContent.toLowerCase().includes(q)));
+  m.list.innerHTML = opts.length ? opts.map(o => '<label class="ms-opt' + (o.disabled && !o.selected ? " dim" : "") + '"><input type="checkbox" value="' + esc(o.value) + '"' +
+    (o.selected ? " checked" : "") + (o.disabled && !o.selected ? " disabled" : "") + '><span>' + esc(o.textContent) + '</span></label>').join("") : '<div class="ms-none">No matches</div>';
+  m.search.parentNode.hidden = s.options.length <= 8;
+}
+function msFire(s){ msText(s); s.dispatchEvent(new Event("change", {bubbles: true})); }
+function msClose(except){ for (const id in MS){ const m = MS[id]; if (m.open && m !== except){ m.open = false; m.panel.hidden = true; m.btn.setAttribute("aria-expanded", "false"); } } }
+function msEnhance(id){
+  const s = $(id); if (!s || MS[id]) return;
+  const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+  s.multiple = true; s.classList.add("ms-native"); s.tabIndex = -1; s.setAttribute("aria-hidden", "true");
+  Object.defineProperty(s, "value", {configurable: true, get(){ const v = msVals(s); return v.length ? v[0] : ""; },
+    set(v){ desc.set.call(s, v); if (v === "" || v === null) for (const o of s.options) o.selected = false; msText(s); }});
+  const box = document.createElement("div"); box.className = "ms";
+  s.parentNode.insertBefore(box, s); box.appendChild(s);
+  box.insertAdjacentHTML("beforeend", '<button type="button" class="ms-btn" aria-haspopup="true" aria-expanded="false"><span class="ms-text">All</span></button>' +
+    '<div class="ms-panel" hidden><div class="ms-search"><input type="search" placeholder="Search…" aria-label="Search options"></div>' +
+    '<div class="ms-acts"><button type="button" data-ms="all">Select all</button><button type="button" data-ms="none">Clear</button></div><div class="ms-list" role="group"></div></div>');
+  const m = MS[id] = {box, btn: box.querySelector(".ms-btn"), text: box.querySelector(".ms-text"), panel: box.querySelector(".ms-panel"),
+                      list: box.querySelector(".ms-list"), search: box.querySelector(".ms-search input"), open: false};
+  const lab = s.closest("label"); if (lab){ const t = (lab.childNodes[0] && lab.childNodes[0].textContent || "").trim(); if (t) m.btn.setAttribute("aria-label", t + ": choose one or more"); }
+  m.btn.addEventListener("click", e => { e.preventDefault(); const open = !m.open; msClose(); m.open = open; m.panel.hidden = !open; m.btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open){ m.search.value = ""; msList(s); if (!m.search.parentNode.hidden) m.search.focus(); } });
+  m.search.addEventListener("input", () => msList(s));
+  m.list.addEventListener("change", e => { const c = e.target.closest("input[type=checkbox]"); if (!c) return;
+    for (const o of s.options) if (o.value === c.value) o.selected = c.checked;
+    if (s.options[0] && s.options[0].value === "") s.options[0].selected = false;
+    msFire(s); });
+  m.panel.querySelector(".ms-acts").addEventListener("click", e => { const b = e.target.closest("button[data-ms]"); if (!b) return;
+    const q = m.search.value.trim().toLowerCase();
+    for (const o of s.options){ if (o.value === "") { o.selected = false; continue; }
+      if (b.dataset.ms === "none") o.selected = false;
+      else if ((!q || o.textContent.toLowerCase().includes(q)) && !o.disabled) o.selected = true; }
+    msFire(s); });
+  new MutationObserver(() => msText(s)).observe(s, {childList: true, subtree: true, characterData: true, attributes: true});
+  for (const o of s.options) if (o.value === "") o.selected = false;
+  msText(s);
+}
+document.addEventListener("click", e => { if (!e.target.closest(".ms")) msClose(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") msClose(); });
+
+msEnhance("fMonth");
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){

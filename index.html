@@ -213,6 +213,27 @@ html.nav-mini .sidenav span.two{display:none}
 .claimcta b{color:var(--accent)}
 .claimcta .arrow{margin-left:auto;font-weight:700;color:var(--accent)}
 .claimcta:hover{border-color:var(--accent)}
+/* Multi-select dropdowns */
+.ms{position:relative;min-width:0}
+.ms-native{display:none!important}
+.ms-btn{width:100%;height:40px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 30px 0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.ms-btn .ms-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ms-btn.on{border-color:var(--accent);border-width:1.5px;font-weight:600}
+.ms-btn[aria-expanded="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.ms-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;min-width:100%;width:max-content;max-width:min(360px,92vw);background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(7,14,28,.22);padding:6px}
+.ms-search{padding:2px 2px 6px}
+.ms-search input{width:100%;box-sizing:border-box;height:36px}
+.ms-acts{display:flex;gap:6px;padding:0 2px 6px;border-bottom:1px solid var(--line-2);margin-bottom:4px}
+.ms-acts button{flex:1;min-height:32px;border:1px solid var(--line);border-radius:8px;background:var(--line-2);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.ms-list{max-height:280px;overflow:auto;display:flex;flex-direction:column}
+.ms-opt{display:flex;align-items:center;gap:10px;min-height:38px;padding:4px 8px;border-radius:6px;font-size:13.5px;color:var(--ink);cursor:pointer}
+.ms-opt:hover{background:var(--line-2)}
+.ms-opt input{width:18px;height:18px;margin:0;accent-color:var(--accent);flex:none}
+.ms-opt span{overflow-wrap:anywhere}
+.ms-opt.dim{opacity:.5;cursor:default}
+.ms-none{padding:10px;font-size:13px;color:var(--faint)}
+@media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -934,15 +955,15 @@ const FILTER_IDS = ["q","fDrona","fSarathi","fResult","fType","fMode","fStage","
 function readFilters(){
   return {
     q: $("q").value.trim().toLowerCase(),
-    res: $("fResult").value,
-    ty: TYPES.find(t => t.astra === $("fType").value),
-    reb: $("fRebut").value,
-    stage: $("fStage").value,
-    mode: $("fMode").value,
+    res: msVals("fResult"),
+    tys: msVals("fType").map(v => TYPES.find(t => t.astra === v)).filter(Boolean),
+    reb: msVals("fRebut"),
+    stage: msVals("fStage"),
+    mode: msVals("fMode"),
     /* Date range uses the claim submission date (Timestamp, column A) */
     from: $("dFrom").value ? new Date($("dFrom").value + "T00:00:00").getTime() : null,
     to:   $("dTo").value   ? new Date($("dTo").value + "T23:59:59").getTime() : null,
-    drop: Object.fromEntries(DROPDOWNS.map(d => [d.id, $(d.id).value]))
+    drop: Object.fromEntries(DROPDOWNS.map(d => [d.id, msVals(d.id)]))
   };
 }
 const resOf = r => r._res === "ok" ? "ok" : r._res === "bad" ? "bad" : "wait";
@@ -952,12 +973,12 @@ function rowMatches(r, f, skipArg){
   if (!has("q") && f.q && !r._search.includes(f.q)) return false;
   if (!has("date") && f.from !== null && r._ts < f.from) return false;
   if (!has("date") && f.to !== null && r._ts > f.to) return false;
-  if (!has("fResult") && f.res && resOf(r) !== f.res) return false;
-  if (!has("fType") && f.ty && !f.ty.match.test(r.claim || "")) return false;
-  if (!has("fRebut") && f.reb && (f.reb === "any" ? !rebKind(r.rebuttal) : rebKind(r.rebuttal) !== f.reb)) return false;
-  if (!has("fStage") && f.stage && stageOf(r) !== f.stage) return false;
-  if (!has("fMode") && f.mode && (f.mode === "(blank)" ? !!modeKey(r.mode) : modeKey(r.mode) !== f.mode)) return false;
-  for (const d of DROPDOWNS) if (!has(d.id) && f.drop[d.id] && (r[d.key] || "(blank)") !== f.drop[d.id]) return false;
+  if (!has("fResult") && f.res.length && !f.res.includes(resOf(r))) return false;
+  if (!has("fType") && f.tys.length && !f.tys.some(t => t.match.test(r.claim || ""))) return false;
+  if (!has("fRebut") && f.reb.length && !f.reb.some(x => x === "any" ? !!rebKind(r.rebuttal) : rebKind(r.rebuttal) === x)) return false;
+  if (!has("fStage") && f.stage.length && !f.stage.includes(stageOf(r))) return false;
+  if (!has("fMode") && f.mode.length && !f.mode.some(m => m === "(blank)" ? !modeKey(r.mode) : modeKey(r.mode) === m)) return false;
+  for (const d of DROPDOWNS) if (!has(d.id) && f.drop[d.id].length && !f.drop[d.id].includes(r[d.key] || "(blank)")) return false;
   return true;
 }
 
@@ -965,7 +986,7 @@ function rowMatches(r, f, skipArg){
 function buildOptions(f){
   f = f || readFilters();
   for (const d of DROPDOWNS){
-    const sel = $(d.id), cur = sel.value, opts = new Map();
+    const sel = $(d.id), cur = msVals(sel), opts = new Map();
     for (const r of ALL){
       // the coordinator list ignores the team leader choice, so you can always switch coordinator
       if (!rowMatches(r, f, d.id === "fDrona" ? ["fDrona", "fSarathi"] : d.id)) continue;
@@ -973,23 +994,23 @@ function buildOptions(f){
       if (!opts.has(v)) opts.set(v, {label: d.labelKey ? r[d.labelKey] : v, n: 0});
       opts.get(v).n++;
     }
-    if (cur && !opts.has(cur)){                 // keep the current choice visible even if nothing matches now
-      const any = ALL.find(r => (r[d.key] || "(blank)") === cur);
-      opts.set(cur, {label: any && d.labelKey ? any[d.labelKey] : cur, n: 0});
+    for (const c of cur) if (!opts.has(c)){     // keep chosen values visible even if nothing matches now
+      const any = ALL.find(r => (r[d.key] || "(blank)") === c);
+      opts.set(c, {label: any && d.labelKey ? any[d.labelKey] : c, n: 0});
     }
     const vals = [...opts.keys()].sort((a, b) => String(opts.get(a).label).localeCompare(String(opts.get(b).label), undefined, {numeric:true}));
     sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '">' + esc(opts.get(v).label) + ' (' + fmt(opts.get(v).n) + ')</option>').join("");
-    sel.value = cur;
+    msSet(sel, cur);
   }
   // Mode of conversion: options from the values in column F (Ameyo call first, blank last)
   {
-    const sel = $("fMode"), cur = sel.value;
+    const sel = $("fMode"), cur = msVals(sel);
     const modes = [...new Set(ALL.map(r => modeKey(r.mode)).filter(Boolean))].sort((a, b) => (a === "Ameyo call" ? -1 : b === "Ameyo call" ? 1 : a.localeCompare(b)));
     if (ALL.some(r => !modeKey(r.mode))) modes.push("(blank)");
     const key = modes.join("|");
     if (sel.dataset.key !== key){
       sel.innerHTML = '<option value="">All</option>' + modes.map(m => '<option value="' + esc(m) + '">' + esc(m === "(blank)" ? "Not filled" : m) + '</option>').join("");
-      sel.dataset.key = key; sel.value = modes.includes(cur) ? cur : "";
+      sel.dataset.key = key; msSet(sel, cur.filter(m => modes.includes(m)));
     }
   }
   // Fixed lists (Hit or Miss, Claim type): show counts, grey out options with no claims
@@ -1006,7 +1027,7 @@ function buildOptions(f){
       if (!o.dataset.base) o.dataset.base = o.textContent;
       const n = x.count(o.value);
       o.textContent = o.dataset.base + " (" + fmt(n) + ")";
-      o.disabled = n === 0 && $(x.id).value !== o.value;
+      o.disabled = n === 0 && !o.selected;
     }
   }
 }
@@ -1105,7 +1126,7 @@ function renderProgress(f){
   const pc = (a, b) => b ? Math.round(a * 100 / b) : 0;
   $("vmini").innerHTML = '<b>Step 1:</b> ' + pc(s1Done, list.length) + '% done, ' + fmt(c.s1p) + ' pending <span class="vsep">|</span> <b>Step 2:</b> ' +
     pc(c.done2, s2Total) + '% done, ' + fmt(c.s2p + c.prq + c.psb) + ' pending';
-  const chip = (stage, n, label, cls) => '<button type="button" class="vchip ' + cls + ($("fStage").value === stage ? " on" : "") + '" data-stage="' + stage + '" ' + (n ? "" : "disabled") + '><b>' + fmt(n) + '</b> ' + label + '</button>';
+  const chip = (stage, n, label, cls) => '<button type="button" class="vchip ' + cls + (msVals("fStage").includes(stage) ? " on" : "") + '" data-stage="' + stage + '" ' + (n ? "" : "disabled") + '><b>' + fmt(n) + '</b> ' + label + '</button>';
   const bar = segs => '<div class="vbar">' + segs.map(([n, cls]) => n ? '<span class="' + cls + '" style="width:' + (n * 100 / Math.max(1, segs.reduce((a, x) => a + x[0], 0))) + '%"></span>' : "").join("") + '</div>';
   $("vprog").innerHTML =
     '<div class="vrow"><div class="vlabel"><b>Step 1</b><small>Record verification</small></div>' +
@@ -1173,8 +1194,8 @@ function setSel(id, v){ $(id).value = v; $(id).dispatchEvent(new Event("change")
 /* "Showing" strip: one removable chip per active filter; filters in use get a coloured outline */
 function renderActive(){
   const items = [];
-  const label = (id, name) => { const el = $(id); if (!el.value) return; const o = el.options[el.selectedIndex];
-    items.push({id, text: name + ": " + (o ? o.textContent.replace(/\s*\(\d[\d,]*\)$/, "") : el.value)}); };
+  const label = (id, name) => { const el = $(id), sel = [...el.options].filter(o => o.selected && o.value !== ""); if (!sel.length) return;
+    items.push({id, text: name + ": " + sel.map(o => o.textContent.replace(/\s*\(\d[\d,]*\)$/, "")).join(", ")}); };
   if ($("q").value.trim()) items.push({id:"q", text:'Search: "' + $("q").value.trim() + '"'});
   label("fDrona", "Coordinator"); label("fSarathi", "Team leader"); label("fType", "Type"); label("fResult", "Status"); label("fMode", "Mode"); label("fStage", "Stage"); label("fRebut", "Rebuttal"); label("fMonth", "Month");
   if ($("dFrom").value || $("dTo").value) items.push({id:"dates", text:"Dates: " + ($("dFrom").value || "…") + " to " + ($("dTo").value || "…")});
@@ -1207,13 +1228,14 @@ $("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 
 })();
 $("vprog").addEventListener("click", e => {
   const b = e.target.closest(".vchip"); if (!b) return;
-  $("fStage").value = $("fStage").value === b.dataset.stage ? "" : b.dataset.stage; apply();
-  if ($("fStage").value) document.querySelector(".table-panel").scrollIntoView({behavior:"smooth", block:"start"});
+  const cur = msVals("fStage"), st = b.dataset.stage;
+  msSet("fStage", cur.includes(st) ? cur.filter(x => x !== st) : cur.concat(st)); apply();
+  if (msVals("fStage").length) document.querySelector(".table-panel").scrollIntoView({behavior:"smooth", block:"start"});
 });
 $("fDrona").addEventListener("change", () => {
   // if the chosen team leader isn't under the new coordinator, clear it
   const f = readFilters();
-  if (f.drop.fSarathi && !ALL.some(r => rowMatches(r, f, null))) $("fSarathi").value = "";
+  if (f.drop.fSarathi.length && !ALL.some(r => rowMatches(r, f, null))) $("fSarathi").value = "";
   apply();
 });
 $("resetBtn").addEventListener("click", () => { FILTER_IDS.forEach(id => $(id).value = ""); buildOptions(); apply(); });
@@ -1223,6 +1245,80 @@ $("nextBtn").addEventListener("click", () => { page++; renderTable(); window.scr
 function sortBy(key){ if (sortKey === key) sortDir = -sortDir; else { sortKey = key; sortDir = 1; } apply(false); }
 $("thead").addEventListener("click", e => { const th = e.target.closest("th"); if (th) sortBy(th.dataset.key); });
 $("thead").addEventListener("keydown", e => { const th = e.target.closest("th"); if (th && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); sortBy(th.dataset.key); } });
+
+/* ================== Multi-select dropdowns ==================
+   A filter <select> becomes a checkbox list (search, Select all, Clear). The original <select> stays in the page,
+   switched to "multiple" and hidden, so the page keeps building its options and counts as before.
+   msVals(id) = chosen values ([] = All); msHas(id, v) = passes the filter; msSet(id, values) = choose. */
+const MS = {};
+function msVals(id){ const s = typeof id === "string" ? $(id) : id; return s ? [...s.options].filter(o => o.selected && o.value !== "").map(o => o.value) : []; }
+function msHas(id, v){ const a = msVals(id); return !a.length || a.includes(v); }
+function msSet(id, vals){
+  const s = typeof id === "string" ? $(id) : id; if (!s) return;
+  const want = new Set((Array.isArray(vals) ? vals : [vals]).filter(v => v !== "" && v !== null && v !== undefined));
+  for (const o of s.options) o.selected = o.value !== "" && want.has(o.value);
+  msText(s);
+}
+function msText(s){
+  const m = MS[s.id]; if (!m) return;
+  const sel = [...s.options].filter(o => o.selected && o.value !== "");
+  const clean = o => o.textContent.replace(/\s*\(\d[\d,]*\)\s*$/, "");
+  m.text.textContent = !sel.length ? (s.options[0] && s.options[0].value === "" ? s.options[0].textContent : "All") : sel.length === 1 ? clean(sel[0]) : clean(sel[0]) + " +" + (sel.length - 1);
+  m.btn.classList.toggle("on", sel.length > 0);
+  m.btn.title = sel.length > 1 ? sel.map(clean).join(", ") : "";
+  if (m.open) msList(s);
+}
+function msList(s){
+  const m = MS[s.id], q = m.search.value.trim().toLowerCase();
+  const opts = [...s.options].filter(o => o.value !== "" && (!q || o.textContent.toLowerCase().includes(q)));
+  m.list.innerHTML = opts.length ? opts.map(o => '<label class="ms-opt' + (o.disabled && !o.selected ? " dim" : "") + '"><input type="checkbox" value="' + esc(o.value) + '"' +
+    (o.selected ? " checked" : "") + (o.disabled && !o.selected ? " disabled" : "") + '><span>' + esc(o.textContent) + '</span></label>').join("") : '<div class="ms-none">No matches</div>';
+  m.search.parentNode.hidden = s.options.length <= 8;
+}
+function msFire(s){ msText(s); s.dispatchEvent(new Event("change", {bubbles: true})); }
+function msClose(except){ for (const id in MS){ const m = MS[id]; if (m.open && m !== except){ m.open = false; m.panel.hidden = true; m.btn.setAttribute("aria-expanded", "false"); } } }
+function msEnhance(id){
+  const s = $(id); if (!s || MS[id]) return;
+  const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+  s.multiple = true; s.classList.add("ms-native"); s.tabIndex = -1; s.setAttribute("aria-hidden", "true");
+  Object.defineProperty(s, "value", {configurable: true, get(){ const v = msVals(s); return v.length ? v[0] : ""; },
+    set(v){ desc.set.call(s, v); if (v === "" || v === null) for (const o of s.options) o.selected = false; msText(s); }});
+  const box = document.createElement("div"); box.className = "ms";
+  s.parentNode.insertBefore(box, s); box.appendChild(s);
+  box.insertAdjacentHTML("beforeend", '<button type="button" class="ms-btn" aria-haspopup="true" aria-expanded="false"><span class="ms-text">All</span></button>' +
+    '<div class="ms-panel" hidden><div class="ms-search"><input type="search" placeholder="Search…" aria-label="Search options"></div>' +
+    '<div class="ms-acts"><button type="button" data-ms="all">Select all</button><button type="button" data-ms="none">Clear</button></div><div class="ms-list" role="group"></div></div>');
+  const m = MS[id] = {box, btn: box.querySelector(".ms-btn"), text: box.querySelector(".ms-text"), panel: box.querySelector(".ms-panel"),
+                      list: box.querySelector(".ms-list"), search: box.querySelector(".ms-search input"), open: false};
+  const lab = s.closest("label"); if (lab){ const t = (lab.childNodes[0] && lab.childNodes[0].textContent || "").trim(); if (t) m.btn.setAttribute("aria-label", t + ": choose one or more"); }
+  m.btn.addEventListener("click", e => { e.preventDefault(); const open = !m.open; msClose(); m.open = open; m.panel.hidden = !open; m.btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open){ m.search.value = ""; msList(s); if (!m.search.parentNode.hidden) m.search.focus(); } });
+  m.search.addEventListener("input", () => msList(s));
+  m.list.addEventListener("change", e => { const c = e.target.closest("input[type=checkbox]"); if (!c) return;
+    for (const o of s.options) if (o.value === c.value) o.selected = c.checked;
+    if (s.options[0] && s.options[0].value === "") s.options[0].selected = false;
+    msFire(s); });
+  m.panel.querySelector(".ms-acts").addEventListener("click", e => { const b = e.target.closest("button[data-ms]"); if (!b) return;
+    const q = m.search.value.trim().toLowerCase();
+    for (const o of s.options){ if (o.value === "") { o.selected = false; continue; }
+      if (b.dataset.ms === "none") o.selected = false;
+      else if ((!q || o.textContent.toLowerCase().includes(q)) && !o.disabled) o.selected = true; }
+    msFire(s); });
+  new MutationObserver(() => msText(s)).observe(s, {childList: true, subtree: true, characterData: true, attributes: true});
+  for (const o of s.options) if (o.value === "") o.selected = false;
+  msText(s);
+}
+document.addEventListener("click", e => { if (!e.target.closest(".ms")) msClose(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") msClose(); });
+
+msEnhance("fDrona");
+msEnhance("fSarathi");
+msEnhance("fType");
+msEnhance("fResult");
+msEnhance("fMode");
+msEnhance("fStage");
+msEnhance("fRebut");
+msEnhance("fMonth");
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){

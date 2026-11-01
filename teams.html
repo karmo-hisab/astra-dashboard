@@ -291,6 +291,11 @@ tbody tr.hl td b{color:var(--ink)}
 .leadnote.stale{color:var(--wait);font-weight:600}
 .faint{color:var(--faint)}
 .funnel{display:flex;flex-direction:column;gap:1px;font-size:12.5px;white-space:nowrap;color:var(--muted)}
+.vsrow{display:flex;align-items:center;gap:6px;margin:1px 0 3px 22px;white-space:nowrap}
+.vschip{display:inline-flex;align-items:center;border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:700;line-height:1.5;white-space:nowrap}
+.vschip.up{background:var(--ok-bg);color:var(--ok)} .vschip.down{background:var(--bad-bg);color:var(--bad)} .vschip.eq{background:var(--neutral-bg);color:var(--muted)}
+.vsavg{font-size:11.5px;color:var(--faint)}
+.fskills .vschip{margin-left:6px;padding:0 6px;font-size:11px}
 .vs{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;white-space:nowrap}
 .vs.up{color:var(--ok)} .vs.down{color:var(--bad)} .vs.eq,.vs.few{color:var(--faint);font-weight:600}
 .vs.few{margin-left:0;font-size:11px}
@@ -327,6 +332,27 @@ tbody tr.hl td b{color:var(--ink)}
 .fbparts b{color:var(--muted)}
 .fbparts .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
 @media (max-width: 720px){ .tfilters.six{grid-template-columns:1fr 1fr} }
+/* Multi-select dropdowns */
+.ms{position:relative;min-width:0}
+.ms-native{display:none!important}
+.ms-btn{width:100%;height:40px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 30px 0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.ms-btn .ms-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ms-btn.on{border-color:var(--accent);border-width:1.5px;font-weight:600}
+.ms-btn[aria-expanded="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.ms-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;min-width:100%;width:max-content;max-width:min(360px,92vw);background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(7,14,28,.22);padding:6px}
+.ms-search{padding:2px 2px 6px}
+.ms-search input{width:100%;box-sizing:border-box;height:36px}
+.ms-acts{display:flex;gap:6px;padding:0 2px 6px;border-bottom:1px solid var(--line-2);margin-bottom:4px}
+.ms-acts button{flex:1;min-height:32px;border:1px solid var(--line);border-radius:8px;background:var(--line-2);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.ms-list{max-height:280px;overflow:auto;display:flex;flex-direction:column}
+.ms-opt{display:flex;align-items:center;gap:10px;min-height:38px;padding:4px 8px;border-radius:6px;font-size:13.5px;color:var(--ink);cursor:pointer}
+.ms-opt:hover{background:var(--line-2)}
+.ms-opt input{width:18px;height:18px;margin:0;accent-color:var(--accent);flex:none}
+.ms-opt span{overflow-wrap:anywhere}
+.ms-opt.dim{opacity:.5;cursor:default}
+.ms-none{padding:10px;font-size:13px;color:var(--faint)}
+@media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1101,9 +1127,9 @@ function compute(opts){
   const trendStart = mondayOf(Date.now()) - (TREND_WEEKS - 1) * WEEK;
   const byUid = new Map(); for (const p of ROSTER) byUid.set(String(p.uid), p);
   const haveRoster = ROSTER.length > 0;
-  const f = {month:$("fMonth").value, skill:$("fSkill").value, sim:$("fSim").value};
-  if (opts.allPeople){ f.skill = ""; f.sim = ""; }
-  const personOk = p => (!f.skill || (p && p.skill === f.skill)) && (!f.sim || (p && (f.sim === "SIM") === (p.sim === "Yes")));
+  const f = {months: msVals("fMonth"), skills: msVals("fSkill"), sim: $("fSim").value};
+  if (opts.allPeople){ f.skills = []; f.sim = ""; }
+  const personOk = p => (!f.skills.length || (p && f.skills.includes(p.skill))) && (!f.sim || (p && (f.sim === "SIM") === (p.sim === "Yes")));
   const coords = new Map(), teams = new Map(), people = new Map(), coordName = new Map();
   for (const p of ROSTER) if (p.coord) coordName.set(normName(p.coord), p.coord);
   const coordOf = n => { const k = normName(n) || "(none)"; if (!coordName.has(k)) coordName.set(k, n || "(No coordinator)"); return k; };
@@ -1149,11 +1175,11 @@ function compute(opts){
   };
 
   for (const r of ALL){
-    if (!opts.ignoreMonth && f.month && r.month !== f.month) continue;
+    if (!opts.ignoreMonth && f.months.length && !f.months.includes(r.month)) continue;
     if (opts.from !== null && opts.from !== undefined && r._ts < opts.from) continue;
     if (opts.to !== null && opts.to !== undefined && r._ts >= opts.to) continue;
     const p = byUid.get(String(r.uid));
-    if ((f.skill || f.sim) && !personOk(p)) continue;
+    if ((f.skills.length || f.sim) && !personOk(p)) continue;
     const ck = coordOf(r.drona); add(getCoord(ck), r);
     const t = getTeam(teamFor(r, ck), r._teamLabel ? r._teamLabel.replace(/\s*:\s*\d+\s*$/, "") : "", ck); add(t, r);
     const person = getPerson(String(r.uid), r.name); add(person, r);
@@ -1316,11 +1342,13 @@ const pctTxt = (a, b) => b ? (Math.round(1000 * a / b) / 10) + "%" : "–";
    Green ▲ above, red ▼ below, grey ≈ within 0.5 percentage points. Fewer than MIN_LEADS leads: not compared. */
 const MIN_LEADS = 20;
 let CMP = (() => { try { return localStorage.getItem("hk_cmp") === "adm" ? "adm" : "app"; } catch (_) { return "app"; } })();   // which % gets the arrows
-function vsPeer(mine, grp, what, n, against){
+function vsPeer(mine, grp, what, n, against, compact){
   const diff = (mine - grp) * 100, g = (grp * 100).toFixed(1);
   const k = Math.abs(diff) < 0.5 ? "eq" : diff > 0 ? "up" : "down";
-  return '<span class="vs ' + k + '" title="' + what + ': ' + (mine * 100).toFixed(1) + '% vs ' + g + '% for ' + (against || "the peer group") + ' (' + n + ' with leads)">' +
-    (k === "eq" ? '≈ <i>group ' + g + '%</i>' : (k === "up" ? "▲ " : "▼ ") + Math.abs(diff).toFixed(1) + ' pts <i>vs ' + g + '%</i>') + '</span>';
+  const avg = /division/i.test(against || "") ? "division avg" : /skill/i.test(against || "") ? "skill avg" : "group avg";
+  const tip = what + ': ' + (mine * 100).toFixed(1) + '% vs ' + g + '% (' + avg + ', ' + n + ' with leads)';
+  const chip = '<span class="vschip ' + k + '" title="' + tip + '">' + (k === "eq" ? "≈ avg" : (k === "up" ? "▲ " : "▼ ") + Math.abs(diff).toFixed(1) + " pts") + '</span>';
+  return compact ? chip : '<span class="vsrow">' + chip + '<span class="vsavg">' + avg + ' ' + g + '%</span></span>';
 }
 function leadCell(t, extra, peer, against){
   if (!LEADS) return '<span class="faint">–</span>';
@@ -1329,8 +1357,8 @@ function leadCell(t, extra, peer, against){
   const vsApp = can && CMP === "app" ? vsPeer(t.c / t.l, peer.c / peer.l, "Lead to Application", peer.n, against) : "";
   const vsAdm = can && CMP === "adm" && (peer.a > 0 || t.a > 0) ? vsPeer(t.a / t.l, peer.a / peer.l, "Lead to Admission", peer.n, against) : "";
   return '<div class="funnel"><span class="fl"><b>' + fmt(t.l) + '</b> leads</span>' +
-    '<span class="fa" title="Lead to Application">🎯 <b>' + fmt(t.c) + '</b> apps · <b>' + pctTxt(t.c, t.l) + '</b>' + vsApp + '</span>' +
-    '<span class="fd" title="Lead to Admission (Enrolment)">🏹 <b>' + fmt(t.a) + '</b> adm · <b>' + pctTxt(t.a, t.l) + '</b>' + vsAdm + '</span>' +
+    '<span class="fa" title="Lead to Application">🎯 <b>' + fmt(t.c) + '</b> apps · <b>' + pctTxt(t.c, t.l) + '</b></span>' + vsApp +
+    '<span class="fd" title="Lead to Admission (Enrolment)">🏹 <b>' + fmt(t.a) + '</b> adm · <b>' + pctTxt(t.a, t.l) + '</b></span>' + vsAdm +
     (peer && !can && t.l < MIN_LEADS ? '<span class="vs few">too few leads to compare (under ' + MIN_LEADS + ')</span>' : "") + '</div>' + (extra || "");
 }
 /* Coordinator: one small line per skill (L→App % · L→Adm %) */
@@ -1342,8 +1370,8 @@ function skillLines(m, people, skillBase){
   const cmp = (k, t) => {
     const g = skillBase && skillBase.get(k);
     if (!g || g.n < 2 || !g.l || t.l < MIN_LEADS) return "";
-    return CMP === "app" ? vsPeer(t.c / t.l, g.c / g.l, "Lead to Application (" + k + ")", g.n, "this skill across the division")
-      : (g.a > 0 || t.a > 0) ? vsPeer(t.a / t.l, g.a / g.l, "Lead to Admission (" + k + ")", g.n, "this skill across the division") : "";
+    return CMP === "app" ? vsPeer(t.c / t.l, g.c / g.l, "Lead to Application (" + k + ")", g.n, "this skill across the division", true)
+      : (g.a > 0 || t.a > 0) ? vsPeer(t.a / t.l, g.a / g.l, "Lead to Admission (" + k + ")", g.n, "this skill across the division", true) : "";
   };
   return '<div class="fskills">' + lines.map(([k, t]) => '<span title="' + esc(k) + ': ' + fmt(t.l) + ' leads, ' + fmt(t.c) + ' apps, ' + fmt(t.a) + ' adm"><i>' + esc(k) + '</i> <b>' + fmt(t.l) + '</b> leads · 🎯 <b>' + fmt(t.c) + '</b> (' + pctTxt(t.c, t.l) + ') · 🏹 <b>' + fmt(t.a) + '</b> (' + pctTxt(t.a, t.l) + ')' + cmp(k, t) + '</span>').join("") + '</div>';
 }
@@ -1365,16 +1393,16 @@ function render(){
   if (!ALL.length && !ROSTER.length) return;
   if (ALL !== lastAllRef){ lastAllRef = ALL; dataStamp++; }
   const P = periodWindow($("fPeriod").value);
-  const baseKey = [dataStamp, $("fSkill").value, $("fSim").value, $("fMonth").value].join("|");
+  const baseKey = [dataStamp, msVals("fSkill").join(","), $("fSim").value, msVals("fMonth").join(",")].join("|");
   const d = cached("cur", baseKey + "|" + JSON.stringify(P.cur), () => compute(P.cur));
   const dPrev = cached("prev", baseKey + "|" + JSON.stringify(P.prev), () => compute(P.prev));
-  const dTrend = cached("trend", [dataStamp, $("fSkill").value, $("fSim").value, mondayOf(Date.now())].join("|"), () => compute({weeks:true, ignoreMonth:true}));
+  const dTrend = cached("trend", [dataStamp, msVals("fSkill").join(","), $("fSim").value, mondayOf(Date.now())].join("|"), () => compute({weeks:true, ignoreMonth:true}));
   const lastClaim = cached("last", String(dataStamp), () => { const m = new Map(); for (const r of ALL){ const u = String(r.uid); if (!m.has(u) || m.get(u) < r._ts) m.set(u, r._ts); } return m; });
   const idleSince = Date.now() - 7 * DAY;
   const LT = cached("leads", [dataStamp, JSON.stringify(P.cur)].join("|"), () => leadTotals(P.cur.from, P.cur.to));
   // the funnel follows the Skill and Counselor type filters (team leaders count only when no type is chosen)
-  const fSkillV = $("fSkill").value, fSimV = $("fSim").value;
-  const funnelOk = x => (!fSkillV || x.skill === fSkillV) && (!fSimV || (!x.isTL && (fSimV === "SIM") === !!x.sim));
+  const fSkills = msVals("fSkill"), fSkillV = fSkills.join(","), fSimV = $("fSim").value;
+  const funnelOk = x => (!fSkills.length || fSkills.includes(x.skill)) && (!fSimV || (!x.isTL && (fSimV === "SIM") === !!x.sim));
   const teamUids = t => [...d.people.values()].filter(x => (x.teamUid === t.uid || x.uid === t.uid) && funnelOk(x)).map(x => x.uid);
   const coordUids = c => [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x)).map(x => x.uid);
   const pLead = p => LT ? sumLeads(LT, [p.uid]) : null, tLead = t => LT ? sumLeads(LT, teamUids(t)) : null, cLead = c => LT ? sumLeads(LT, coordUids(c)) : null;
@@ -1418,6 +1446,7 @@ function render(){
       : selC ? [...d.people.values()].filter(x => x.coordKey === selC && funnelOk(x)).map(x => x.uid)
       : [...d.people.values()].filter(funnelOk).map(x => x.uid);
     let T = sumLeads(LT, uids), outside = null;
+    const tel = T;                                                 // Telephonic only (people in TL Bifurcation)
     const un = LT.get("UNASSIGNED") || {l: 0, c: 0, a: 0};       // leads with no owner in Meritto: shown separately
     if (!selP && !selT && !selC && !fSkillV && !fSimV){            // everyone: ALL session leads (Telephonic, other teams, unassigned)
       const all = {l: 0, c: 0, a: 0}, assigned = {l: 0};
@@ -1437,8 +1466,14 @@ function render(){
       $("fbLeadsSub").textContent = range.slice(3);
     }
     $("fbLeadsLabel").textContent = outside ? "👥 Total leads" : "👥 Leads assigned";
-    $("fbApps").textContent = fmt(T.c); $("fbAppsPct").textContent = pctTxt(T.c, T.l) + " of leads (L→App)";
-    $("fbAdm").textContent = fmt(T.a); $("fbAdmPct").textContent = pctTxt(T.a, T.l) + " of leads (L→Adm)";
+    $("fbApps").textContent = fmt(T.c); $("fbAdm").textContent = fmt(T.a);
+    if (outside){                                                  // everyone: all leads, and Telephonic on its own (the table's division avg)
+      $("fbAppsPct").innerHTML = pctTxt(T.c, T.l) + ' of all leads (L→App) · <b title="Telephonic only: applications ÷ leads of people in TL Bifurcation (the division avg used in the table)">Telephonic ' + pctTxt(tel.c, tel.l) + '</b>';
+      $("fbAdmPct").innerHTML = pctTxt(T.a, T.l) + ' of all leads (L→Adm) · <b title="Telephonic only: admissions ÷ leads of people in TL Bifurcation">Telephonic ' + pctTxt(tel.a, tel.l) + '</b>';
+    } else {
+      $("fbAppsPct").textContent = pctTxt(T.c, T.l) + " of leads (L→App)";
+      $("fbAdmPct").textContent = pctTxt(T.a, T.l) + " of leads (L→Adm)";
+    }
     const fullNote = "Leads registered from 1 Sep 2026 (plus older leads that paid on a 2027 form). Applications: online Payment Approved forms on 2027-session forms only. Leads with an application number starting with N are not counted. ▲▼ in the table compare each person's L→App % (or L→Adm %, chosen with the Compare switch) with their peer group (counselors: same skill and SIM/Normal; team leaders: same skill), in percentage points; coordinators: total vs the whole Division of Telephonic, and each skill line vs that skill across the division; fewer than 20 leads are not compared." +
       (fSimV ? " " + fSimV + " counselors only." : "");
     $("leadNote").innerHTML = '<span class="leadnote' + (LEADS_INFO.stale ? " stale" : "") + '" title="' + esc(fullNote) + '">ⓘ Session 2027 · N applications excluded' +
@@ -1450,12 +1485,12 @@ function render(){
   $("rosterWarn").innerHTML = d.haveRoster ? "" : '<div class="notice err"><b>The team list (TL Bifurcation) couldn\'t be read.</b><br>Scores need the team list for skills and SIM; showing claims only.</div>';
 
   // Dropdowns only offer options that exist within the other choices (with counts)
-  const d0 = cached("all", [dataStamp, $("fMonth").value, JSON.stringify(P.cur)].join("|"), () => compute(Object.assign({allPeople:true}, P.cur)));
+  const d0 = cached("all", [dataStamp, msVals("fMonth").join(","), JSON.stringify(P.cur)].join("|"), () => compute(Object.assign({allPeople:true}, P.cur)));
   const fillSel = (sel, items, keepVal) => {
-    const cur = sel.value;
-    if (cur && !items.some(it => it.v === cur)) items.push({v:cur, l:(keepVal && keepVal(cur)) || cur, n:0});
+    const cur = msVals(sel);                                       // one value, or several for multi-select filters
+    for (const c of cur) if (!items.some(it => it.v === c)) items.push({v:c, l:(keepVal && keepVal(c)) || c, n:0});
     sel.innerHTML = '<option value="">All</option>' + items.map(it => '<option value="' + esc(it.v) + '"' + (it.n ? "" : " disabled") + '>' + esc(it.l) + ' (' + fmt(it.n) + ')</option>').join("");
-    sel.value = cur;
+    if (sel.multiple) msSet(sel, cur); else sel.value = cur[0] || "";
   };
   const cSel = $("fCoord"), tSel = $("fTeam");
   const counselorsOf = (dd, fn) => [...dd.people.values()].filter(x => !x.isTL && x.active && fn(x)).length;
@@ -1472,7 +1507,7 @@ function render(){
   pSel.value = personOpts.some(p => p.uid === curP) ? curP : "";
   // Skill, Counselor type and Payment month follow the chosen coordinator / team / counselor
   const scope0 = x => !x.isTL && x.active && (!sc || x.coordKey === sc) && (!st || x.teamUid === st) && (!pSel.value || x.uid === pSel.value);
-  const simF = $("fSim").value, skillF = $("fSkill").value;
+  const simF = $("fSim").value, skillsF = msVals("fSkill"), skillIn = x => !skillsF.length || skillsF.includes(x.skill);
   const typeOk = x => !simF || (simF === "SIM") === x.sim;
   const skillCount = new Map();
   for (const x of d0.people.values()) if (scope0(x) && typeOk(x)) skillCount.set(x.skill, (skillCount.get(x.skill) || 0) + 1);
@@ -1480,10 +1515,10 @@ function render(){
   for (const o of $("fSim").options){
     if (!o.value) continue;
     if (!o.dataset.base) o.dataset.base = o.textContent;
-    const n = [...d0.people.values()].filter(x => scope0(x) && (!skillF || x.skill === skillF) && (o.value === "SIM") === x.sim).length;
+    const n = [...d0.people.values()].filter(x => scope0(x) && skillIn(x) && (o.value === "SIM") === x.sim).length;
     o.textContent = o.dataset.base + " (" + fmt(n) + ")"; o.disabled = !n && $("fSim").value !== o.value;
   }
-  const inPeople = new Set([...d0.people.values()].filter(x => scope0(x) && typeOk(x) && (!skillF || x.skill === skillF)).map(x => String(x.uid)));
+  const inPeople = new Set([...d0.people.values()].filter(x => scope0(x) && typeOk(x) && skillIn(x)).map(x => String(x.uid)));
   const monthCount = new Map();
   for (const r of ALL) if (inPeople.has(String(r.uid))) monthCount.set(r.month, (monthCount.get(r.month) || 0) + 1);
   fillSel($("fMonth"), [...monthCount.entries()].filter(([m]) => m).map(([m, n]) => ({v:m, l:m, n})).sort((a, b) => String(a.v).localeCompare(String(b.v), undefined, {numeric:true})));
@@ -1564,12 +1599,12 @@ function render(){
   const prevCoords = rankMap(AP.coords.filter(keep(L.coords, c => c.key)), c => c.key);
 
   // Filters applied after ranking, so ranks stay true
-  const q = $("q").value.trim().toLowerCase(), bandF = $("fBand").value, actF = $("fAct").value;
-  const bandOk = s => !bandF || (bandF === "none" ? (s === null || s === undefined) : band(s).key === bandF);
+  const q = $("q").value.trim().toLowerCase(), bandF = msVals("fBand"), actF = msVals("fAct");
+  const bandOk = s => !bandF.length || bandF.some(b => b === "none" ? (s === null || s === undefined) : (s !== null && s !== undefined && band(s).key === b));
   const teamIdle = t => [...d.people.values()].filter(p => !p.isTL && p.active && p.teamUid === t.uid && isIdle(p)).length;
   const coordIdle = c => [...d.people.values()].filter(p => !p.isTL && p.active && p.coordKey === c.key && isIdle(p)).length;
   const coordIdleTL = c => [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && t.coordKey === c.key && isIdle({uid: t.uid})).length;
-  const actOk = n => !actF || (actF === "idle" ? n > 0 : n === 0);
+  const actOk = n => !actF.length || actF.some(a => a === "idle" ? n > 0 : n === 0);
 
   let head = [], rows = [], toRow, sortVals = {};
   const hlBase = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
@@ -1745,6 +1780,76 @@ $("thead").addEventListener("click", e => { const th = e.target.closest("th[data
 $("thead").addEventListener("keydown", e => { const th = e.target.closest("th[data-key]"); if (th && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); sortClick(th.dataset.key); } });
 $("prevBtn").addEventListener("click", () => { pg--; render(); });
 $("nextBtn").addEventListener("click", () => { pg++; render(); });
+
+/* ================== Multi-select dropdowns ==================
+   A filter <select> becomes a checkbox list (search, Select all, Clear). The original <select> stays in the page,
+   switched to "multiple" and hidden, so the page keeps building its options and counts as before.
+   msVals(id) = chosen values ([] = All); msHas(id, v) = passes the filter; msSet(id, values) = choose. */
+const MS = {};
+function msVals(id){ const s = typeof id === "string" ? $(id) : id; return s ? [...s.options].filter(o => o.selected && o.value !== "").map(o => o.value) : []; }
+function msHas(id, v){ const a = msVals(id); return !a.length || a.includes(v); }
+function msSet(id, vals){
+  const s = typeof id === "string" ? $(id) : id; if (!s) return;
+  const want = new Set((Array.isArray(vals) ? vals : [vals]).filter(v => v !== "" && v !== null && v !== undefined));
+  for (const o of s.options) o.selected = o.value !== "" && want.has(o.value);
+  msText(s);
+}
+function msText(s){
+  const m = MS[s.id]; if (!m) return;
+  const sel = [...s.options].filter(o => o.selected && o.value !== "");
+  const clean = o => o.textContent.replace(/\s*\(\d[\d,]*\)\s*$/, "");
+  m.text.textContent = !sel.length ? (s.options[0] && s.options[0].value === "" ? s.options[0].textContent : "All") : sel.length === 1 ? clean(sel[0]) : clean(sel[0]) + " +" + (sel.length - 1);
+  m.btn.classList.toggle("on", sel.length > 0);
+  m.btn.title = sel.length > 1 ? sel.map(clean).join(", ") : "";
+  if (m.open) msList(s);
+}
+function msList(s){
+  const m = MS[s.id], q = m.search.value.trim().toLowerCase();
+  const opts = [...s.options].filter(o => o.value !== "" && (!q || o.textContent.toLowerCase().includes(q)));
+  m.list.innerHTML = opts.length ? opts.map(o => '<label class="ms-opt' + (o.disabled && !o.selected ? " dim" : "") + '"><input type="checkbox" value="' + esc(o.value) + '"' +
+    (o.selected ? " checked" : "") + (o.disabled && !o.selected ? " disabled" : "") + '><span>' + esc(o.textContent) + '</span></label>').join("") : '<div class="ms-none">No matches</div>';
+  m.search.parentNode.hidden = s.options.length <= 8;
+}
+function msFire(s){ msText(s); s.dispatchEvent(new Event("change", {bubbles: true})); }
+function msClose(except){ for (const id in MS){ const m = MS[id]; if (m.open && m !== except){ m.open = false; m.panel.hidden = true; m.btn.setAttribute("aria-expanded", "false"); } } }
+function msEnhance(id){
+  const s = $(id); if (!s || MS[id]) return;
+  const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+  s.multiple = true; s.classList.add("ms-native"); s.tabIndex = -1; s.setAttribute("aria-hidden", "true");
+  Object.defineProperty(s, "value", {configurable: true, get(){ const v = msVals(s); return v.length ? v[0] : ""; },
+    set(v){ desc.set.call(s, v); if (v === "" || v === null) for (const o of s.options) o.selected = false; msText(s); }});
+  const box = document.createElement("div"); box.className = "ms";
+  s.parentNode.insertBefore(box, s); box.appendChild(s);
+  box.insertAdjacentHTML("beforeend", '<button type="button" class="ms-btn" aria-haspopup="true" aria-expanded="false"><span class="ms-text">All</span></button>' +
+    '<div class="ms-panel" hidden><div class="ms-search"><input type="search" placeholder="Search…" aria-label="Search options"></div>' +
+    '<div class="ms-acts"><button type="button" data-ms="all">Select all</button><button type="button" data-ms="none">Clear</button></div><div class="ms-list" role="group"></div></div>');
+  const m = MS[id] = {box, btn: box.querySelector(".ms-btn"), text: box.querySelector(".ms-text"), panel: box.querySelector(".ms-panel"),
+                      list: box.querySelector(".ms-list"), search: box.querySelector(".ms-search input"), open: false};
+  const lab = s.closest("label"); if (lab){ const t = (lab.childNodes[0] && lab.childNodes[0].textContent || "").trim(); if (t) m.btn.setAttribute("aria-label", t + ": choose one or more"); }
+  m.btn.addEventListener("click", e => { e.preventDefault(); const open = !m.open; msClose(); m.open = open; m.panel.hidden = !open; m.btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open){ m.search.value = ""; msList(s); if (!m.search.parentNode.hidden) m.search.focus(); } });
+  m.search.addEventListener("input", () => msList(s));
+  m.list.addEventListener("change", e => { const c = e.target.closest("input[type=checkbox]"); if (!c) return;
+    for (const o of s.options) if (o.value === c.value) o.selected = c.checked;
+    if (s.options[0] && s.options[0].value === "") s.options[0].selected = false;
+    msFire(s); });
+  m.panel.querySelector(".ms-acts").addEventListener("click", e => { const b = e.target.closest("button[data-ms]"); if (!b) return;
+    const q = m.search.value.trim().toLowerCase();
+    for (const o of s.options){ if (o.value === "") { o.selected = false; continue; }
+      if (b.dataset.ms === "none") o.selected = false;
+      else if ((!q || o.textContent.toLowerCase().includes(q)) && !o.disabled) o.selected = true; }
+    msFire(s); });
+  new MutationObserver(() => msText(s)).observe(s, {childList: true, subtree: true, characterData: true, attributes: true});
+  for (const o of s.options) if (o.value === "") o.selected = false;
+  msText(s);
+}
+document.addEventListener("click", e => { if (!e.target.closest(".ms")) msClose(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") msClose(); });
+
+msEnhance("fSkill");
+msEnhance("fMonth");
+msEnhance("fBand");
+msEnhance("fAct");
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
