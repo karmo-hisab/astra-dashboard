@@ -757,6 +757,7 @@ td{border-color:var(--line-2)}
     <div class="frow">
       <span class="flabel"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg>When</span>
       <div class="cfilters">
+        <label class="f">Assignment date<select id="fAday"><option value="">All</option></select></label>
         <label class="f">Assigned from<input id="dFrom" type="date"></label>
         <label class="f">Assigned to<input id="dTo" type="date"></label>
       </div>
@@ -1095,7 +1096,7 @@ function prepare(data){
       form: dv("form", r), app: dv("app", r), pay: F.pay !== undefined ? r[F.pay] : 0, tlText,
       tlKey: rec ? rec.uid : (u || tlName), tlName, tlUid: rec ? rec.uid : u,
       coord: rec && rec.coord ? rec.coord : "(Not in team list)", tlSkill: rec ? (rec.skill || "") : "",
-      assigned: F.assigned !== undefined ? r[F.assigned] : 0, schol: dv("schol", r), phase: dv("phase", r) || "(No phase)",
+      assigned: F.assigned !== undefined ? r[F.assigned] : 0, aday: F.assigned !== undefined ? dayKeyOf(r[F.assigned]) : "", schol: dv("schol", r), phase: dv("phase", r) || "(No phase)",
       program: dv("program", r), pskill: dv("pskill", r) || "(No program skill)", type: dv("type", r),
       eligible: yes(dv("elig", r)), eligText: dv("elig", r), enrolled: yes(dv("enrol", r)), enrolDate: F.enrolDate !== undefined ? r[F.enrolDate] : 0,
       examSlot: String(dv("examSlot", r) || "").trim(), intDate: String(dv("intDate", r) || "").trim(), intResult: String(dv("intResult", r) || "").trim()
@@ -1134,6 +1135,9 @@ async function load(isBackground){
 }
 
 /* ---------- Filters (only relevant options, with counts) ---------- */
+/* Assignment date: "2026-11-02" for filtering and sorting, shown as "02-Nov-2026" */
+function dayKeyOf(ms){ if (!ms) return ""; const d = new Date(ms); if (isNaN(d)) return ""; return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function dayLabel(k){ if (!k) return "(No assignment date)"; const [y, m, d] = k.split("-"); return d + "-" + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][Number(m) - 1] + "-" + y; }
 const FL = [
   {id:"fCoord",  key:"coord"},
   {id:"fTeam",   key:"tlKey", label:a => a.tlName + (a.tlUid ? " (" + a.tlUid + ")" : "")},
@@ -1141,7 +1145,8 @@ const FL = [
   {id:"fPskill", key:"pskill"},
   {id:"fPhase",  key:"phase"},
   {id:"fForm",   key:"form"},
-  {id:"fAtype",  key:"type", blank:"(No type)"}
+  {id:"fAtype",  key:"type", blank:"(No type)"},
+  {id:"fAday",   key:"aday", blank:"", label:a => dayLabel(a.aday), newestFirst:true}
 ];
 const FOCUS = {hot: a => a.eligible && !a.enrolled, awaited: a => a.awaited && !a.enrolled, noelig: a => !a.eligible && !a.awaited && !a.enrolled, enrolled: a => a.enrolled,
   noslot: a => !a.examSlot && !a.enrolled, nointerview: a => a.intApplies && !a.intDate && !a.enrolled};
@@ -1167,7 +1172,9 @@ function buildFilters(f){
       opts.get(v).n++;
     }
     for (const c of cur) if (!opts.has(c)) opts.set(c, {l: c, n: 0});
-    const vals = [...opts.keys()].sort((x, y) => String(opts.get(x).l).localeCompare(String(opts.get(y).l), undefined, {numeric:true}));
+    const vals = d.newestFirst ? [...opts.keys()].sort((x, y) => (y || "0").localeCompare(x || "0"))
+      : [...opts.keys()].sort((x, y) => String(opts.get(x).l).localeCompare(String(opts.get(y).l), undefined, {numeric:true}));
+    if (d.newestFirst) for (const c of cur) if (opts.get(c) && opts.get(c).l === c) opts.get(c).l = dayLabel(c);
     sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '"' + (opts.get(v).n ? "" : " disabled") + '>' + esc(opts.get(v).l) + ' (' + fmt(opts.get(v).n) + ')</option>').join("");
     msSet(sel, cur); delete sel.dataset.pending;
   }
@@ -1346,6 +1353,7 @@ msEnhance("fPskill");
 msEnhance("fPhase");
 msEnhance("fForm");
 msEnhance("fAtype");
+msEnhance("fAday");
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
