@@ -1442,10 +1442,10 @@ function render(){
   $("cmpSeg").hidden = !LEADS;
   document.querySelectorAll("#cmpSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.cmp === CMP ? "true" : "false"));
   if (LEADS){
-    const selP = $("fPerson").value, selT = $("fTeam").value, selC = $("fCoord").value;
+    const selP = $("fPerson").value, selTs = msVals("fTeam"), selCs = msVals("fCoord"), selT = selTs.length, selC = selCs.length;
     const uids = selP ? [selP]
-      : selT ? [...d.people.values()].filter(x => (x.teamUid === selT || x.uid === selT) && funnelOk(x)).map(x => x.uid)
-      : selC ? [...d.people.values()].filter(x => x.coordKey === selC && funnelOk(x)).map(x => x.uid)
+      : selT ? [...d.people.values()].filter(x => (selTs.includes(x.teamUid) || selTs.includes(x.uid)) && (!selC || selCs.includes(x.coordKey)) && funnelOk(x)).map(x => x.uid)
+      : selC ? [...d.people.values()].filter(x => selCs.includes(x.coordKey) && funnelOk(x)).map(x => x.uid)
       : [...d.people.values()].filter(funnelOk).map(x => x.uid);
     let T = sumLeads(LT, uids), outside = null;
     const tel = T;                                                 // Telephonic only (people in TL Bifurcation)
@@ -1497,18 +1497,21 @@ function render(){
   const cSel = $("fCoord"), tSel = $("fTeam");
   const counselorsOf = (dd, fn) => [...dd.people.values()].filter(x => !x.isTL && x.active && fn(x)).length;
   fillSel(cSel, [...d.coords.values()].map(c => ({v:c.key, l:c.name, n:counselorsOf(d, x => x.coordKey === c.key)}))
-    .filter(it => it.n || it.v === cSel.value).sort((a, b) => a.l.localeCompare(b.l)), v => (d0.coords.get(v) || {}).name);
-  fillSel(tSel, [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!cSel.value || t.coordKey === cSel.value))
+    .filter(it => it.n || msVals(cSel).includes(it.v)).sort((a, b) => a.l.localeCompare(b.l)), v => (d0.coords.get(v) || {}).name);
+  const scs = msVals(cSel);
+  fillSel(tSel, [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!scs.length || scs.includes(t.coordKey)))
     .map(t => ({v:t.uid, l:t.name, n:counselorsOf(d, x => x.teamUid === t.uid)})).sort((a, b) => a.l.localeCompare(b.l)), v => (d0.teams.get(v) || {}).name);
-  const sc = cSel.value, st = tSel.value;
-  const inScope = p => (!sc || p.coordKey === sc) && (!st || p.teamUid === st);
+  const sts = msVals(tSel);
+  const sc = scs.length === 1 ? scs[0] : "", st = sts.length === 1 ? sts[0] : "";      // exactly one: highlight + peer view
+  const multiSel = scs.length > 1 || sts.length > 1;                                   // several: a plain filter
+  const inScope = p => (!scs.length || scs.includes(p.coordKey)) && (!sts.length || sts.includes(p.teamUid));
   // Counselor dropdown (within the chosen coordinator / team)
   const pSel = $("fPerson"), curP = pSel.value;
   const personOpts = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
   pSel.innerHTML = '<option value="">All</option>' + personOpts.map(p => '<option value="' + esc(p.uid) + '">' + esc(p.name) + ' (' + esc(p.uid) + ')</option>').join("");
   pSel.value = personOpts.some(p => p.uid === curP) ? curP : "";
   // Skill, Counselor type and Payment month follow the chosen coordinator / team / counselor
-  const scope0 = x => !x.isTL && x.active && (!sc || x.coordKey === sc) && (!st || x.teamUid === st) && (!pSel.value || x.uid === pSel.value);
+  const scope0 = x => !x.isTL && x.active && inScope(x) && (!pSel.value || x.uid === pSel.value);
   const simF = $("fSim").value, skillsF = msVals("fSkill"), skillIn = x => !skillsF.length || skillsF.includes(x.skill);
   const typeOk = x => !simF || (simF === "SIM") === x.sim;
   const skillCount = new Map();
@@ -1550,11 +1553,12 @@ function render(){
       (inScope(x) && (!sp || x.uid === sp))),                      // drill-down or "only this selection"
     teams: t => !t.other && d.tlSet.has(t.uid) && (
       view !== "teams" ? true :
+      multiSel ? (!scs.length || scs.includes(t.coordKey)) && (!sts.length || sts.includes(t.uid)) :   // several chosen
       peers ? skills.has(t.skill) :                                // team leader chosen: same skill
       below ? t.coordKey === sc :                                  // coordinator chosen: their own teams
       atLevel ? t.uid === st : true),                              // "only this selection" / above the selection
     coords: c => view !== "coords" ? true :
-      true
+      scs.length > 1 ? scs.includes(c.key) : true
   };
   const hl = {
     people: x => level === "person" ? x.uid === sp : level === "team" ? x.teamUid === st : level === "coord" ? x.coordKey === sc : false,
@@ -1568,7 +1572,7 @@ function render(){
   };
 
   // Overview
-  const teamsIn = [...d.teams.values()].filter(t => (!sc || t.coordKey === sc) && (!st || t.uid === st));
+  const teamsIn = [...d.teams.values()].filter(t => (!scs.length || scs.includes(t.coordKey)) && (!sts.length || sts.includes(t.uid)));
   const tot = teamsIn.reduce((s, t) => { s.claims += t.claims; s.ok += t.ok; s.bad += t.bad; s.wait += t.wait; for (const c of CATS) s.h[c] += t.h[c]; return s; }, blank());
   const peopleIn = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p));
   $("oClaims").textContent = fmt(tot.claims);
@@ -1576,7 +1580,7 @@ function render(){
   $("oHits").textContent = fmt(tot.ok);
   $("oHitsSub").textContent = "🎯 " + fmt(tot.h.app) + "   🏹 " + fmt(tot.h.adm) + "   🐍🍜 " + fmt(tot.h.post);
   $("oTeams").textContent = fmt(teamsIn.filter(t => !t.other && d.tlSet.has(t.uid)).length);
-  $("oTeamsSub").textContent = sc ? "under this coordinator" : fmt(d.coords.size) + " coordinators";
+  $("oTeamsSub").textContent = scs.length === 1 ? "under this coordinator" : scs.length > 1 ? "under " + scs.length + " coordinators" : fmt(d.coords.size) + " coordinators";
   $("oPeople").textContent = fmt(peopleIn.length);
   const idleN = peopleIn.filter(isIdle).length;
   $("oPeopleSub").textContent = fmt(peopleIn.filter(p => p.sim).length) + " with SIM, " + fmt(idleN) + " no claims in 7 days";
@@ -1848,7 +1852,8 @@ function msEnhance(id){
 document.addEventListener("click", e => { if (!e.target.closest(".ms")) msClose(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") msClose(); });
 
-msEnhance("fSkill");
+msEnhance("fCoord");
+msEnhance("fTeam");
 msEnhance("fMonth");
 msEnhance("fBand");
 msEnhance("fAct");
