@@ -1442,8 +1442,8 @@ function render(){
   $("cmpSeg").hidden = !LEADS;
   document.querySelectorAll("#cmpSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.cmp === CMP ? "true" : "false"));
   if (LEADS){
-    const selP = $("fPerson").value, selTs = msVals("fTeam"), selCs = msVals("fCoord"), selT = selTs.length, selC = selCs.length;
-    const uids = selP ? [selP]
+    const selPs = msVals("fPerson"), selP = selPs.length, selTs = msVals("fTeam"), selCs = msVals("fCoord"), selT = selTs.length, selC = selCs.length;
+    const uids = selP ? selPs.slice()
       : selT ? [...d.people.values()].filter(x => (selTs.includes(x.teamUid) || selTs.includes(x.uid)) && (!selC || selCs.includes(x.coordKey)) && funnelOk(x)).map(x => x.uid)
       : selC ? [...d.people.values()].filter(x => selCs.includes(x.coordKey) && funnelOk(x)).map(x => x.uid)
       : [...d.people.values()].filter(funnelOk).map(x => x.uid);
@@ -1506,12 +1506,13 @@ function render(){
   const multiSel = scs.length > 1 || sts.length > 1;                                   // several: a plain filter
   const inScope = p => (!scs.length || scs.includes(p.coordKey)) && (!sts.length || sts.includes(p.teamUid));
   // Counselor dropdown (within the chosen coordinator / team)
-  const pSel = $("fPerson"), curP = pSel.value;
+  const pSel = $("fPerson"), curP = msVals(pSel);
   const personOpts = [...d.people.values()].filter(p => !p.isTL && p.active && inScope(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
   pSel.innerHTML = '<option value="">All</option>' + personOpts.map(p => '<option value="' + esc(p.uid) + '">' + esc(p.name) + ' (' + esc(p.uid) + ')</option>').join("");
-  pSel.value = personOpts.some(p => p.uid === curP) ? curP : "";
+  msSet(pSel, curP.filter(u => personOpts.some(p => p.uid === u)));
+  const sps = msVals(pSel);
   // Skill, Counselor type and Payment month follow the chosen coordinator / team / counselor
-  const scope0 = x => !x.isTL && x.active && inScope(x) && (!pSel.value || x.uid === pSel.value);
+  const scope0 = x => !x.isTL && x.active && inScope(x) && (!sps.length || sps.includes(x.uid));
   const simF = $("fSim").value, skillsF = msVals("fSkill"), skillIn = x => !skillsF.length || skillsF.includes(x.skill);
   const typeOk = x => !simF || (simF === "SIM") === x.sim;
   const skillCount = new Map();
@@ -1527,7 +1528,7 @@ function render(){
   const monthCount = new Map();
   for (const r of ALL) if (inPeople.has(String(r.uid))) monthCount.set(r.month, (monthCount.get(r.month) || 0) + 1);
   fillSel($("fMonth"), [...monthCount.entries()].filter(([m]) => m).map(([m, n]) => ({v:m, l:m, n})).sort((a, b) => String(a.v).localeCompare(String(b.v), undefined, {numeric:true})));
-  const sp = pSel.value;
+  const sp = sps.length === 1 ? sps[0] : "";                         // exactly one counselor: highlight + peer view
   const P1 = sp ? d.people.get(sp) : null, T1 = st ? d.teams.get(st) : null;
 
   /* Who is being compared, and with whom.
@@ -1550,7 +1551,7 @@ function render(){
     people: x => !x.isTL && x.active && (
       view !== "people" ? true :
       peers ? x.cmp === P1.cmp :                                   // counselor chosen: their scoring group
-      (inScope(x) && (!sp || x.uid === sp))),                      // drill-down or "only this selection"
+      (inScope(x) && (!sps.length || sps.includes(x.uid)))),       // drill-down, "only this selection" or several counselors
     teams: t => !t.other && d.tlSet.has(t.uid) && (
       view !== "teams" ? true :
       multiSel ? (!scs.length || scs.includes(t.coordKey)) && (!sts.length || sts.includes(t.uid)) :   // several chosen
@@ -1764,7 +1765,7 @@ function drill(tr){
   if (!tr) return;
   if (tr.dataset.person){                                       // counselor row: compare them with their peers (click again to clear)
     const u = tr.dataset.person;
-    if ($("fPerson").value === u) $("fPerson").value = "";
+    if (msVals("fPerson").length === 1 && msVals("fPerson")[0] === u) $("fPerson").value = "";
     else { $("fCoord").value = ""; $("fTeam").value = ""; render(); $("fPerson").value = u; }
     pg = 1; jumpToHighlight = true; render(); return;
   }
@@ -1854,6 +1855,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") msClose(); }
 
 msEnhance("fCoord");
 msEnhance("fTeam");
+msEnhance("fPerson");
 msEnhance("fMonth");
 msEnhance("fBand");
 msEnhance("fAct");
