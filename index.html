@@ -234,6 +234,7 @@ html.nav-mini .sidenav span.two{display:none}
 .ms-opt.dim{opacity:.5;cursor:default}
 .ms-none{padding:10px;font-size:13px;color:var(--faint)}
 @media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
+.cdiff{display:block;margin-top:3px;font-size:11.5px;font-weight:700;color:var(--wait)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -717,7 +718,8 @@ const SHOWN = [
   {key:"claim", label:"Claim"},
   {key:"app",   label:"Application No."},
   {key:"astra", label:"Astra ID", num:true},
-  {key:"paid",  label:"Payment date & time", date:true},
+  {key:"cdate", label:"Date & time by claimant", date:true, ts:"_cdTs"},
+  {key:"paid",  label:"Actual date & time (NPF)", date:true, ts:"_paidTs"},
   {key:"drona", label:"Dronacharya"},
   {key:"final", label:"Final status"},
   {key:"fired", label:"Astra ID fired"},
@@ -883,7 +885,8 @@ async function fetchClaims(useShared){
     fired: D.fired[r[F.fired]], sarathi: D.sarathi[r[F.sarathi]], month: D.month[r[F.month]],
     rebuttal: F.rebuttal !== undefined && D.rebuttal ? String(D.rebuttal[r[F.rebuttal]] || "").trim() : "",
     s1d: F.s1date !== undefined ? r[F.s1date] || 0 : 0, s2d: F.s2date !== undefined ? r[F.s2date] || 0 : 0,
-    mode: F.mode !== undefined && D.mode ? String(D.mode[r[F.mode]] || "").trim() : ""
+    mode: F.mode !== undefined && D.mode ? String(D.mode[r[F.mode]] || "").trim() : "",
+    cdate: F.cdate !== undefined ? String(r[F.cdate] || "").trim() : "", _cdTs: F.cdateTs !== undefined ? r[F.cdateTs] || 0 : 0
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
@@ -1040,7 +1043,7 @@ function apply(resetPage = true){
   const col = SHOWN.find(c => c.key === sortKey);
   VIEW.sort((a, b) => {
     let x = a[sortKey], y = b[sortKey];
-    if (col && col.date){ x = a._paidTs; y = b._paidTs; }
+    if (col && col.date){ x = a[col.ts || "_paidTs"] || 0; y = b[col.ts || "_paidTs"] || 0; }
     else if (col && col.num){
       const nx = parseFloat(String(x).replace(/[^\d.]/g, "")), ny = parseFloat(String(y).replace(/[^\d.]/g, ""));
       if (!isNaN(nx) && !isNaN(ny)){ x = nx; y = ny; }
@@ -1169,6 +1172,12 @@ function cell(c, r){
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
                          (v ? '<span class="reason">' + esc(v) + '</span>' : "") + rebuttalTag(r);
     case "fired": return '<span class="tag ' + (isFired(v) ? "ok" : "neutral") + '">' + icon(isFired(v) ? "fired" : "notfired") + esc(firedLabel(v)) + '</span>';
+    case "cdate": {                              // claimant's date; flag it when it is a different day from NPF
+      if (!v) return '<span style="color:var(--faint)">–</span>';
+      const day = ms => ms ? new Date(ms + 330 * 60000).toISOString().slice(0, 10) : "";
+      const diff = r._cdTs && r._paidTs && day(r._cdTs) !== day(r._paidTs);
+      return esc(v) + (diff ? '<small class="cdiff" title="The date entered by the claimant is not the NPF payment date">differs from NPF</small>' : "");
+    }
     default:      return v ? esc(v) : '<span style="color:var(--faint)">–</span>';
   }
 }
