@@ -235,6 +235,35 @@ html.nav-mini .sidenav span.two{display:none}
 .ms-none{padding:10px;font-size:13px;color:var(--faint)}
 @media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
 .cdiff{display:block;margin-top:3px;font-size:11.5px;font-weight:700;color:var(--wait)}
+/* Claim register fits the screen: no sideways scrolling */
+@media (min-width: 721px){
+  #tbl, .table-panel table{min-width:0;table-layout:auto}
+  .table-panel th{white-space:normal;line-height:1.25;padding:10px 10px;vertical-align:bottom}
+  .table-panel td{padding:9px 10px;font-size:13px}
+  .table-panel .reason{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:230px}
+  .table-panel .who b{overflow-wrap:break-word}
+  .table-panel .mask{letter-spacing:0}
+}
+/* Tablet held upright: the register as cards, like on phones */
+@media (min-width: 721px) and (max-width: 900px){
+  .table-panel .tablebox{overflow:visible}
+  .table-panel table{min-width:0}
+  .table-panel thead{display:none}
+  .table-panel tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--card)}
+  .table-panel tbody tr td{display:block;border:none;padding:8px 14px;min-width:0}
+  .table-panel td::before{content:attr(data-label);display:block;margin-bottom:3px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--faint)}
+  .table-panel .reason{max-width:none}
+  .table-panel .sorthint{display:none}
+}
+@media (min-width: 901px) and (max-width: 1180px){
+  .table-panel th{padding:9px 6px;font-size:11px;letter-spacing:.02em}
+  .table-panel td{padding:8px 6px;font-size:12.5px}
+  .table-panel .reason{max-width:150px;font-size:12px}
+  .table-panel .tag{font-size:12px}
+  .table-panel .who small,.table-panel .modetag{font-size:11px}
+}
+.dt{display:inline-flex;flex-direction:column;white-space:nowrap}
+.dt small{font-size:11.5px;color:var(--muted)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1162,6 +1191,12 @@ function rebuttalTag(r){
   return '<span class="rebut ' + k + '">Rebuttal: ' + label + '</span>' +
     (k === "rej" ? '<a class="rebut-link" href="' + REBUTTAL_SHEET + '" target="_blank" rel="noopener">View remarks ↗</a>' : "");
 }
+/* "03-Nov-2026 14:24:00" -> date, with the time (no seconds) on a small second line */
+function dateTime(v){
+  const t = String(v || "").trim(); if (!t) return '<span style="color:var(--faint)">–</span>';
+  const m = t.match(/^(\S+)\s+(\d{1,2}:\d{2})(?::\d{2})?\s*(am|pm)?$/i);
+  return m ? '<span class="dt">' + esc(m[1]) + '<small>' + esc(m[2] + (m[3] ? " " + m[3] : "")) + '</small></span>' : '<span class="dt">' + esc(t) + '</span>';
+}
 function cell(c, r){
   const v = r[c.key];
   switch (c.key){
@@ -1170,13 +1205,14 @@ function cell(c, r){
                     return (t ? '<span class="tag neutral" style="font-weight:500;color:var(--ink)" title="' + esc(t.label) + '"><span class="em" aria-hidden="true">' + t.emoji + '</span>' + esc(t.astra) + '</span>' : esc(v || "–")) + modeTag(r); }
     case "app":   return '<span class="mask">' + esc(v || "–") + '</span>';
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
-                         (v ? '<span class="reason">' + esc(v) + '</span>' : "") + rebuttalTag(r);
+                         (v ? '<span class="reason" title="' + esc(v) + '">' + esc(v) + '</span>' : "") + rebuttalTag(r);
     case "fired": return '<span class="tag ' + (isFired(v) ? "ok" : "neutral") + '">' + icon(isFired(v) ? "fired" : "notfired") + esc(firedLabel(v)) + '</span>';
+    case "paid": return dateTime(v);
     case "cdate": {                              // claimant's date; flag it when it is a different day from NPF
       if (!v) return '<span style="color:var(--faint)">–</span>';
       const day = ms => ms ? new Date(ms + 330 * 60000).toISOString().slice(0, 10) : "";
       const diff = r._cdTs && r._paidTs && day(r._cdTs) !== day(r._paidTs);
-      return esc(v) + (diff ? '<small class="cdiff" title="The date entered by the claimant is not the NPF payment date">differs from NPF</small>' : "");
+      return dateTime(v) + (diff ? '<small class="cdiff" title="The date entered by the claimant is not the NPF payment date">differs from NPF</small>' : "");
     }
     default:      return v ? esc(v) : '<span style="color:var(--faint)">–</span>';
   }
