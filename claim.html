@@ -1002,7 +1002,7 @@ function showWho(){
     list.map(v => '<option value="' + esc(v) + '"' + (v === cur ? " selected" : "") + '>' + esc(v) + '</option>').join("");
   const errId = id => id === "cSar" ? "sarathi" : id === "cCoord" ? "coord" : "youAre";
   const pickBox = (id, label, list, cur, blank) => '<label class="cw-item cw-edit" for="' + id + '"><small>' + label + '</small>' +
-    '<select id="' + id + '" data-default="' + esc(cur || "") + '">' + opts(list, cur, blank) + '</select><span class="cw-hint" id="' + id + 'Hint">Not correct or not updated? Pick the right one.</span><span class="cw-changed" id="' + id + 'Note"></span><span class="cf-err" id="err-' + errId(id) + '"></span></label>';
+    '<select id="' + id + '" data-default="' + esc(cur || "") + '">' + opts(list, cur, blank) + '</select><span class="cw-hint" id="' + id + 'Hint">If not correct or not updated, pick the right one.</span><span class="cw-changed" id="' + id + 'Note"></span><span class="cf-err" id="err-' + errId(id) + '"></span></label>';
   $("whoGrid").innerHTML = item("Name", w.name) + item("Your UID", w.uid) +
     item("You are", CINFO.youAre) +
     pickBox("cSar", "Sarathi (Team Leader)", CINFO.tlOptions || [], w.isTL ? "" : w.sarathi, w.isTL ? "– (I am a team leader)" : "Choose your team leader") +
