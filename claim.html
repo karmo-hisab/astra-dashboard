@@ -1084,12 +1084,11 @@ $("claimForm").addEventListener("submit", async e => {
     $("cMsg").textContent = "Could not submit. Please check your connection and try again."; $("cMsg").className = "cf-msg bad";
   } finally { $("cSubmit").disabled = false; $("cSubmit").textContent = "Submit claim"; }
 });
-/* "Email me a copy" is remembered on this device */
-(() => { try { const v = localStorage.getItem("hk_claim_email"); if (v !== null) $("cEmail").checked = v === "1"; } catch (_) {} })();
-$("cEmail").addEventListener("change", () => { try { localStorage.setItem("hk_claim_email", $("cEmail").checked ? "1" : "0"); } catch (_) {} });
+/* "Email me a copy" always starts unticked (an old remembered choice is cleared) */
+try { localStorage.removeItem("hk_claim_email"); } catch (_) {}
+$("cEmail").checked = false;
 $("claimAgain").addEventListener("click", () => {
-  const keepEmail = $("cEmail").checked;
-  $("claimForm").reset(); cClaim = cMode = ""; $("cEmail").checked = keepEmail; pick("claimChoices", "claim", ""); pick("modeChoices", "mode", "");
+  $("claimForm").reset(); cClaim = cMode = ""; $("cEmail").checked = false; pick("claimChoices", "claim", ""); pick("modeChoices", "mode", "");
   $("proofBox").classList.remove("has"); $("proofName").textContent = "Choose a file"; clearErrors();
   showWho();                                                          // back to the TL Bifurcation team leader and coordinator
   $("claimDone").hidden = true; $("claimForm").hidden = false; $("cApp").focus();
