@@ -353,6 +353,8 @@ tbody tr.hl td b{color:var(--ink)}
 .ms-opt.dim{opacity:.5;cursor:default}
 .ms-none{padding:10px;font-size:13px;color:var(--faint)}
 @media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
+.scopenote{margin:-4px 0 12px;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.scopenote b{color:var(--ink);font-weight:600}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -764,6 +766,7 @@ td{border-color:var(--line-2)}
     </div>
     <span class="resultbar" id="viewCount"></span>
   </div>
+  <p class="scopenote" id="scopeNote"></p>
   <div class="modebar" id="modeBar" hidden>
     <span>Show:</span>
     <button type="button" data-mode="peers" aria-pressed="true">Compare with peers</button>
@@ -1684,6 +1687,20 @@ function render(){
   const noun = view === "people" ? "counselor" : view === "teams" ? "team" : "coordinator";
   const nHl = level ? rows.filter(hlFn).length : 0;
   $("viewCount").textContent = fmt(rows.length) + " " + noun + (rows.length === 1 ? "" : "s") + (nHl ? ", " + fmt(nHl) + " highlighted" : "");
+  // What is counted, and which filters are on (so numbers can be checked against other pages)
+  {
+    const txt = id => { const el = $(id); if (!el) return []; return [...el.options].filter(o => o.selected && o.value !== "").map(o => o.textContent.replace(/\s*\(\d[\d,]*\)\s*$/, "")); };
+    const on = [["fCoord","Coordinator"],["fTeam","Team leader"],["fPerson","Counselor"],["fSkill","Skill"],["fSim","Type"],["fMonth","Payment month"],["fBand","Band"],["fAct","Activity"]]
+      .map(([id, n]) => { const v = txt(id); return v.length ? n + ": " + v.join(", ") : ""; }).filter(Boolean);
+    const per = $("fPeriod").value;
+    on.unshift("Period: " + (per === "custom" ? ($("pFrom").value || "…") + " to " + ($("pTo").value || "…") : $("fPeriod").options[$("fPeriod").selectedIndex].textContent));
+    if ($("q").value.trim()) on.push('Search: "' + $("q").value.trim() + '"');
+    const what = view === "people" ? "Counselors = active people in TL Bifurcation (team leaders not included). Hits = approved claims in the period."
+      : view === "teams" ? "Teams = team leaders in TL Bifurcation. Team hits = approved claims credited to the Sarathi written in each claim."
+      : "Coordinators = from TL Bifurcation. Hits = approved claims credited to the Dronacharya written in each claim.";
+    $("scopeNote").innerHTML = '<b>Filters:</b> ' + esc(on.join(" · ")) + '<br><b>Counted:</b> ' + esc(what) +
+      (LEADS ? " Leads = session 2027 (from 1 Sep 2026), current lead owner, N applications excluded." : "");
+  }
 
   // Mode switch and comparison box
   $("modeBar").hidden = !atLevel || level === "coord";
