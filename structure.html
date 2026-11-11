@@ -411,6 +411,7 @@ tbody tr.hl td b{color:var(--ink)}
 .ms-opt.dim{opacity:.5;cursor:default}
 .ms-none{padding:10px;font-size:13px;color:var(--faint)}
 @media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
+.cmem{color:var(--ink)} .cmemx{color:var(--faint)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1438,7 +1439,10 @@ function render(){
       '<span class="skchip">' + esc(k) + ' <b>' + n + '</b></span>').join("") + (mism ? '<span class="mini diff">' + mism + ' different skill</span>' : '') + '</span>';
     const head = '<button type="button" class="chead n' + (hit(c.name) ? " match" : "") + '" data-coord="' + esc(c.key) + '" aria-expanded="' + open + '">' +
       '<svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
-      '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">Coordinator, ' + fmt(cols.filter(x => x.t).length) + ' teams, ' + fmt(cols.reduce((n, x) => n + x.members.length, 0)) + ' counselors</span>' + skillsLine + '</span>' +
+      '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">' + (() => {                              // total head-count: team leaders + counselors
+        const nT = cols.filter(x => x.t).length, nC = cols.reduce((n, x) => n + x.members.length, 0), pl = (n, w) => fmt(n) + " " + w + (n === 1 ? "" : "s");
+        return 'Coordinator · ' + pl(nT, "team") + ' · <b class="cmem">' + pl(nT + nC, "member") + '</b> <span class="cmemx">(' + pl(nT, "team leader") + ' + ' + pl(nC, "counselor") + ')</span>';
+      })() + '</span>' + skillsLine + '</span>' +
       '<span class="cstats">' +
       '<span class="stat-i hitsbox"><span><b>' + fmt(c.ok) + '</b> hits</span><small class="hb">' +
         '<span title="Arrow (LPUNEST Application)">🎯 App <b>' + fmt(c.h.app) + '</b></span>' +
