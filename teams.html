@@ -862,12 +862,20 @@ function statusClass(v){
 const RES_LABEL = {ok:"Hit", bad:"Miss", wait:"Pending"};
 const RES_ICON = {ok:"hit", bad:"miss", wait:"pending"};
 const icon = (name, cls) => '<svg class="ic' + (cls ? " " + cls : "") + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
-/* Astra ID fired: "Used" = fired; "Unused" / "Astra not fired till now" = not fired */
-function isFired(v){ return (v || "").trim().toLowerCase() === "used"; }
+/* Astra ID fired: "Used" / "Fired" / "Destroyed" = fired and used; "Unused" = fired but not used; "Astra not fired till now" = not fired */
+function isFired(v){                                 // fired = Used / Fired / Destroyed, or Unused (fired but not used)
+  return firedKind(v) !== "";
+}
+function firedKind(v){                               // "used" (fired and used), "unused" (fired, not used) or "" (not fired)
+  const s = (v || "").trim().toLowerCase();
+  if (!s || /not\s*fired/.test(s)) return "";
+  if (/unused/.test(s)) return "unused";
+  return /\bused\b|fired|destroy/.test(s) ? "used" : "";
+}
 function firedLabel(v){
   const s = (v || "").trim().toLowerCase();
-  if (s === "used") return "Used";
-  if (s === "unused") return "Unused";
+  if (firedKind(v) === "unused") return "Unused";
+  if (isFired(v)) return v.trim();                  // the sheet's own word, e.g. "Used" or "Destroyed 🎯"
   return v ? "Not fired yet" : "–";
 }
 

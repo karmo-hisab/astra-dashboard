@@ -638,7 +638,7 @@ td{border-color:var(--line-2)}
     <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Hit</h2><div class="big" id="sHit">–</div><div class="sub" id="sHitSub">&nbsp;</div></div>
     <div class="stat bad"><h2><svg class="ic" aria-hidden="true"><use href="#i-miss"/></svg>Miss</h2><div class="big" id="sMiss">–</div><div class="sub" id="sMissSub">&nbsp;</div></div>
     <div class="stat wait"><h2><svg class="ic" aria-hidden="true"><use href="#i-pending"/></svg>Pending</h2><div class="big" id="sPend">–</div><div class="sub" id="sPendSub">&nbsp;</div></div>
-    <div class="stat fire"><h2><svg class="ic" aria-hidden="true"><use href="#i-fired"/></svg>Astra ID fired (Used)</h2><div class="big" id="sFired">–</div><div class="sub" id="sFiredSub">&nbsp;</div></div>
+    <div class="stat fire"><h2><svg class="ic" aria-hidden="true"><use href="#i-fired"/></svg>Astra ID fired</h2><div class="big" id="sFired">–</div><div class="sub" id="sFiredSub">&nbsp;</div></div>
   </section>
 
   <div class="vhead">
@@ -792,12 +792,20 @@ function statusClass(v){
 const RES_LABEL = {ok:"Hit", bad:"Miss", wait:"Pending"};
 const RES_ICON = {ok:"hit", bad:"miss", wait:"pending"};
 const icon = (name, cls) => '<svg class="ic' + (cls ? " " + cls : "") + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
-/* Astra ID fired: "Used" = fired; "Unused" / "Astra not fired till now" = not fired */
-function isFired(v){ return (v || "").trim().toLowerCase() === "used"; }
+/* Astra ID fired: "Used" / "Fired" / "Destroyed" = fired and used; "Unused" = fired but not used; "Astra not fired till now" = not fired */
+function isFired(v){                                 // fired = Used / Fired / Destroyed, or Unused (fired but not used)
+  return firedKind(v) !== "";
+}
+function firedKind(v){                               // "used" (fired and used), "unused" (fired, not used) or "" (not fired)
+  const s = (v || "").trim().toLowerCase();
+  if (!s || /not\s*fired/.test(s)) return "";
+  if (/unused/.test(s)) return "unused";
+  return /\bused\b|fired|destroy/.test(s) ? "used" : "";
+}
 function firedLabel(v){
   const s = (v || "").trim().toLowerCase();
-  if (s === "used") return "Used";
-  if (s === "unused") return "Unused";
+  if (firedKind(v) === "unused") return "Unused";
+  if (isFired(v)) return v.trim();                  // the sheet's own word, e.g. "Used" or "Destroyed 🎯"
   return v ? "Not fired yet" : "–";
 }
 
@@ -1120,10 +1128,10 @@ function apply(resetPage = true){
   if (resetPage) page = 1;
 
   // Summary
-  let hit = 0, miss = 0, fired = 0, firedHit = 0;
+  let hit = 0, miss = 0, fired = 0, firedHit = 0, firedUnused = 0;
   for (const r of VIEW){
     if (r._res === "ok") hit++; else if (r._res === "bad") miss++;
-    if (isFired(r.fired)){ fired++; if (r._res === "ok") firedHit++; }
+    if (isFired(r.fired)){ fired++; if (r._res === "ok") firedHit++; if (firedKind(r.fired) === "unused") firedUnused++; }
   }
   const pend = VIEW.length - hit - miss, decided = hit + miss;
   $("sTotal").textContent = fmt(VIEW.length);
@@ -1131,7 +1139,7 @@ function apply(resetPage = true){
   $("sMiss").textContent = fmt(miss); $("sMissSub").textContent = pct(miss, decided) + " of decided";
   $("sPend").textContent = fmt(pend); $("sPendSub").textContent = pct(pend, VIEW.length) + " of all claims";
   $("sFired").textContent = fmt(fired);
-  $("sFiredSub").textContent = pct(firedHit, hit) + " of hits fired" + (fired > firedHit ? ", " + fmt(fired - firedHit) + " not Hit" : "");
+  $("sFiredSub").textContent = fmt(fired - firedUnused) + " used, " + fmt(firedUnused) + " unused · " + pct(firedHit, hit) + " of hits fired" + (fired > firedHit ? ", " + fmt(fired - firedHit) + " not Hit" : "");
   const w = n => VIEW.length ? (n * 100 / VIEW.length) + "%" : "0";
   $("sMix").innerHTML = '<span class="ok" style="width:' + w(hit) + '"></span><span class="bad" style="width:' + w(miss) +
                         '"></span><span class="wait" style="width:' + w(pend) + '"></span>';
@@ -1242,7 +1250,8 @@ function cell(c, r){
     case "app":   return '<span class="mask">' + esc(v || "–") + '</span>';
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
                          (v ? '<span class="reason" title="' + esc(v) + '">' + esc(v) + '</span>' : "") + rebuttalTag(r);
-    case "fired": return '<span class="tag ' + (isFired(v) ? "ok" : "neutral") + '">' + icon(isFired(v) ? "fired" : "notfired") + esc(firedLabel(v)) + '</span>';
+    case "fired": { const k = firedKind(v);
+                    return '<span class="tag ' + (k === "used" ? "ok" : k === "unused" ? "wait" : "neutral") + '">' + icon(k ? "fired" : "notfired") + esc(firedLabel(v)) + '</span>'; }
     case "paid": return dateTime(v);
     case "cdate": {                              // claimant's date; flag it when it is a different day from NPF
       if (!v) return '<span style="color:var(--faint)">–</span>';
