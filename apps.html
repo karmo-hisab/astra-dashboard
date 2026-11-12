@@ -365,6 +365,31 @@ tbody tr.st3 td:first-child{border-left-color:var(--ok)}
 .ms-opt.dim{opacity:.5;cursor:default}
 .ms-none{padding:10px;font-size:13px;color:var(--faint)}
 @media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
+.viewright{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.csvbtn{min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.csvbtn:hover{border-color:var(--accent);color:var(--accent)}
+@media (min-width: 721px){
+  .table-panel table{min-width:0;table-layout:auto}
+  .table-panel th{white-space:normal;line-height:1.25;padding:10px 8px;vertical-align:bottom}
+  .table-panel td{padding:9px 8px;font-size:13px}
+  .table-panel .pg{overflow-wrap:break-word}
+}
+/* smaller laptops and tablets: each application as a card, like on phones */
+@media (min-width: 721px) and (max-width: 1060px){
+  .table-panel .tablebox{overflow:visible}
+  .table-panel table{min-width:0}
+  .table-panel thead{display:none}
+  .table-panel tbody tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--card)}
+  .table-panel tbody tr td{display:block;border:none;padding:8px 12px;min-width:0}
+  .table-panel td::before{content:attr(data-label);display:block;margin-bottom:3px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--faint)}
+  .table-panel .sorthint{display:none}
+}
+@media (min-width: 1061px) and (max-width: 1250px){
+  .table-panel th{padding:9px 5px;font-size:11px;letter-spacing:.02em}
+  .table-panel td{padding:8px 5px;font-size:12.5px}
+  .table-panel .tagx{font-size:11.5px;padding:2px 6px}
+  .table-panel .who small,.table-panel .subl{font-size:11px}
+}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -769,7 +794,8 @@ td{border-color:var(--line-2)}
       <button type="button" role="tab" data-view="summary" aria-selected="true">Summary</button>
       <button type="button" role="tab" data-view="list" aria-selected="false">Follow-up list</button>
     </div>
-    <span class="resultbar" id="viewCount"></span>
+    <span class="viewright"><span class="resultbar" id="viewCount"></span>
+      <button type="button" class="csvbtn" id="csvBtn" hidden title="Download the applications shown (all filters applied) as a CSV file">⬇ Download CSV</button></span>
   </div>
   <div class="viewopts" id="summaryOnly">
     <label class="f inline">Group by
@@ -1222,7 +1248,7 @@ function render(){
     const q = $("q").value.trim().toLowerCase(), fo = FOCUS[$("fFocus").value];
     rows = base.filter(a => (!q || a._search.includes(q)) && (!fo || fo(a)));
     head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["assigned", "Assigned on"], ["phase", "Phase"], ["slot", "Exam slot"], ["intv", "Interview"], ["schol", "Result"], ["stage", "Status"]];
-    const get = {app:a => a.app, program:a => a.program, tl:a => a.tlName, pay:a => a.pay || 0, assigned:a => a.assigned || 0, phase:a => a.phase,
+    const get = {app:a => a.app, program:a => a.program, tl:a => a.tlName, coord:a => a.coord || "", pay:a => a.pay || 0, assigned:a => a.assigned || 0, phase:a => a.phase,
       slot:a => a.examSlot ? 1 : 0, intv:a => !a.intApplies ? -1 : a.intDate ? 1 : 0, schol:a => a.awaited ? "" : a.schol, stage:a => a.stage};
     if (S.key) rows.sort((x, y) => { const p = get[S.key](x), q2 = get[S.key](y); return (typeof p === "number" ? p - q2 : String(p).localeCompare(String(q2), undefined, {numeric:true})) * S.dir; });
     else rows.sort((x, y) => x.stage - y.stage || (x.assigned || 0) - (y.assigned || 0));   // eligible first, oldest first
@@ -1240,7 +1266,9 @@ function render(){
       td("Result", a.awaited ? '<span class="tagx wait">Awaited</span>' : esc(a.schol)) +
       td("Status", stageTag(a) + (a.enrolled && a.enrolDate ? '<small class="subl">' + dateTxt(a.enrolDate) + '</small>' : "")) + '</tr>';
     $("viewCount").textContent = fmt(rows.length) + " application" + (rows.length === 1 ? "" : "s");
+    LIST_ROWS = rows;
   }
+  $("csvBtn").hidden = view !== "list";
   const size = pageSize(), pages = Math.max(1, Math.ceil(rows.length / size));
   pg = Math.min(Math.max(1, pg), pages);
   const start = (pg - 1) * size, items = rows.slice(start, start + size);
@@ -1251,6 +1279,28 @@ function render(){
   const nActive = [...FL.map(d => d.id), "dFrom", "dTo"].filter(id => $(id).value).length + (view === "list" ? ["q", "fFocus"].filter(id => $(id).value.trim()).length : 0);
   $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
 }
+
+/* ---------- Download the follow-up list as CSV (exactly the applications shown, all pages) ---------- */
+let LIST_ROWS = [];
+function csvDownload(){
+  const plain = h => String(h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const day = ms => ms ? dateTxt(ms).replace(/<[^>]+>/g, "").trim() : "";
+  const cols = [
+    ["Application", a => a.app], ["Form", a => a.form], ["Program", a => a.program], ["Program skill", a => a.pskill], ["Type", a => a.type],
+    ["Team leader", a => a.tlName], ["Coordinator", a => a.coord], ["TL skill", a => a.tlSkill],
+    ["Assigned on", a => day(a.assigned)], ["Days since assigned", a => a.assigned ? Math.max(0, Math.floor((Date.now() - a.assigned) / DAYMS)) : ""],
+    ["Phase", a => a.phase], ["Exam slot", a => a.examSlot || "Slot booking pending"],
+    ["Interview", a => !a.intApplies ? "Not applicable" : (a.intDate || "Slot booking pending")],
+    ["Interview result", a => a.intResult ? (a.intPass ? "Passed" : "Not passed") : ""],
+    ["Result", a => a.awaited ? "Awaited" : a.schol], ["Status", a => plain(stageTag(a))], ["Enrolled on", a => a.enrolled && a.enrolDate ? day(a.enrolDate) : ""]
+  ];
+  const q = v => { const t = String(v == null ? "" : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const csv = "\ufeff" + [cols.map(c => q(c[0])).join(",")].concat(LIST_ROWS.map(a => cols.map(c => q(c[1](a))).join(","))).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8"}));
+  const link = document.createElement("a"); link.href = url; link.download = "follow-up-list_" + new Date().toISOString().slice(0, 10) + ".csv";
+  document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+$("csvBtn").addEventListener("click", csvDownload);
 
 /* ---------- Events ---------- */
 [...FL.map(d => d.id), "dFrom", "dTo", "fFocus"].forEach(id => $(id).addEventListener("change", () => {
