@@ -390,6 +390,8 @@ tbody tr.st3 td:first-child{border-left-color:var(--ok)}
   .table-panel .tagx{font-size:11.5px;padding:2px 6px}
   .table-panel .who small,.table-panel .subl{font-size:11px}
 }
+.accnote{margin:0 0 12px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font-size:13px;color:var(--muted)}
+.accnote b{color:var(--ink)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -746,6 +748,7 @@ td{border-color:var(--line-2)}
 <div class="wrap">
   <div id="installHelp" class="panel help" hidden></div>
   <div id="notice"></div>
+  <div id="accessNote"></div>
   <div id="myNote"></div>
 
   <section class="stats stats6" aria-label="Summary for the current filters">
@@ -1067,7 +1070,7 @@ function assignTeams(rows){
 /* Applications assigned to team leaders (from the assignment sheet), with
    Summary: application-to-admission % by coordinator / team leader / skill / phase / form, and
    Follow-up list: each team leader's applications to plan follow-ups. */
-let APPS = [], ROSTER = [], myUid = "", myApplied = false;
+let APPS = [], ROSTER = [], myUid = "", myApplied = false, ACCESS = null;
 let view = "summary", groupBy = "coord", pg = 1;
 const sortS = {key: "", dir: -1}, sortL = {key: "", dir: 1};
 const DAYMS = 864e5;
@@ -1094,18 +1097,18 @@ async function fetchApps(useShared){
   if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
   staleApps = false;
   const sh = useShared ? sharedApps() : null;
-  let gz = sh ? sh.gz : null, me = sh ? sh.me || "" : "";
+  let gz = sh ? sh.gz : null, me = sh ? sh.me || "" : "", access = sh ? sh.access || null : null;
   if (!gz){
     const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, what: "apps", fresh: forceFresh})});
     forceFresh = false;
     if (!res.ok) throw new Error("service error (" + res.status + ")");
     const j = await res.json();
     if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
-    gz = j.gz; me = j.me || "";                                     // me = signed-in person's UID, matched on the server
-    try{ sessionStorage.setItem("hk_apps", JSON.stringify({at: Date.now(), gz, me})); }catch(_){}
+    gz = j.gz; me = j.me || ""; access = j.access || null;          // me = signed-in person's UID; access = what they may see
+    try{ sessionStorage.setItem("hk_apps", JSON.stringify({at: Date.now(), gz, me, access})); }catch(_){}
   }
   const data = JSON.parse(await gunzipBase64(gz));
-  data.me = me;
+  data.me = me; ACCESS = access;
   return data;
 }
 function prepare(data){
@@ -1221,6 +1224,8 @@ function render(){
   $("kAssigned").textContent = fmt(n); $("kDeclared").textContent = fmt(n - aw); $("kDeclaredSub").textContent = pctTxt(pctA(n - aw, n)) + " of assigned";
   $("kEligible").textContent = fmt(el); $("kEligibleSub").textContent = pctTxt(pctA(el, n)) + " of assigned";
   $("kEnrolled").textContent = fmt(en); $("kAdm").textContent = pctTxt(overall); $("kConv").textContent = pctTxt(pctA(en, el));
+  $("accessNote").innerHTML = ACCESS && ACCESS.masked ?
+    '<div class="accnote">🔒 Signed in as <b>' + esc(ACCESS.role) + '</b>. ' + (ACCESS.teams ? "Application numbers outside your team" + (ACCESS.teams > 1 ? "s" : "") + " are hidden (*****)." : "Application numbers are hidden (*****).") + ' Counts and other details are shown for everyone.</div>' : "";
   $("myNote").innerHTML = myUid && msVals("fTeam").length === 1 && msVals("fTeam")[0] === myUid ? '<div class="zero">Showing <b>your</b> assigned applications. Choose <b>All</b> in Team leader to see everyone.</div>' : "";
   document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view ? "true" : "false"));
   $("summaryOnly").hidden = view !== "summary"; $("listOnly").hidden = view !== "list";
