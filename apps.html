@@ -392,6 +392,12 @@ tbody tr.st3 td:first-child{border-left-color:var(--ok)}
 }
 .accnote{margin:0 0 12px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font-size:13px;color:var(--muted)}
 .accnote b{color:var(--ink)}
+.pvbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border:1px dashed var(--line);border-radius:10px;font-size:13px;color:var(--muted)}
+.pvbar input{height:34px;min-width:220px;flex:1 1 220px;max-width:340px}
+.pvbar button{min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer}
+.pvbar.on{border-style:solid;border-color:var(--accent);background:color-mix(in srgb, var(--accent) 7%, var(--card));color:var(--ink)}
+.pvbar.on button{border-color:var(--accent);color:var(--accent)}
+.pverr{color:var(--bad);font-weight:600}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -748,6 +754,7 @@ td{border-color:var(--line-2)}
 <div class="wrap">
   <div id="installHelp" class="panel help" hidden></div>
   <div id="notice"></div>
+  <div id="previewBar"></div>
   <div id="accessNote"></div>
   <div id="myNote"></div>
 
@@ -1083,6 +1090,23 @@ const pctA = (a, b) => b ? Math.round(a * 1000 / b) / 10 : null;
 const pctTxt = v => v === null ? "–" : v + "%";
 
 /* ---------- Data ---------- */
+/* Admin "Preview as": the data service sends the page as that person would get it (checked on the server) */
+function previewEmail(){ try { return sessionStorage.getItem("hk_preview") || ""; } catch (_) { return ""; } }
+function restartAs(email){
+  try { if (email) sessionStorage.setItem("hk_preview", email); else sessionStorage.removeItem("hk_preview"); } catch (_) {}
+  FL.forEach(d => { $(d.id).value = ""; delete $(d.id).dataset.pending; }); $("dFrom").value = $("dTo").value = "";
+  APPS = []; myApplied = false; myUid = ""; view = "summary"; load(false);
+}
+document.addEventListener("click", e => {
+  if (e.target.id === "pvStop") restartAs("");
+  if (e.target.id === "pvGo"){
+    const v = $("pvEmail").value.trim().toLowerCase();
+    if (!/^[^@\s]+@lpu\.co\.in$/.test(v)){ $("pvErr").textContent = "Enter an @lpu.co.in email"; return; }
+    restartAs(v);
+  }
+});
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "pvEmail"){ e.preventDefault(); $("pvGo").click(); } });
+
 /* Saved copy shown instantly for up to 30 minutes; refreshed quietly once older than 5 minutes */
 let staleApps = false;
 function sharedApps(){
@@ -1096,16 +1120,17 @@ function sharedApps(){
 async function fetchApps(useShared){
   if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
   staleApps = false;
-  const sh = useShared ? sharedApps() : null;
+  const viewAs = previewEmail();
+  const sh = useShared && !viewAs ? sharedApps() : null;
   let gz = sh ? sh.gz : null, me = sh ? sh.me || "" : "", access = sh ? sh.access || null : null;
   if (!gz){
-    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, what: "apps", fresh: forceFresh})});
+    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, what: "apps", fresh: forceFresh, viewAs: viewAs || undefined})});
     forceFresh = false;
     if (!res.ok) throw new Error("service error (" + res.status + ")");
     const j = await res.json();
     if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
     gz = j.gz; me = j.me || ""; access = j.access || null;          // me = signed-in person's UID; access = what they may see
-    try{ sessionStorage.setItem("hk_apps", JSON.stringify({at: Date.now(), gz, me, access})); }catch(_){}
+    if (!viewAs) try{ sessionStorage.setItem("hk_apps", JSON.stringify({at: Date.now(), gz, me, access})); }catch(_){}
   }
   const data = JSON.parse(await gunzipBase64(gz));
   data.me = me; ACCESS = access;
@@ -1224,6 +1249,10 @@ function render(){
   $("kAssigned").textContent = fmt(n); $("kDeclared").textContent = fmt(n - aw); $("kDeclaredSub").textContent = pctTxt(pctA(n - aw, n)) + " of assigned";
   $("kEligible").textContent = fmt(el); $("kEligibleSub").textContent = pctTxt(pctA(el, n)) + " of assigned";
   $("kEnrolled").textContent = fmt(en); $("kAdm").textContent = pctTxt(overall); $("kConv").textContent = pctTxt(pctA(en, el));
+  const pv = ACCESS && ACCESS.preview;
+  $("previewBar").innerHTML = pv
+    ? '<div class="pvbar on">👁 <span>Previewing as <b>' + esc(pv) + '</b> (' + esc(ACCESS.role) + '). This is exactly what they see, including the CSV.</span><button type="button" id="pvStop">Stop preview</button></div>'
+    : (ACCESS && ACCESS.role === "Admin" ? '<div class="pvbar"><span><b>Admin:</b> preview as</span><input id="pvEmail" type="email" placeholder="someone@lpu.co.in" autocomplete="off"><button type="button" id="pvGo">Preview</button><span class="pverr" id="pvErr"></span></div>' : "");
   $("accessNote").innerHTML = ACCESS && ACCESS.masked ?
     '<div class="accnote">🔒 Signed in as <b>' + esc(ACCESS.role) + '</b>. ' + (ACCESS.teams ? "Application numbers outside your team" + (ACCESS.teams > 1 ? "s" : "") + " are hidden (*****)." : "Application numbers are hidden (*****).") + ' Counts and other details are shown for everyone.</div>' : "";
   $("myNote").innerHTML = myUid && msVals("fTeam").length === 1 && msVals("fTeam")[0] === myUid ? '<div class="zero">Showing <b>your</b> assigned applications. Choose <b>All</b> in Team leader to see everyone.</div>' : "";
