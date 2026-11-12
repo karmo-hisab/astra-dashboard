@@ -777,6 +777,7 @@ td{border-color:var(--line-2)}
         <label class="f">Phase<select id="fPhase"></select></label>
         <label class="f">Form name<select id="fForm"></select></label>
         <label class="f">Type<select id="fAtype"></select></label>
+        <label class="f">Enrolment status<select id="fEnrol"></select></label>
       </div>
     </div>
     <div class="frow">
@@ -1133,6 +1134,7 @@ function prepare(data){
     a.awaited = /^(|na|n\/a|n\.a\.?|-+|not available|null|none)$/i.test(String(a.schol || "").trim());
     a.mismatch = !!(a.tlSkill && a.pskill && normS(a.tlSkill) !== normS(a.pskill));
     a.stage = a.enrolled ? 3 : a.eligible ? 0 : a.awaited ? 1 : 2;        // follow-up priority: eligible first
+    a.enrolStat = a.enrolled ? "Enrolled" : "Not enrolled";
     a._search = (a.app + " " + a.program).toLowerCase();
     return a;
   });
@@ -1172,6 +1174,7 @@ const FL = [
   {id:"fPhase",  key:"phase"},
   {id:"fForm",   key:"form"},
   {id:"fAtype",  key:"type", blank:"(No type)"},
+  {id:"fEnrol",  key:"enrolStat", blank:"Not enrolled"},
   {id:"fAday",   key:"aday", blank:"", label:a => dayLabel(a.aday), newestFirst:true}
 ];
 const FOCUS = {hot: a => a.eligible && !a.enrolled, awaited: a => a.awaited && !a.enrolled, noelig: a => !a.eligible && !a.awaited && !a.enrolled, enrolled: a => a.enrolled,
@@ -1247,9 +1250,9 @@ function render(){
   } else {
     const q = $("q").value.trim().toLowerCase(), fo = FOCUS[$("fFocus").value];
     rows = base.filter(a => (!q || a._search.includes(q)) && (!fo || fo(a)));
-    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["assigned", "Assigned on"], ["phase", "Phase"], ["slot", "Exam slot"], ["intv", "Interview"], ["schol", "Result"], ["stage", "Status"]];
+    head = [["app", "Application"], ["program", "Program"], ["tl", "Team leader"], ["assigned", "Assigned on"], ["phase", "Phase"], ["slot", "Exam slot"], ["intv", "Interview"], ["schol", "Result"], ["stage", "Status"], ["enrol", "Enrolment date"]];
     const get = {app:a => a.app, program:a => a.program, tl:a => a.tlName, coord:a => a.coord || "", pay:a => a.pay || 0, assigned:a => a.assigned || 0, phase:a => a.phase,
-      slot:a => a.examSlot ? 1 : 0, intv:a => !a.intApplies ? -1 : a.intDate ? 1 : 0, schol:a => a.awaited ? "" : a.schol, stage:a => a.stage};
+      enrol:a => a.enrolled ? (a.enrolDate || 1) : 0, slot:a => a.examSlot ? 1 : 0, intv:a => !a.intApplies ? -1 : a.intDate ? 1 : 0, schol:a => a.awaited ? "" : a.schol, stage:a => a.stage};
     if (S.key) rows.sort((x, y) => { const p = get[S.key](x), q2 = get[S.key](y); return (typeof p === "number" ? p - q2 : String(p).localeCompare(String(q2), undefined, {numeric:true})) * S.dir; });
     else rows.sort((x, y) => x.stage - y.stage || (x.assigned || 0) - (y.assigned || 0));   // eligible first, oldest first
     const now = Date.now();
@@ -1264,7 +1267,8 @@ function render(){
         : (a.intDate ? '<span class="okdate">' + esc(a.intDate) + '</span>' : '<span class="tagx wait">Slot booking pending</span>') +
           (a.intResult ? '<small class="subl ' + (a.intPass ? "pass" : "fail") + '">' + (a.intPass ? "Passed" : "Not passed") + '</small>' : "")) +
       td("Result", a.awaited ? '<span class="tagx wait">Awaited</span>' : esc(a.schol)) +
-      td("Status", stageTag(a) + (a.enrolled && a.enrolDate ? '<small class="subl">' + dateTxt(a.enrolDate) + '</small>' : "")) + '</tr>';
+      td("Status", stageTag(a)) +
+      td("Enrolment date", a.enrolled ? (a.enrolDate ? dateTxt(a.enrolDate) : '<span class="na">Date not available</span>') : '<span class="na">–</span>') + '</tr>';
     $("viewCount").textContent = fmt(rows.length) + " application" + (rows.length === 1 ? "" : "s");
     LIST_ROWS = rows;
   }
@@ -1287,12 +1291,12 @@ function csvDownload(){
   const day = ms => ms ? dateTxt(ms).replace(/<[^>]+>/g, "").trim() : "";
   const cols = [
     ["Application", a => a.app], ["Form", a => a.form], ["Program", a => a.program], ["Program skill", a => a.pskill], ["Type", a => a.type],
-    ["Team leader", a => a.tlName], ["Coordinator", a => a.coord], ["TL skill", a => a.tlSkill],
-    ["Assigned on", a => day(a.assigned)], ["Days since assigned", a => a.assigned ? Math.max(0, Math.floor((Date.now() - a.assigned) / DAYMS)) : ""],
+    ["Team leader", a => a.tlName], ["TL UID", a => a.tlUid || ""], ["Coordinator", a => a.coord], ["TL skill", a => a.tlSkill],
+    ["Assigned on", a => day(a.assigned)],
     ["Phase", a => a.phase], ["Exam slot", a => a.examSlot || "Slot booking pending"],
     ["Interview", a => !a.intApplies ? "Not applicable" : (a.intDate || "Slot booking pending")],
     ["Interview result", a => a.intResult ? (a.intPass ? "Passed" : "Not passed") : ""],
-    ["Result", a => a.awaited ? "Awaited" : a.schol], ["Status", a => plain(stageTag(a))], ["Enrolled on", a => a.enrolled && a.enrolDate ? day(a.enrolDate) : ""]
+    ["Result", a => a.awaited ? "Awaited" : a.schol], ["Status", a => plain(stageTag(a))], ["Enrolment status", a => a.enrolStat], ["Enrolment date", a => a.enrolled && a.enrolDate ? day(a.enrolDate) : ""]
   ];
   const q = v => { const t = String(v == null ? "" : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
   const csv = "\ufeff" + [cols.map(c => q(c[0])).join(",")].concat(LIST_ROWS.map(a => cols.map(c => q(c[1](a))).join(","))).join("\r\n");
