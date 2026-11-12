@@ -954,11 +954,18 @@ const SHARE_MS = 5 * 60000, KEEP_MS = 30 * 60000;
 let staleCopy = false;
 let forceFresh = false;                       // set by the Refresh button: ask the data service to rebuild from the sheets
 document.addEventListener("click", e => { if (e.target.closest("#refreshBtn")) forceFresh = true; }, true);
+/* Which claim application numbers this person sees in full (decided by the data service) */
+function showClaimAccess(acc){
+  const el = document.getElementById("claimAccessNote"); if (!el) return;
+  el.innerHTML = acc && acc.masked ? '<div class="accnote">🔒 Signed in as <b>' + esc(acc.role) + '</b>. Application numbers of ' +
+    (acc.role === "Counselor" || acc.role === "Viewer" ? "other people\u2019s claims" : "claims outside your team" + (acc.teams > 1 ? "s" : "")) + ' are partly hidden (e.g. C2*****43). Counts and other details are shown for everyone.</div>' : "";
+}
 function sharedGz(){
   try{
-    const c = JSON.parse(sessionStorage.getItem("hk_data") || "null");
+    const c = JSON.parse(sessionStorage.getItem("hk_data2") || "null");
     if (!c || Date.now() - c.at > KEEP_MS) return null;
     staleCopy = Date.now() - c.at > SHARE_MS;
+    showClaimAccess(c.access);
     return c.gz;
   }catch(_){ return null; }
 }
@@ -973,7 +980,8 @@ async function fetchClaims(useShared){
     const j = await res.json();
     if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
     gz = j.gz;
-    try{ sessionStorage.setItem("hk_data", JSON.stringify({at: Date.now(), gz})); }catch(_){}
+    try{ sessionStorage.setItem("hk_data2", JSON.stringify({at: Date.now(), gz, access: j.access || null})); }catch(_){}
+    showClaimAccess(j.access);
   }
   const data = JSON.parse(await gunzipBase64(gz));
   const F = {}; data.fields.forEach((f, i) => F[f] = i);
@@ -1667,7 +1675,7 @@ window.matchMedia("(max-width: 720px)").addEventListener("change", () => { rende
 
 $("signOutBtn").addEventListener("click", () => {
   clearToken();
-  try{ sessionStorage.removeItem("hk_data"); }catch(_){}
+  try{ sessionStorage.removeItem("hk_data2"); }catch(_){}
   ALL = []; ROSTER = [];
   if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
   showGate("You have signed out.");
