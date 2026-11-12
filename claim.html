@@ -264,6 +264,14 @@ html.nav-mini .sidenav span.two{display:none}
 }
 .dt{display:inline-flex;flex-direction:column;white-space:nowrap}
 .dt small{font-size:11.5px;color:var(--muted)}
+.accnote{margin:0 0 12px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font-size:13px;color:var(--muted)}
+.accnote b{color:var(--ink)}
+.pvbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border:1px dashed var(--line);border-radius:10px;font-size:13px;color:var(--muted)}
+.pvbar input{height:34px;min-width:220px;flex:1 1 220px;max-width:340px}
+.pvbar button{min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer}
+.pvbar.on{border-style:solid;border-color:var(--accent);background:color-mix(in srgb, var(--accent) 7%, var(--card));color:var(--ink)}
+.pvbar.on button{border-color:var(--accent);color:var(--accent)}
+.pverr{color:var(--bad);font-weight:600}
 /* Submit a Claim page */
 .claimwho{padding:14px 18px;margin-bottom:16px}
 .cw-head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:var(--ink);margin-bottom:10px}
@@ -889,11 +897,29 @@ let staleCopy = false;
 let forceFresh = false;                       // set by the Refresh button: ask the data service to rebuild from the sheets
 document.addEventListener("click", e => { if (e.target.closest("#refreshBtn")) forceFresh = true; }, true);
 /* Which claim application numbers this person sees in full (decided by the data service) */
+function previewEmail(){ try { return sessionStorage.getItem("hk_preview") || ""; } catch (_) { return ""; } }
 function showClaimAccess(acc){
   const el = document.getElementById("claimAccessNote"); if (!el) return;
-  el.innerHTML = acc && acc.masked ? '<div class="accnote">🔒 Signed in as <b>' + esc(acc.role) + '</b>. Application numbers of ' +
-    (acc.role === "Counselor" || acc.role === "Viewer" ? "other people\u2019s claims" : "claims outside your team" + (acc.teams > 1 ? "s" : "")) + ' are partly hidden (e.g. C2*****43). Counts and other details are shown for everyone.</div>' : "";
+  const pv = acc && acc.preview;
+  const bar = pv
+    ? '<div class="pvbar on">👁 <span>Previewing as <b>' + esc(pv) + '</b> (' + esc(acc.role) + '). This is exactly what they see.</span><button type="button" id="pvStop">Stop preview</button></div>'
+    : (acc && acc.role === "Admin" ? '<div class="pvbar"><span><b>Admin:</b> preview as</span><input id="pvEmail" type="email" placeholder="someone@lpu.co.in" autocomplete="off"><button type="button" id="pvGo">Preview</button><span class="pverr" id="pvErr"></span></div>' : "");
+  el.innerHTML = bar + (acc && acc.masked ? '<div class="accnote">🔒 Signed in as <b>' + esc(acc.role) + '</b>. Application numbers of ' +
+    (acc.role === "Counselor" || acc.role === "Viewer" ? "other people\u2019s claims" : "claims outside your team" + (acc.teams > 1 ? "s" : "")) + ' are partly hidden (e.g. C2*****43). Counts and other details are shown for everyone.</div>' : "");
 }
+function restartClaimsAs(email){
+  try { if (email) sessionStorage.setItem("hk_preview", email); else sessionStorage.removeItem("hk_preview"); } catch (_) {}
+  ALL = []; load(false);
+}
+document.addEventListener("click", e => {
+  if (e.target.id === "pvStop") restartClaimsAs("");
+  if (e.target.id === "pvGo"){
+    const v = $("pvEmail").value.trim().toLowerCase();
+    if (!/^[^@\s]+@lpu\.co\.in$/.test(v)){ $("pvErr").textContent = "Enter an @lpu.co.in email"; return; }
+    restartClaimsAs(v);
+  }
+});
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "pvEmail"){ e.preventDefault(); $("pvGo").click(); } });
 function sharedGz(){
   try{
     const c = JSON.parse(sessionStorage.getItem("hk_data2") || "null");
@@ -906,15 +932,16 @@ function sharedGz(){
 async function fetchClaims(useShared){
   if (!tokenOk(idToken)){ const e = new Error("sign-in expired"); e.auth = true; throw e; }
   staleCopy = false;
-  let gz = useShared ? sharedGz() : null;
+  const viewAs = previewEmail();
+  let gz = useShared && !viewAs ? sharedGz() : null;
   if (!gz){
-    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, fresh: forceFresh})});
+    const res = await fetch(API_URL, {method:"POST", body: JSON.stringify({token: idToken, fresh: forceFresh, viewAs: viewAs || undefined})});
     forceFresh = false;
     if (!res.ok) throw new Error("service error (" + res.status + ")");
     const j = await res.json();
     if (!j.ok){ const e = new Error(j.message || "service error"); if (j.error === "auth") e.auth = true; throw e; }
     gz = j.gz;
-    try{ sessionStorage.setItem("hk_data2", JSON.stringify({at: Date.now(), gz, access: j.access || null})); }catch(_){}
+    if (!viewAs) try{ sessionStorage.setItem("hk_data2", JSON.stringify({at: Date.now(), gz, access: j.access || null})); }catch(_){}
     showClaimAccess(j.access);
   }
   const data = JSON.parse(await gunzipBase64(gz));
