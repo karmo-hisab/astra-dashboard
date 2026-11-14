@@ -1402,9 +1402,9 @@ function skillTable(m, people, skillBase, claimBase){
     }
     return '<div class="cv"><div><b class="cvp">' + fmt(ok) + '</b> <small>' + v.toFixed(2) + ' per member · ' + n + ' member' + (n === 1 ? "" : "s") + '</small></div>' + vs + '</div>';
   };
-  return '<table class="sktab"><thead><tr><th>Skill</th><th>Leads</th><th>Approved claims</th><th>Lead → Application</th><th>Lead → Admission</th></tr></thead><tbody>' +
+  return '<table class="sktab"><thead><tr><th>Skill</th><th>Approved claims</th><th>Leads</th><th>Lead → Application</th><th>Lead → Admission</th></tr></thead><tbody>' +
     lines.map(([k, t, xs]) => { const g = skillBase && skillBase.get(k);
-      return '<tr><td>' + skillShort(k) + '</td><td>' + fmt(t.l) + '</td><td>' + claimsBox(k, xs) + '</td><td>' + convCell(t, g, "c", "skill") + '</td><td>' + convCell(t, g, "a", "skill") + '</td></tr>'; }).join("") +
+      return '<tr><td>' + skillShort(k) + '</td><td>' + claimsBox(k, xs) + '</td><td>' + fmt(t.l) + '</td><td>' + convCell(t, g, "c", "skill") + '</td><td>' + convCell(t, g, "a", "skill") + '</td></tr>'; }).join("") +
     '</tbody></table>';
 }
 
