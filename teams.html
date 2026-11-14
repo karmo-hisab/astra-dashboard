@@ -759,6 +759,11 @@ td{border-color:var(--line-2)}
       <button type="button" role="tab" data-view="teams" aria-selected="false">Team leaders</button>
       <button type="button" role="tab" data-view="coords" aria-selected="false">Coordinators</button>
     </div>
+    <div class="cmpseg" id="creditSeg" role="group" aria-label="Credit applications to" hidden title="Who gets the credit when a lead was moved to another counselor after paying">
+      <span>Credit to</span>
+      <button type="button" data-credit="cur" aria-pressed="true">Current owner</button>
+      <button type="button" data-credit="pay" aria-pressed="false">Owner at payment</button>
+    </div>
     <div class="cmpseg" id="cmpSeg" role="group" aria-label="Compare conversion with the group" hidden>
       <span>Compare</span>
       <button type="button" data-cmp="app" aria-pressed="true" title="Arrows on Lead to Application %">🎯 L→App</button>
@@ -1014,7 +1019,7 @@ async function fetchClaims(useShared){
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
-  const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0})) : null;
+  const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0, b: r[5] || 0})) : null;
   return {rows, updated: data.updated, roster, leads, leadsAsOf: data.leadsAsOf || "", leadsStale: !!data.leadsStale};
 }
 
@@ -1343,10 +1348,15 @@ function periodText(){
   }
   return ({week: "this week", month: "this month", "30d": "last 30 days"})[v] || "session 2027";
 }
+/* Credit applications to: "cur" = current lead owner, "pay" = owner before the LPUNEST payment */
+let CREDIT = (() => { try { return localStorage.getItem("hk_credit") === "pay" ? "pay" : "cur"; } catch (_) { return "cur"; } })();
+const hasPayBasis = () => !!(LEADS && LEADS.some(r => r.b === 1));
 function leadTotals(from, to){
   const m = new Map();
   if (!LEADS) return null;
+  const want = CREDIT === "pay" && hasPayBasis() ? 1 : 0;
   for (const r of LEADS){
+    if ((r.b || 0) !== want) continue;
     if ((from && r.d < from) || (to && r.d >= to)) continue;
     const x = m.get(r.uid) || {l: 0, c: 0, a: 0};
     x.l += r.l; x.c += r.c; x.a += r.a; m.set(r.uid, x);
@@ -1398,6 +1408,11 @@ function skillLines(m, people, skillBase){
 }
 
 document.addEventListener("click", e => {
+  const b = e.target.closest("#creditSeg button"); if (!b) return;
+  CREDIT = b.dataset.credit; try { localStorage.setItem("hk_credit", CREDIT); } catch (_) {}
+  render();
+});
+document.addEventListener("click", e => {
   const b = e.target.closest("#cmpSeg button"); if (!b) return;
   CMP = b.dataset.cmp; try { localStorage.setItem("hk_cmp", CMP); } catch (_) {}
   render();
@@ -1420,7 +1435,7 @@ function render(){
   const dTrend = cached("trend", [dataStamp, msVals("fSkill").join(","), $("fSim").value, mondayOf(Date.now())].join("|"), () => compute({weeks:true, ignoreMonth:true}));
   const lastClaim = cached("last", String(dataStamp), () => { const m = new Map(); for (const r of ALL){ const u = String(r.uid); if (!m.has(u) || m.get(u) < r._ts) m.set(u, r._ts); } return m; });
   const idleSince = Date.now() - 7 * DAY;
-  const LT = cached("leads", [dataStamp, JSON.stringify(P.cur)].join("|"), () => leadTotals(P.cur.from, P.cur.to));
+  const LT = cached("leads", [dataStamp, JSON.stringify(P.cur), CREDIT].join("|"), () => leadTotals(P.cur.from, P.cur.to));
   // the funnel follows the Skill and Counselor type filters (team leaders count only when no type is chosen)
   const fSkills = msVals("fSkill"), fSkillV = fSkills.join(","), fSimV = $("fSim").value;
   const funnelOk = x => (!fSkills.length || fSkills.includes(x.skill)) && (!fSimV || (!x.isTL && (fSimV === "SIM") === !!x.sim));
@@ -1430,7 +1445,7 @@ function render(){
   const cSkills = c => LT ? skillLines(LT, [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x)), divBase && divBase.bySkill) : "";   // same people as the total
   // Peer groups for conversion: counselors = same skill + same type (SIM / Normal / Post-adm); team leaders = same skill
   const pGroupKey = x => (x.skill || "") + "|" + (x.post ? "Post" : x.sim ? "SIM" : "Normal");
-  const peerRates = !LT ? {pg: new Map(), tg: new Map()} : cached("peerRates", [dataStamp, JSON.stringify(P.cur)].join("|"), () => {
+  const peerRates = !LT ? {pg: new Map(), tg: new Map()} : cached("peerRates", [dataStamp, JSON.stringify(P.cur), CREDIT].join("|"), () => {
     const pg = new Map(), tg = new Map(), add = (m, k, s) => { const g = m.get(k) || {l: 0, c: 0, a: 0, n: 0}; g.l += s.l; g.c += s.c; g.a += s.a; g.n++; m.set(k, g); };
     for (const x of d.people.values()){
       if (x.isTL || x.active === false) continue;
@@ -1445,7 +1460,7 @@ function render(){
   });
   const pPeer = p => p.isTL ? null : peerRates.pg.get(pGroupKey(p)), tPeer = t => peerRates.tg.get(t.skill || "");
   // Coordinators: total vs the whole Division of Telephonic; each skill line vs that skill across the division
-  const divBase = !LT ? null : cached("divBase", [dataStamp, JSON.stringify(P.cur), fSkillV, fSimV].join("|"), () => {
+  const divBase = !LT ? null : cached("divBase", [dataStamp, JSON.stringify(P.cur), fSkillV, fSimV, CREDIT].join("|"), () => {
     const all = {l: 0, c: 0, a: 0, n: 0}, bySkill = new Map(), coordsWith = new Set();
     for (const x of d.people.values()){
       if (x.active === false || !funnelOk(x)) continue;
@@ -1459,6 +1474,8 @@ function render(){
   // Lead funnel card: the current selection (counselor > team leader > coordinator > everyone), following Skill / type / period
   $("funnelBar").hidden = !LEADS;
   $("cmpSeg").hidden = !LEADS;
+  $("creditSeg").hidden = !hasPayBasis();
+  document.querySelectorAll("#creditSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.credit === (hasPayBasis() ? CREDIT : "cur") ? "true" : "false"));
   document.querySelectorAll("#cmpSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.cmp === CMP ? "true" : "false"));
   if (LEADS){
     const selPs = msVals("fPerson"), selP = selPs.length, selTs = msVals("fTeam"), selCs = msVals("fCoord"), selT = selTs.length, selC = selCs.length;
@@ -1715,7 +1732,8 @@ function render(){
       : view === "teams" ? "Teams = team leaders in TL Bifurcation. Team hits = approved claims credited to the Sarathi written in each claim."
       : "Coordinators = from TL Bifurcation. Hits = approved claims credited to the Dronacharya written in each claim.";
     $("scopeNote").innerHTML = '<b>Filters:</b> ' + esc(on.join(" · ")) + '<br><b>Counted:</b> ' + esc(what) +
-      (LEADS ? " Leads = session 2027 (from 1 Sep 2026), current lead owner, N applications excluded." : "");
+      (LEADS ? " Leads = session 2027 (from 1 Sep 2026), N applications excluded; " + (CREDIT === "pay" && hasPayBasis()
+        ? "paid applications credited to the owner before the LPUNEST payment, other leads to their current owner." : "credited to the current lead owner.") : "");
   }
 
   // Mode switch and comparison box
