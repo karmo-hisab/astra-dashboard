@@ -355,6 +355,37 @@ tbody tr.hl td b{color:var(--ink)}
 @media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
 .scopenote{margin:-4px 0 12px;font-size:12.5px;line-height:1.5;color:var(--muted)}
 .scopenote b{color:var(--ink);font-weight:600}
+/* The table fits the screen: no sideways scrolling */
+@media (min-width: 721px){
+  .table-panel table{min-width:0;table-layout:auto}
+  .table-panel th{white-space:normal;line-height:1.25;vertical-align:bottom}
+  .table-panel td{vertical-align:top}
+}
+@media (min-width: 721px) and (max-width: 1250px){
+  .table-panel th{padding:9px 6px;font-size:11px;letter-spacing:.02em}
+  .table-panel td{padding:8px 6px;font-size:12.5px}
+  .cv{padding:6px 8px}
+  .clmb,.vsl{font-size:11.5px}
+}
+/* Approved claims and conversion columns */
+.clm{display:flex;flex-direction:column;gap:3px;min-width:0}
+.clmn{font-size:16px}
+.clmb{font-size:12px;color:var(--muted);line-height:1.45}
+.clmb b{color:var(--ink)}
+.cv{display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--line-2);min-width:0}
+.cvp{font-size:16px}
+.cv small{color:var(--muted)}
+.vsl{display:inline-block;font-size:12px;font-weight:700;line-height:1.35}
+.vsl.up{color:var(--ok)} .vsl.down{color:var(--bad)} .vsl.eq{color:var(--faint);font-weight:600}
+.vsl i{font-style:normal;font-weight:500;color:var(--faint)}
+.skbtn{margin-top:6px;align-self:flex-start;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:12px;font-weight:600;padding:3px 10px;cursor:pointer}
+.skbtn:hover{border-color:var(--accent);color:var(--accent)}
+tr.skrow td{background:var(--paper);padding:10px 14px}
+.sktab{width:100%;border-collapse:collapse;font-size:13px}
+.sktab th{background:none;text-transform:none;letter-spacing:0;font-size:12px;color:var(--muted);padding:4px 8px;text-align:left}
+.sktab td{padding:6px 8px;border-top:1px solid var(--line-2);vertical-align:top}
+.sktab .cv{background:var(--card)}
+@media (max-width: 720px){ tr.skrow td::before{content:none} .sktab thead{display:none} .sktab tr{display:block;border-top:1px solid var(--line-2);padding:6px 0} .sktab td{display:block;border:none;padding:4px 0} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -721,7 +752,7 @@ td{border-color:var(--line-2)}
   </section>
   <section class="stats stats4" aria-label="Overview for the current selection">
     <div class="stat tot"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Claims</h2><div class="big" id="oClaims">–</div><div class="sub" id="oClaimsSub">&nbsp;</div></div>
-    <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Verified hits</h2><div class="big" id="oHits">–</div><div class="sub" id="oHitsSub">&nbsp;</div></div>
+    <div class="stat ok"><h2><svg class="ic" aria-hidden="true"><use href="#i-hit"/></svg>Approved claims</h2><div class="big" id="oHits">–</div><div class="sub" id="oHitsSub">&nbsp;</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-admission"/></svg>Teams</h2><div class="big" id="oTeams">–</div><div class="sub" id="oTeamsSub">&nbsp;</div></div>
     <div class="stat"><h2><svg class="ic" aria-hidden="true"><use href="#i-total"/></svg>Counselors</h2><div class="big" id="oPeople">–</div><div class="sub" id="oPeopleSub">&nbsp;</div></div>
   </section>
@@ -740,10 +771,9 @@ td{border-color:var(--line-2)}
       <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option><option value="custom">Custom dates…</option></select></label>
       <label class="f">Show<select id="fShow" title="Show only people who are behind their peers">
         <option value="">All</option>
-        <option value="any">Below peers (hits or conversion)</option>
-        <option value="hits">Hits rank below median</option>
-        <option value="app">L→App below peers</option>
-        <option value="adm">L→Adm below peers</option>
+        <option value="hits">Approved claims below peers</option>
+        <option value="app">Lead → Application below peers</option>
+        <option value="adm">Lead → Admission below peers</option>
         <option value="idle">Idle 7 days</option>
       </select></label>
       <label class="f" id="pFromWrap" hidden>From<input id="pFrom" type="date"></label>
@@ -756,7 +786,7 @@ td{border-color:var(--line-2)}
     <div class="tfilters five" id="moreFilters" hidden>
       <label class="f">Search<input id="q" type="search" placeholder="Name or UID" autocomplete="off"></label>
       <label class="f">Payment month<select id="fMonth"></select></label>
-      <label class="f">Band<select id="fBand"><option value="">All</option><option value="ok">Top</option><option value="okl">Above median</option><option value="wait">Below median</option><option value="bad">Needs attention</option><option value="none">Not ranked yet</option></select></label>
+      <label class="f" hidden>Band<select id="fBand"><option value="">All</option><option value="ok">Top</option><option value="okl">Above median</option><option value="wait">Below median</option><option value="bad">Needs attention</option><option value="none">Not ranked yet</option></select></label>
       <label class="f">Activity<select id="fAct"><option value="">All</option><option value="idle">No claims in last 7 days</option><option value="active">Active in last 7 days</option></select></label>
     </div>
   </section>
@@ -1114,10 +1144,10 @@ function buildOptions(){
   fill("fSkill", ROSTER.filter(p => p.active).map(p => p.skill));
 }
 
-const blank = () => ({claims:0, ok:0, bad:0, wait:0, h:{app:0, adm:0, post:0}});
+const blank = () => ({claims:0, ok:0, bad:0, wait:0, h:{app:0, adm:0, post:0, hostel:0, mess:0}});
 function add(s, r){
   s.claims++;
-  if (r._res === "ok"){ s.ok++; const c = catOf(r.claim); if (c) s.h[c]++; }
+  if (r._res === "ok"){ s.ok++; const c = catOf(r.claim); if (c) s.h[c]++; if (c === "post") s.h[/naga/i.test(r.claim || "") ? "hostel" : "mess"]++; }
   else if (r._res === "bad") s.bad++; else s.wait++;
 }
 function pctl(v, arr){ let below = 0, eq = 0; for (const x of arr){ if (x < v) below++; else if (x === v) eq++; } return Math.round((below + eq / 2) * 100 / arr.length); }
@@ -1311,6 +1341,63 @@ const hitsBreak = h => '<span class="hb">' +
   '<span title="Naga Pasha (Hostel) + Akshaya Patra (Mess)">🐍🍜 Post <b>' + fmt(h.post) + '</b></span></span>';
 const hitsCell = h => fmt(h.app + h.adm + h.post) + hitsBreak(h);
 
+/* Short, readable skill names (full name on hover) */
+function shortSkill(n){
+  const t = String(n || "").trim(); if (!t) return "–";
+  if (t.length <= 18) return t;
+  return t.replace(/\s+and\s+/gi, " & ").replace(/Computer Science/gi, "Comp. Sc.").replace(/Engineering/gi, "Engg.")
+    .replace(/Bioengg\./gi, "Bioengg.").replace(/Biosciences/gi, "Biosc.").replace(/Sciences?/gi, "Sc.").replace(/Education/gi, "Edu.")
+    .replace(/Physical/gi, "Phys.").replace(/Management/gi, "Mgmt.").replace(/Technology/gi, "Tech.").replace(/Commerce/gi, "Comm.")
+    .replace(/Economics/gi, "Eco.").replace(/Administration/gi, "Admin.").replace(/Hospitality/gi, "Hosp.").replace(/Journalism/gi, "Journ.")
+    .replace(/Communication/gi, "Comm.").replace(/Pharmaceutical/gi, "Pharma.").replace(/Agriculture/gi, "Agri.").replace(/\s{2,}/g, " ");
+}
+const skillShort = n => '<span title="' + esc(n || "") + '">' + esc(shortSkill(n)) + '</span>';
+
+/* Approved claims: total, how it compares with peers (words, no score), and the four claim types */
+const CLAIM_PEER = {ok: ["Top 25% of peers", "up"], okl: ["Above middle of peers", "up"], wait: ["Below middle of peers", "down"], bad: ["Bottom 25% of peers", "down"]};
+function claimsCell(x, posTxt){
+  const h = x.h, tot = h.app + h.adm + h.post;
+  let peer = "";
+  if (posTxt !== null){
+    if (x.zero && !x.noHits) peer = '<span class="vsl down">No approved claims yet (peers have some)</span>';
+    else if (x.score !== null && x.score !== undefined){ const b = CLAIM_PEER[band(x.score).key]; peer = '<span class="vsl ' + b[1] + '">' + b[0] + '</span>'; }
+    else peer = '<span class="vsl eq">Not compared yet</span>';
+  }
+  return '<div class="clm"><div><b class="clmn">' + fmt(tot) + '</b> approved' + (posTxt ? ' <small class="faint">· ' + esc(posTxt) + '</small>' : "") + '</div>' + peer +
+    '<div class="clmb">Applications <b>' + fmt(h.app) + '</b> · Admissions <b>' + fmt(h.adm) + '</b> · Hostel <b>' + fmt(h.hostel || 0) + '</b> · Mess <b>' + fmt(h.mess || 0) + '</b></div></div>';
+}
+
+/* Lead → Application / Lead → Admission: one bordered box each, with one plain line versus peers (or the division) */
+function convCell(t, peer, f, who){
+  if (!LEADS) return '<span class="faint">–</span>';
+  if (!t || !t.l) return '<div class="cv"><span class="faint">No leads</span></div>';
+  const n = f === "c" ? t.c : t.a, mine = n / t.l;
+  let vs = "";
+  if (peer && peer.n >= 2 && peer.l > 0 && (f === "c" || peer.a > 0 || t.a > 0)){
+    if (t.l < MIN_LEADS) vs = '<span class="vsl eq">Too few leads to compare</span>';
+    else {
+      const grp = (f === "c" ? peer.c : peer.a) / peer.l, diff = (mine - grp) * 100, g = (grp * 100).toFixed(1);
+      const k = Math.abs(diff) < Math.max(0.05, 0.1 * grp * 100) ? "eq" : diff > 0 ? "up" : "down";
+      vs = '<span class="vsl ' + k + '" title="' + (mine * 100).toFixed(1) + '% vs ' + g + '% (' + who + ' average)">' +
+        (k === "eq" ? "In line with " + who : (k === "up" ? "▲ " : "▼ ") + Math.abs(diff).toFixed(1) + " pts " + (k === "up" ? "above " : "below ") + who) +
+        ' <i>(avg ' + g + '%)</i></span>';
+    }
+  }
+  return '<div class="cv"><div><b class="cvp">' + pctTxt(n, t.l) + '</b> <small>' + fmt(n) + ' of ' + fmt(t.l) + ' leads</small></div>' + vs + '</div>';
+}
+
+/* Coordinator: conversion by skill, in a small table opened from the row */
+function skillTable(m, people, skillBase){
+  const by = new Map();
+  for (const x of people){ const k = x.skill || "Other"; if (!by.has(k)) by.set(k, []); by.get(k).push(x.uid); }
+  const lines = [...by.entries()].map(([k, uids]) => [k, sumLeads(m, uids)]).filter(([, t]) => t.l).sort((a, b) => b[1].l - a[1].l);
+  if (!lines.length) return "";
+  return '<table class="sktab"><thead><tr><th>Skill</th><th>Leads</th><th>Lead → Application</th><th>Lead → Admission</th></tr></thead><tbody>' +
+    lines.map(([k, t]) => { const g = skillBase && skillBase.get(k);
+      return '<tr><td>' + skillShort(k) + '</td><td>' + fmt(t.l) + '</td><td>' + convCell(t, g, "c", "skill") + '</td><td>' + convCell(t, g, "a", "skill") + '</td></tr>'; }).join("") +
+    '</tbody></table>';
+}
+
 /* Rank cell: medal for the top three (only with a real score), plus movement versus the previous period */
 const moveTag = m => m === null || m === undefined ? "" :
   m === "new" ? '<small class="move new" title="Newly ranked this period">new</small>' :
@@ -1482,7 +1569,7 @@ function render(){
   });
   // Lead funnel card: the current selection (counselor > team leader > coordinator > everyone), following Skill / type / period
   $("funnelBar").hidden = !LEADS;
-  $("cmpSeg").hidden = !LEADS;
+  $("cmpSeg").hidden = true;
   $("creditSeg").hidden = !hasPayBasis();
   document.querySelectorAll("#creditSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.credit === (hasPayBasis() ? CREDIT : "cur") ? "true" : "false"));
   document.querySelectorAll("#cmpSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.cmp === CMP ? "true" : "false"));
@@ -1624,7 +1711,7 @@ function render(){
   $("oClaims").textContent = fmt(tot.claims);
   $("oClaimsSub").textContent = fmt(tot.ok) + " hit, " + fmt(tot.bad) + " miss, " + fmt(tot.wait) + " pending";
   $("oHits").textContent = fmt(tot.ok);
-  $("oHitsSub").textContent = "🎯 " + fmt(tot.h.app) + "   🏹 " + fmt(tot.h.adm) + "   🐍🍜 " + fmt(tot.h.post);
+  $("oHitsSub").textContent = "Applications " + fmt(tot.h.app) + " · Admissions " + fmt(tot.h.adm) + " · Hostel " + fmt(tot.h.hostel || 0) + " · Mess " + fmt(tot.h.mess || 0);
   $("oTeams").textContent = fmt(teamsIn.filter(t => !t.other && d.tlSet.has(t.uid)).length);
   $("oTeamsSub").textContent = scs.length === 1 ? "under this coordinator" : scs.length > 1 ? "under " + scs.length + " coordinators" : fmt(d.coords.size) + " coordinators";
   $("oPeople").textContent = fmt(peopleIn.length);
@@ -1674,55 +1761,62 @@ function render(){
   let head = [], rows = [], toRow, sortVals = {}, baseN = 0;
   const hlBase = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
   const hlFn = x => !below && hlBase(x);                          // no highlighting inside a drill-down (every row belongs to the selection)
+  const cLeadOf = c => cLead(c);
   if (view === "people"){
-    head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["conv","Lead funnel"],["score","Score"],["band","Band"]];
+    head = [["rank","Rank"],["name","Counselor"],["hits","Approved claims"],["conv","Lead → Application"],["adm","Lead → Admission"]];
     rows = L.people.filter(p => (!q || (p.name + " " + p.uid).toLowerCase().includes(q)) && bandOk(p.score) && actOk(isIdle(p) ? 1 : 0));
     baseN = rows.length;
     rows = rows.filter(p => showOk(p, pLead(p), pPeer(p), true, isIdle(p)));
-    sortVals = {name: p => p.name, group: p => p.skill + (p.post ? " 0" : p.sim ? " 1" : " 2"), hits: p => p.h.app + p.h.adm + p.h.post, conv: p => leadRate(pLead(p)), score: p => p.score ?? -1, band: p => p.score ?? -1};
+    sortVals = {name: p => p.name, hits: p => p.h.app + p.h.adm + p.h.post, conv: p => leadRate(pLead(p)), adm: p => { const t = pLead(p); return t && t.l ? t.a / t.l : -1; }};
     toRow = p => {
       const tag = p.post ? '<span class="simtag post">Post-adm</span>' : '<span class="simtag' + (p.sim ? " on" : "") + '">' + (p.sim ? "SIM" : "Normal") + '</span>';
       const t = d.teams.get(p.teamUid), idle = isIdle(p);
+      const pos = p.score === null || p.score === undefined ? (p.zero && !p.noHits ? "" : null) : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill" : " in group");
       return '<tr class="click' + (p._rank < 3 && p.score !== null ? " podium" : "") + (hl.people(p) ? " hl" : "") + '" data-person="' + esc(p.uid) + '" tabindex="0" title="Compare this counselor with their peers">' +
         td("Rank", rankWithMove(p._rank, p.score, movement(prevPeople, p.uid, p._rank, p.score))) +
         td("Counselor", '<span class="who"><b>' + esc(p.name) + (idle ? '<span class="idle" title="No claims in the last 7 days">Idle 7d</span>' : '') + '</b>' +
-          '<small>UID ' + esc(p.uid) + '</small>' +
-          '<small>TL: ' + esc(t && !t.other ? t.name : "–") + '</small>' +
+          '<small>' + skillShort(p.skill) + ' ' + tag + '</small>' +
+          '<small>UID ' + esc(p.uid) + ' · TL: ' + esc(t && !t.other ? t.name : "–") + '</small>' +
           '<small>Coordinator: ' + esc((d.coords.get(p.coordKey) || {}).name || "–") + '</small></span>') +
-        td("Group", esc(p.skill) + " " + tag) + td("Hits", hitsCell(p.h), "num") + td("Lead funnel", leadCell(pLead(p), "", pPeer(p))) +
-        td("Score", scoreCell(p.score, p.noHits ? "no approved claims in group yet" : p.zero ? "no approved claims yet" : p.score === null ? "alone in skill" : ord(p.groupRank) + " of " + p.groupSize + (p.wider ? " in skill (SIM + Normal)" : " in group")), "num") +
-        td("Band", p.noHits ? '<span class="bandtag neutral">Not ranked yet</span>' : p.zero ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(p.score)) + '</tr>';
+        td("Approved claims", claimsCell(p, pos === null && !(p.zero && !p.noHits) ? "" : (pos || ""))) +
+        td("Lead → Application", convCell(pLead(p), pPeer(p), "c", "peers")) +
+        td("Lead → Admission", convCell(pLead(p), pPeer(p), "a", "peers")) + '</tr>';
     };
   } else if (view === "teams"){
-    head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["conv","Lead funnel"],["score","Score"],["band","Band"]];
+    head = [["rank","Rank"],["name","Team leader"],["hits","Approved claims"],["conv","Lead → Application"],["adm","Lead → Admission"]];
     rows = L.teams.filter(t => (!q || (t.name + " " + t.uid).toLowerCase().includes(q)) && bandOk(t.score) && actOk(teamIdle(t)));
     baseN = rows.length;
     rows = rows.filter(t => showOk(t, tLead(t), tPeer(t), true, isIdle({uid: t.uid})));
-    const wk = t => (dTrend.teams.get(t.uid) || {}).wk;
-    sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, conv: t => leadRate(tLead(t)), trend: t => (wk(t) || [0])[TREND_WEEKS - 1], score: t => t.score ?? -1, band: t => t.score ?? -1};
+    sortVals = {name: t => t.name, hits: t => t.ok, conv: t => leadRate(tLead(t)), adm: t => { const x = tLead(t); return x && x.l ? x.a / x.l : -1; }};
     toRow = t => {
       const n = teamIdle(t);
+      const pos = t.score !== null && t.score !== undefined ? ord(t.groupRank) + " of " + t.groupSize + " TLs in skill" : t.groupSize < 2 ? "only TL in skill" : "";
       return '<tr class="click' + (hl.teams(t) ? " hl" : "") + '" data-team="' + esc(t.uid) + '" data-coord="' + esc(t.coordKey) + '" tabindex="0" title="Show this team\'s counselors">' +
         td("Rank", rankWithMove(t._rank, t.score, movement(prevTeams, t.uid, t._rank, t.score))) +
-        td("Team leader", '<span class="who"><b>' + esc(t.name) + (isIdle({uid: t.uid}) ? '<span class="idle" title="No claims of their own in the last 7 days">Idle 7d</span>' : '') + '</b><small>UID ' + esc(t.uid) + (t.coordName ? ", " + esc(t.coordName) : "") + '</small></span>') +
-        td("Skill", esc(t.skill || "–")) + td("Team hits", hitsCell(t.h), "num") + td("Lead funnel", leadCell(tLead(t), "", tPeer(t))) +
-        td("Score", scoreCell(t.score, (t.score !== null ? ord(t.groupRank) + " of " + t.groupSize + " TLs in skill" : t.groupSize < 2 ? "only TL in skill" : t.noHits ? "no approved claims in skill yet" : "no approved claims yet") + '<br>' + fmt(t.counselors) + " counselors" + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "")), "num") +
-        td("Band", (t.zero && !t.noHits) ? '<span class="bandtag neutral">No hits yet</span>' : bandTag(t.score)) + '</tr>';
+        td("Team leader", '<span class="who"><b>' + esc(t.name) + (isIdle({uid: t.uid}) ? '<span class="idle" title="No claims of their own in the last 7 days">Idle 7d</span>' : '') + '</b>' +
+          '<small>' + skillShort(t.skill) + '</small><small>UID ' + esc(t.uid) + (t.coordName ? " · " + esc(t.coordName) : "") + '</small>' +
+          '<small>' + fmt(t.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small></span>') +
+        td("Approved claims", claimsCell(t, pos)) +
+        td("Lead → Application", convCell(tLead(t), tPeer(t), "c", "peers")) +
+        td("Lead → Admission", convCell(tLead(t), tPeer(t), "a", "peers")) + '</tr>';
     };
   } else {
-    head = [["name","Coordinator"],["teams","Teams"],["hits","Hits"],["conv","Lead funnel"]];
+    head = [["name","Coordinator"],["hits","Approved claims"],["conv","Lead → Application"],["adm","Lead → Admission"]];
     rows = L.coords.filter(c => (!q || c.name.toLowerCase().includes(q)) && actOk(coordIdle(c))).sort((a, b) => a.name.localeCompare(b.name));
     baseN = rows.length;
     rows = rows.filter(c => showOk(c, cLead(c), divBase && divBase.all, false, false));   // coordinators: conversion vs the division
-    const wk = c => (dTrend.coords.get(c.key) || {}).wk;
-    sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, conv: c => leadRate(cLead(c)), trend: c => (wk(c) || [0])[TREND_WEEKS - 1]};
+    sortVals = {name: c => c.name, hits: c => c.ok, conv: c => leadRate(cLead(c)), adm: c => { const x = cLead(c); return x && x.l ? x.a / x.l : -1; }};
     toRow = c => {
-      const n = coordIdle(c);
+      const n = coordIdle(c), nTL = coordIdleTL(c);
+      const sk = LT ? skillTable(LT, [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x)), divBase && divBase.bySkill) : "";
       return '<tr class="click' + (hl.coords(c) ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
-        td("Coordinator", '<b>' + esc(c.name) + '</b>') +
-        td("Teams", fmt(c.teamCount) + '<small class="subl">' + fmt(c.counselors) + ' counselors' + (n ? ', <span class="idletxt">' + fmt(n) + ' idle 7d</span>' : "") + '</small>' +
-          (coordIdleTL(c) ? '<small class="subl"><span class="idletxt">' + fmt(coordIdleTL(c)) + ' TL' + (coordIdleTL(c) === 1 ? "" : "s") + ' idle 7d</span></small>' : ""), "num") +
-        td("Hits", hitsCell(c.h), "num") + td("Lead funnel", leadCell(cLead(c), cSkills(c), divBase && divBase.all, "the whole Division of Telephonic")) + '</tr>';
+        td("Coordinator", '<span class="who"><b>' + esc(c.name) + '</b><small>' + fmt(c.teamCount) + ' teams · ' + fmt(c.counselors) + ' counselors</small>' +
+          (n || nTL ? '<small><span class="idletxt">' + [n ? fmt(n) + " counselors" : "", nTL ? fmt(nTL) + " TL" + (nTL === 1 ? "" : "s") : ""].filter(Boolean).join(", ") + ' idle 7d</span></small>' : "") +
+          (sk ? '<button type="button" class="skbtn" data-sk="' + esc(c.key) + '" aria-expanded="false">By skill ▸</button>' : "") + '</span>') +
+        td("Approved claims", claimsCell(c, null)) +
+        td("Lead → Application", convCell(cLead(c), divBase && divBase.all, "c", "division")) +
+        td("Lead → Admission", convCell(cLead(c), divBase && divBase.all, "a", "division")) + '</tr>' +
+        (sk ? '<tr class="skrow" data-skfor="' + esc(c.key) + '" hidden><td colspan="4">' + sk + '</td></tr>' : "");
     };
   }
   const sv = sortBy[view];
@@ -1748,7 +1842,7 @@ function render(){
   const noun = view === "people" ? "counselor" : view === "teams" ? "team" : "coordinator";
   const nHl = level ? rows.filter(hlFn).length : 0;
   $("viewCount").textContent = (showF ? fmt(rows.length) + " of " + fmt(baseN) : fmt(rows.length)) + " " + noun + (rows.length === 1 && !showF ? "" : "s") +
-    (showF ? " " + ({any: "below peers", hits: "below median", app: "below peers on L→App", adm: "below peers on L→Adm", idle: "idle 7 days"})[showF] : "") +
+    (showF ? " " + ({hits: "below peers on approved claims", app: "below peers on Lead → Application", adm: "below peers on Lead → Admission", idle: "idle 7 days"})[showF] : "") +
     (nHl ? ", " + fmt(nHl) + " highlighted" : "");
   // What is counted, and which filters are on (so numbers can be checked against other pages)
   {
@@ -1784,9 +1878,8 @@ function render(){
     const lbl = H.length === 1 ? "" : '<small class="subl">average of ' + H.length + '</small>';
     $("cmpBox").innerHTML = '<div class="cmp panel"><div class="cmphead"><b>' + esc(selName) + '</b> compared with ' + esc(peerLabel[view === "people" ? "people" : view === "teams" ? "teams" : "coords"]) + ' (' + fmt(full.length) + ')</div>' +
       '<div class="tablebox"><table><thead><tr><th>Measure</th><th>Selected</th><th>Peer average</th><th>Best among peers</th></tr></thead><tbody>' +
-      '<tr>' + td("Measure", "Rank") + td("Selected", '<b>' + rankTxt + '</b>') + td("Peer average", "–") + td("Best among peers", bS && bS.score !== null ? esc(nm(full[0])) : "–") + '</tr>' +
+      '<tr>' + td("Measure", "Position in group") + td("Selected", '<b>' + rankTxt + '</b>') + td("Peer average", "–") + td("Best among peers", bS && bS.score !== null ? esc(nm(full[0])) : "–") + '</tr>' +
       '<tr>' + td("Measure", "Approved claims") + td("Selected", val(selHits) + lbl, "num") + td("Peer average", val(mean(full, hits)), "num") + td("Best among peers", bH && hits(bH) > 0 ? val(hits(bH)) + '<small class="subl">' + esc(nm(bH)) + '</small>' : "–", "num") + '</tr>' +
-      '<tr>' + td("Measure", "Score") + td("Selected", val(selScore) + lbl, "num") + td("Peer average", val(mean(full, x => x.score)), "num") + td("Best among peers", bS && bS.score !== null ? val(bS.score) + '<small class="subl">' + esc(nm(bS)) + '</small>' : "–", "num") + '</tr>' +
       '</tbody></table></div></div>';
   } else $("cmpBox").innerHTML = "";
   $("pageInfo").textContent = rows.length ? "Showing " + fmt(start + 1) + "–" + fmt(start + items.length) + " of " + fmt(rows.length) : "";
@@ -1856,7 +1949,12 @@ function drill(tr){
   else if (tr.dataset.coord){ $("fCoord").value = tr.dataset.coord; $("fTeam").value = ""; view = "teams"; }
   $("q").value = ""; pg = 1; render();
 }
-$("tbody").addEventListener("click", e => drill(e.target.closest("tr.click")));
+$("tbody").addEventListener("click", e => {
+  const b = e.target.closest(".skbtn");
+  if (b){ e.stopPropagation(); const r = $("tbody").querySelector('tr.skrow[data-skfor="' + CSS.escape(b.dataset.sk) + '"]');
+    if (r){ r.hidden = !r.hidden; b.setAttribute("aria-expanded", r.hidden ? "false" : "true"); b.textContent = r.hidden ? "By skill ▸" : "By skill ▾"; } return; }
+  drill(e.target.closest("tr.click"));
+});
 $("tbody").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); drill(e.target.closest("tr.click")); } });
 function sortClick(k){
   const sv = sortBy[view];
