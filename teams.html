@@ -1762,17 +1762,19 @@ function render(){
   const hlBase = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
   const hlFn = x => !below && hlBase(x);                          // no highlighting inside a drill-down (every row belongs to the selection)
   const cLeadOf = c => cLead(c);
-  // Coordinators lead teams of different sizes: compare approved claims PER COUNSELOR with the division average
-  const pcOf = c => c.counselors ? c.ok / c.counselors : null;
-  const pcAll = A.coords.filter(c => c.counselors > 0);
-  const pcAvg = pcAll.length ? pcAll.reduce((a, c) => a + c.ok, 0) / pcAll.reduce((a, c) => a + c.counselors, 0) : null;
+  // Coordinators lead teams of different sizes: compare approved claims PER MEMBER (counselors + team leaders),
+  // since team leaders' own claims are part of the total. Division average = all claims / all members.
+  const members = c => (c.counselors || 0) + (c.teamCount || 0);
+  const pcOf = c => members(c) ? c.ok / members(c) : null;
+  const pcAll = A.coords.filter(c => members(c) > 0);
+  const pcAvg = pcAll.length ? pcAll.reduce((a, c) => a + c.ok, 0) / pcAll.reduce((a, c) => a + members(c), 0) : null;
   const pcRank = new Map([...pcAll].sort((a, b) => pcOf(b) - pcOf(a)).map((c, i) => [c.key, i + 1]));
   const pcGap = c => { const v = pcOf(c); return v === null || !pcAvg ? null : (v - pcAvg) / pcAvg; };   // relative gap, e.g. -0.3 = 30% below
   const coordClaimsLine = c => {
     const v = pcOf(c); if (v === null || pcAvg === null || pcAll.length < 2) return '<span class="vsl eq">Not compared yet</span>';
     const g = pcGap(c), k = Math.abs(g) < 0.1 ? "eq" : g > 0 ? "up" : "down", a = (Math.round(pcAvg * 10) / 10).toFixed(1);
-    return '<span class="vsl ' + k + '">' + (Math.round(v * 10) / 10).toFixed(1) + ' per counselor · ' +
-      (k === "eq" ? "in line with division" : (k === "up" ? "above" : "below") + " division") + ' <i>(avg ' + a + ')</i></span>';
+    return '<span class="vsl ' + k + '" title="All approved claims ÷ (counselors + team leaders) = ' + fmt(c.ok) + ' ÷ ' + fmt(members(c)) + '">' + (Math.round(v * 100) / 100).toFixed(2) + ' per member · ' +
+      (k === "eq" ? "in line with division" : (k === "up" ? "above" : "below") + " division") + ' <i>(avg ' + (Math.round(pcAvg * 100) / 100).toFixed(2) + ')</i></span>';
   };
   const coordClaimsLow = c => { const g = pcGap(c); return g !== null && g <= -0.1 && pcAll.length >= 2; };
   // gap versus the peer average, in percentage points (negative = below); for sorting the weakest first
@@ -1825,7 +1827,7 @@ function render(){
       const n = coordIdle(c), nTL = coordIdleTL(c);
       const sk = LT ? skillTable(LT, [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x)), divBase && divBase.bySkill) : "";
       return '<tr class="click' + (hl.coords(c) ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
-        td("Coordinator", '<span class="who"><b>' + esc(c.name) + '</b><small>' + fmt(c.teamCount) + ' teams · ' + fmt(c.counselors) + ' counselors</small>' +
+        td("Coordinator", '<span class="who"><b>' + esc(c.name) + '</b><small>' + fmt(c.teamCount) + ' team leaders · ' + fmt(c.counselors) + ' counselors</small>' +
           (n || nTL ? '<small><span class="idletxt">' + [n ? fmt(n) + " counselors" : "", nTL ? fmt(nTL) + " TL" + (nTL === 1 ? "" : "s") : ""].filter(Boolean).join(", ") + ' idle 7d</span></small>' : "") +
           (sk ? '<button type="button" class="skbtn" data-sk="' + esc(c.key) + '" aria-expanded="false">By skill ▸</button>' : "") + '</span>') +
         td("Approved claims", claimsCell(c, pcRank.has(c.key) ? ord(pcRank.get(c.key)) + " of " + pcAll.length + " coordinators" : "", coordClaimsLine(c))) +
