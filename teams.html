@@ -210,7 +210,7 @@ html.nav-mini .sidenav span.two{display:none}
 .stats4{grid-template-columns:repeat(4,1fr)!important}
 .tfilters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end;flex:1;min-width:0}
 .tfilters.one{grid-template-columns:minmax(0,2fr) minmax(0,2fr)}
-.tfilters.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+.tfilters.six{grid-template-columns:repeat(7,minmax(0,1fr))}
 @media (max-width: 1250px){ .tfilters.six{grid-template-columns:repeat(3,minmax(0,1fr))} }
 .viewbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
 .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:3px;gap:3px}
@@ -738,6 +738,14 @@ td{border-color:var(--line-2)}
       <label class="f">Skill<select id="fSkill"></select></label>
       <label class="f">Counselor type<select id="fSim"><option value="">All</option><option value="SIM">SIM</option><option value="Normal">Normal</option></select></label>
       <label class="f">Period<select id="fPeriod"><option value="">Whole session</option><option value="week">This week</option><option value="month">This month</option><option value="30d">Last 30 days</option><option value="custom">Custom dates…</option></select></label>
+      <label class="f">Show<select id="fShow" title="Show only people who are behind their peers">
+        <option value="">All</option>
+        <option value="any">Below peers (hits or conversion)</option>
+        <option value="hits">Hits rank below median</option>
+        <option value="app">L→App below peers</option>
+        <option value="adm">L→Adm below peers</option>
+        <option value="idle">Idle 7 days</option>
+      </select></label>
       <label class="f" id="pFromWrap" hidden>From<input id="pFrom" type="date"></label>
       <label class="f" id="pToWrap" hidden>To<input id="pTo" type="date"></label>
     </div>
@@ -796,6 +804,7 @@ td{border-color:var(--line-2)}
         <li><b>Team leaders:</b> compared only with team leaders of the same skill, on their team's approved claims.</li>
         <li><b>Coordinators:</b> not ranked; shown with their teams, counselors and hits only.</li>
       </ul>
+      <p><b>Show → Below peers</b> keeps only people behind their own peer group on at least one of: hits rank below median (or no hits while peers have some), or L→App or L→Adm % below the peer average (more than 10% of the average below, with at least 20 leads). Coordinators are checked on conversion against the whole division. <b>Show → Idle 7 days</b> lists those with no claims in the last 7 days.</p>
       <p>Score is a percentile of approved claims from 0 to 100: a score of 75 means more approved claims than about three quarters of the peer group.</p>
       <p class="bands"><span class="bandtag ok">Top 75+</span><span class="bandtag okl">Above median 50–74</span><span class="bandtag wait">Below median 25–49</span><span class="bandtag bad">Needs attention under 25</span></p>
     </div>
@@ -1648,13 +1657,28 @@ function render(){
   const coordIdle = c => [...d.people.values()].filter(p => !p.isTL && p.active && p.coordKey === c.key && isIdle(p)).length;
   const coordIdleTL = c => [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && t.coordKey === c.key && isIdle({uid: t.uid})).length;
   const actOk = n => !actF.length || actF.some(a => a === "idle" ? n > 0 : n === 0);
+  // "Show": people behind their own peers (same rules as the band, the ▼ chips and Idle 7d shown in each row)
+  const showF = $("fShow").value;
+  const convBelow = (t, g, f) => {                               // conversion below the peer average (beyond the "≈ avg" band)
+    if (!t || !g || g.n < 2 || !g.l || t.l < MIN_LEADS || (f === "a" && !(g.a > 0))) return false;
+    const mine = t[f] / t.l * 100, grp = g[f] / g.l * 100;
+    return grp - mine >= Math.max(0.05, 0.1 * grp);
+  };
+  const hitsLow = x => (x.score !== null && x.score !== undefined && x.score < 50) || (x.zero && !x.noHits);
+  const showOk = (x, lead, peer, rankable, idle) => {
+    if (!showF) return true;
+    const f = {hits: rankable && hitsLow(x), app: convBelow(lead, peer, "c"), adm: convBelow(lead, peer, "a"), idle: !!idle};
+    return showF === "any" ? f.hits || f.app || f.adm : !!f[showF];
+  };
 
-  let head = [], rows = [], toRow, sortVals = {};
+  let head = [], rows = [], toRow, sortVals = {}, baseN = 0;
   const hlBase = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
   const hlFn = x => !below && hlBase(x);                          // no highlighting inside a drill-down (every row belongs to the selection)
   if (view === "people"){
     head = [["rank","Rank"],["name","Counselor"],["group","Group"],["hits","Hits"],["conv","Lead funnel"],["score","Score"],["band","Band"]];
     rows = L.people.filter(p => (!q || (p.name + " " + p.uid).toLowerCase().includes(q)) && bandOk(p.score) && actOk(isIdle(p) ? 1 : 0));
+    baseN = rows.length;
+    rows = rows.filter(p => showOk(p, pLead(p), pPeer(p), true, isIdle(p)));
     sortVals = {name: p => p.name, group: p => p.skill + (p.post ? " 0" : p.sim ? " 1" : " 2"), hits: p => p.h.app + p.h.adm + p.h.post, conv: p => leadRate(pLead(p)), score: p => p.score ?? -1, band: p => p.score ?? -1};
     toRow = p => {
       const tag = p.post ? '<span class="simtag post">Post-adm</span>' : '<span class="simtag' + (p.sim ? " on" : "") + '">' + (p.sim ? "SIM" : "Normal") + '</span>';
@@ -1672,6 +1696,8 @@ function render(){
   } else if (view === "teams"){
     head = [["rank","Rank"],["name","Team leader"],["skill","Skill"],["hits","Team hits"],["conv","Lead funnel"],["score","Score"],["band","Band"]];
     rows = L.teams.filter(t => (!q || (t.name + " " + t.uid).toLowerCase().includes(q)) && bandOk(t.score) && actOk(teamIdle(t)));
+    baseN = rows.length;
+    rows = rows.filter(t => showOk(t, tLead(t), tPeer(t), true, isIdle({uid: t.uid})));
     const wk = t => (dTrend.teams.get(t.uid) || {}).wk;
     sortVals = {name: t => t.name, skill: t => t.skill || "", hits: t => t.ok, conv: t => leadRate(tLead(t)), trend: t => (wk(t) || [0])[TREND_WEEKS - 1], score: t => t.score ?? -1, band: t => t.score ?? -1};
     toRow = t => {
@@ -1686,6 +1712,8 @@ function render(){
   } else {
     head = [["name","Coordinator"],["teams","Teams"],["hits","Hits"],["conv","Lead funnel"]];
     rows = L.coords.filter(c => (!q || c.name.toLowerCase().includes(q)) && actOk(coordIdle(c))).sort((a, b) => a.name.localeCompare(b.name));
+    baseN = rows.length;
+    rows = rows.filter(c => showOk(c, cLead(c), divBase && divBase.all, false, false));   // coordinators: conversion vs the division
     const wk = c => (dTrend.coords.get(c.key) || {}).wk;
     sortVals = {name: c => c.name, teams: c => c.teamCount, hits: c => c.ok, conv: c => leadRate(cLead(c)), trend: c => (wk(c) || [0])[TREND_WEEKS - 1]};
     toRow = c => {
@@ -1719,11 +1747,13 @@ function render(){
   $("tbody").innerHTML = items.map(x => toRow(x)).join("") || '<tr><td class="empty" colspan="' + head.length + '">Nothing matches these filters.</td></tr>';
   const noun = view === "people" ? "counselor" : view === "teams" ? "team" : "coordinator";
   const nHl = level ? rows.filter(hlFn).length : 0;
-  $("viewCount").textContent = fmt(rows.length) + " " + noun + (rows.length === 1 ? "" : "s") + (nHl ? ", " + fmt(nHl) + " highlighted" : "");
+  $("viewCount").textContent = (showF ? fmt(rows.length) + " of " + fmt(baseN) : fmt(rows.length)) + " " + noun + (rows.length === 1 && !showF ? "" : "s") +
+    (showF ? " " + ({any: "below peers", hits: "below median", app: "below peers on L→App", adm: "below peers on L→Adm", idle: "idle 7 days"})[showF] : "") +
+    (nHl ? ", " + fmt(nHl) + " highlighted" : "");
   // What is counted, and which filters are on (so numbers can be checked against other pages)
   {
     const txt = id => { const el = $(id); if (!el) return []; return [...el.options].filter(o => o.selected && o.value !== "").map(o => o.textContent.replace(/\s*\(\d[\d,]*\)\s*$/, "")); };
-    const on = [["fCoord","Coordinator"],["fTeam","Team leader"],["fPerson","Counselor"],["fSkill","Skill"],["fSim","Type"],["fMonth","Payment month"],["fBand","Band"],["fAct","Activity"]]
+    const on = [["fShow","Show"],["fCoord","Coordinator"],["fTeam","Team leader"],["fPerson","Counselor"],["fSkill","Skill"],["fSim","Type"],["fMonth","Payment month"],["fBand","Band"],["fAct","Activity"]]
       .map(([id, n]) => { const v = txt(id); return v.length ? n + ": " + v.join(", ") : ""; }).filter(Boolean);
     const per = $("fPeriod").value;
     on.unshift("Period: " + (per === "custom" ? ($("pFrom").value || "…") + " to " + ($("pTo").value || "…") : $("fPeriod").options[$("fPeriod").selectedIndex].textContent));
@@ -1790,7 +1820,7 @@ function render(){
       td("Approved claims", g.members.length < 2 ? "–" : qc(g.totals), "num") + '</tr>').join("") ||
     '<tr><td class="empty" colspan="3">No groups to show.</td></tr>';
 
-  const nActive = ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].filter(id => $(id).value.trim()).length;
+  const nActive = ["fShow","fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q"].filter(id => $(id).value.trim()).length;
   const nMore = ["q","fMonth","fBand","fAct"].filter(id => $(id).value.trim()).length;
   $("moreBtn").textContent = "More filters" + (nMore ? " (" + nMore + " active)" : "");
   const anyMove = $("tbody").querySelector(".move.up,.move.down,.move.new");
@@ -1809,8 +1839,9 @@ $("fPerson").addEventListener("change", () => { if ($("fPerson").value) view = "
 $("moreBtn").addEventListener("click", () => { const open = $("moreFilters").hidden; $("moreFilters").hidden = !open; $("moreBtn").setAttribute("aria-expanded", open ? "true" : "false"); });
 document.querySelectorAll("#modeBar button").forEach(b => b.addEventListener("click", () => { mode = b.dataset.mode; pg = 1; jumpToHighlight = true; render(); }));
 let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => { pg = 1; render(); }, 200); });
-$("resetBtn").addEventListener("click", () => { ["fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q","pFrom","pTo"].forEach(id => $(id).value = ""); $("pFromWrap").hidden = $("pToWrap").hidden = true; pg = 1; render(); });
+$("resetBtn").addEventListener("click", () => { ["fShow","fCoord","fTeam","fPerson","fSkill","fSim","fPeriod","fMonth","fBand","fAct","q","pFrom","pTo"].forEach(id => $(id).value = ""); $("pFromWrap").hidden = $("pToWrap").hidden = true; pg = 1; render(); });
 $("refreshBtn").addEventListener("click", () => load(false));
+$("fShow").addEventListener("change", () => { pg = 1; render(); });
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { view = b.dataset.view; $("q").value = ""; pg = 1; jumpToHighlight = true; render(); }));
 function drill(tr){
   if (!tr) return;
