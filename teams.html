@@ -1387,14 +1387,24 @@ function convCell(t, peer, f, who){
 }
 
 /* Coordinator: conversion by skill, in a small table opened from the row */
-function skillTable(m, people, skillBase){
+function skillTable(m, people, skillBase, claimBase){
   const by = new Map();
-  for (const x of people){ const k = x.skill || "Other"; if (!by.has(k)) by.set(k, []); by.get(k).push(x.uid); }
-  const lines = [...by.entries()].map(([k, uids]) => [k, sumLeads(m, uids)]).filter(([, t]) => t.l).sort((a, b) => b[1].l - a[1].l);
+  for (const x of people){ const k = x.skill || "Other"; if (!by.has(k)) by.set(k, []); by.get(k).push(x); }
+  const lines = [...by.entries()].map(([k, xs]) => [k, sumLeads(m, xs.map(x => x.uid)), xs]).filter(([, t, xs]) => t.l || xs.some(x => x.ok)).sort((a, b) => b[1].l - a[1].l);
   if (!lines.length) return "";
-  return '<table class="sktab"><thead><tr><th>Skill</th><th>Leads</th><th>Lead → Application</th><th>Lead → Admission</th></tr></thead><tbody>' +
-    lines.map(([k, t]) => { const g = skillBase && skillBase.get(k);
-      return '<tr><td>' + skillShort(k) + '</td><td>' + fmt(t.l) + '</td><td>' + convCell(t, g, "c", "skill") + '</td><td>' + convCell(t, g, "a", "skill") + '</td></tr>'; }).join("") +
+  // approved claims per member (counselors + team leaders) in this skill, versus this skill across the division
+  const claimsBox = (k, xs) => {
+    const ok = xs.reduce((a, x) => a + (x.ok || 0), 0), n = xs.length, v = n ? ok / n : 0, g = claimBase && claimBase.get(k);
+    let vs = "";
+    if (g && g.n >= 2){
+      const avg = g.ok / g.n, rel = avg ? (v - avg) / avg : (v > 0 ? 1 : 0), kk = Math.abs(rel) < 0.1 ? "eq" : rel > 0 ? "up" : "down";
+      vs = '<span class="vsl ' + kk + '">' + (kk === "eq" ? "In line with skill" : (kk === "up" ? "Above" : "Below") + " skill") + ' <i>(avg ' + avg.toFixed(2) + ')</i></span>';
+    }
+    return '<div class="cv"><div><b class="cvp">' + fmt(ok) + '</b> <small>' + v.toFixed(2) + ' per member · ' + n + ' member' + (n === 1 ? "" : "s") + '</small></div>' + vs + '</div>';
+  };
+  return '<table class="sktab"><thead><tr><th>Skill</th><th>Leads</th><th>Approved claims</th><th>Lead → Application</th><th>Lead → Admission</th></tr></thead><tbody>' +
+    lines.map(([k, t, xs]) => { const g = skillBase && skillBase.get(k);
+      return '<tr><td>' + skillShort(k) + '</td><td>' + fmt(t.l) + '</td><td>' + claimsBox(k, xs) + '</td><td>' + convCell(t, g, "c", "skill") + '</td><td>' + convCell(t, g, "a", "skill") + '</td></tr>'; }).join("") +
     '</tbody></table>';
 }
 
@@ -1762,6 +1772,12 @@ function render(){
   const hlBase = hl[view === "people" ? "people" : view === "teams" ? "teams" : "coords"];
   const hlFn = x => !below && hlBase(x);                          // no highlighting inside a drill-down (every row belongs to the selection)
   const cLeadOf = c => cLead(c);
+  // approved claims and members (counselors + team leaders) per skill, across the whole division
+  const claimsBySkill = new Map();
+  for (const x of d.people.values()){
+    if (x.active === false || !funnelOk(x)) continue;
+    const k = x.skill || "Other", g = claimsBySkill.get(k) || {ok: 0, n: 0}; g.ok += x.ok || 0; g.n++; claimsBySkill.set(k, g);
+  }
   // Coordinators lead teams of different sizes: compare approved claims PER MEMBER (counselors + team leaders),
   // since team leaders' own claims are part of the total. Division average = all claims / all members.
   const members = c => (c.counselors || 0) + (c.teamCount || 0);
@@ -1825,7 +1841,7 @@ function render(){
     sortVals = {name: c => c.name, hits: c => c.ok, conv: c => leadRate(cLead(c)), adm: c => { const x = cLead(c); return x && x.l ? x.a / x.l : -1; }};
     toRow = c => {
       const n = coordIdle(c), nTL = coordIdleTL(c);
-      const sk = LT ? skillTable(LT, [...d.people.values()].filter(x => x.coordKey === c.key && funnelOk(x)), divBase && divBase.bySkill) : "";
+      const sk = LT ? skillTable(LT, [...d.people.values()].filter(x => x.coordKey === c.key && x.active !== false && funnelOk(x)), divBase && divBase.bySkill, claimsBySkill) : "";
       return '<tr class="click' + (hl.coords(c) ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
         td("Coordinator", '<span class="who"><b>' + esc(c.name) + '</b><small>' + fmt(c.teamCount) + ' team leaders · ' + fmt(c.counselors) + ' counselors</small>' +
           (n || nTL ? '<small><span class="idletxt">' + [n ? fmt(n) + " counselors" : "", nTL ? fmt(nTL) + " TL" + (nTL === 1 ? "" : "s") : ""].filter(Boolean).join(", ") + ' idle 7d</span></small>' : "") +
