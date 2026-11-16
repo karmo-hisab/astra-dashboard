@@ -1865,6 +1865,8 @@ function render(){
       : (p => showF === "hits" ? (p.zero && !p.noHits ? -1 : p.score ?? 999) : showF === "idle" ? (lastClaim.get(String(p.uid)) || 0) : convGap(pLead(p), pPeer(p), showF === "app" ? "c" : "a"));
   if (worstKey && (!sv.key || sv.key === "rank") && sv.dir !== -1){         // Show active and no column chosen: weakest at the top
     rows = [...rows].sort((a, b) => { const x = worstKey(a), y = worstKey(b); return (x === null ? 1e9 : x) - (y === null ? 1e9 : y); });
+  } else if (view === "coords" && (!sv.key || sv.key === "rank")){   // coordinators: approved claims per member, best first
+    rows = [...rows].sort((a, b) => { const x = pcOf(a), y = pcOf(b); return (y === null ? -1 : y) - (x === null ? -1 : x) || a.name.localeCompare(b.name); });
   } else if (sv.key && sv.key !== "rank" && sortVals[sv.key]){
     const get = sortVals[sv.key];
     rows = [...rows].sort((a, b) => {
