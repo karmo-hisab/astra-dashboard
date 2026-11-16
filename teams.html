@@ -1642,7 +1642,9 @@ function render(){
   };
   const cSel = $("fCoord"), tSel = $("fTeam");
   const counselorsOf = (dd, fn) => [...dd.people.values()].filter(x => !x.isTL && x.active && fn(x)).length;
-  fillSel(cSel, [...d.coords.values()].map(c => ({v:c.key, l:withCoach(c.name), n:counselorsOf(d, x => x.coordKey === c.key)}))
+  // coordinator filter: members = counselors + team leaders (the same people coordinators are compared on)
+  const tlsOf = key => [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && t.coordKey === key).length;
+  fillSel(cSel, [...d.coords.values()].map(c => ({v:c.key, l:withCoach(c.name), n:counselorsOf(d, x => x.coordKey === c.key) + tlsOf(c.key)}))
     .filter(it => it.n || msVals(cSel).includes(it.v)).sort((a, b) => a.l.localeCompare(b.l)), v => (d0.coords.get(v) || {}).name);
   const scs = msVals(cSel);
   fillSel(tSel, [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!scs.length || scs.includes(t.coordKey)))
