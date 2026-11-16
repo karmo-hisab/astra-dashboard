@@ -1031,6 +1031,7 @@ async function fetchClaims(useShared){
     mode: F.mode !== undefined && D.mode ? String(D.mode[r[F.mode]] || "").trim() : ""
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  setCoaches(data.coaches);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
   const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0})) : null;
@@ -1211,7 +1212,7 @@ async function load(isBackground){
 function dayKeyOf(ms){ if (!ms) return ""; const d = new Date(ms); if (isNaN(d)) return ""; return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 function dayLabel(k){ if (!k) return "(No assignment date)"; const [y, m, d] = k.split("-"); return d + "-" + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][Number(m) - 1] + "-" + y; }
 const FL = [
-  {id:"fCoord",  key:"coord"},
+  {id:"fCoord",  key:"coord", label:a => withCoach(a.coord)},
   {id:"fTeam",   key:"tlKey", label:a => a.tlName + (a.tlUid ? " (" + a.tlUid + ")" : "")},
   {id:"fTskill", key:"tlSkill", blank:"(No TL skill)"},
   {id:"fPskill", key:"pskill"},
@@ -1458,6 +1459,13 @@ msEnhance("fPhase");
 msEnhance("fForm");
 msEnhance("fAtype");
 msEnhance("fAday");
+
+/* Coaches (helping hands of a coordinator): shown next to the coordinator's name */
+let COACHES = new Map();
+const coachKey = s => String(s || "").toLowerCase().replace(/\bdr\.?\s*/g, "").replace(/[^a-z]/g, "");
+function setCoaches(list){ COACHES = new Map(); (list || []).forEach(x => { const k = coachKey(x[0]); if (!COACHES.has(k)) COACHES.set(k, []); COACHES.get(k).push(x[1]); }); }
+const coachesOf = name => COACHES.get(coachKey(name)) || [];
+const withCoach = name => { const c = coachesOf(name); return c.length ? name + " · Coach: " + c.join(", ") : name; };
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){

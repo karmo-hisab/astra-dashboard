@@ -965,6 +965,7 @@ async function fetchClaims(useShared){
     cdate: F.cdate !== undefined ? String(r[F.cdate] || "").trim() : "", _cdTs: F.cdateTs !== undefined ? r[F.cdateTs] || 0 : 0
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  setCoaches(data.coaches);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
   const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0})) : null;
@@ -1136,6 +1137,9 @@ $("claimAgain").addEventListener("click", () => {
   showWho();                                                          // back to the TL Bifurcation team leader and coordinator
   $("claimDone").hidden = true; $("claimForm").hidden = false; $("cApp").focus();
 });
+
+/* Coaches list arrives with the data; the claim page does not show it */
+function setCoaches(){}
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){

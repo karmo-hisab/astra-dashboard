@@ -1056,6 +1056,7 @@ async function fetchClaims(useShared){
     mode: F.mode !== undefined && D.mode ? String(D.mode[r[F.mode]] || "").trim() : ""
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  setCoaches(data.coaches);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
   const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0, b: r[5] || 0})) : null;
@@ -1638,7 +1639,7 @@ function render(){
   };
   const cSel = $("fCoord"), tSel = $("fTeam");
   const counselorsOf = (dd, fn) => [...dd.people.values()].filter(x => !x.isTL && x.active && fn(x)).length;
-  fillSel(cSel, [...d.coords.values()].map(c => ({v:c.key, l:c.name, n:counselorsOf(d, x => x.coordKey === c.key)}))
+  fillSel(cSel, [...d.coords.values()].map(c => ({v:c.key, l:withCoach(c.name), n:counselorsOf(d, x => x.coordKey === c.key)}))
     .filter(it => it.n || msVals(cSel).includes(it.v)).sort((a, b) => a.l.localeCompare(b.l)), v => (d0.coords.get(v) || {}).name);
   const scs = msVals(cSel);
   fillSel(tSel, [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && (!scs.length || scs.includes(t.coordKey)))
@@ -1843,7 +1844,7 @@ function render(){
       const n = coordIdle(c), nTL = coordIdleTL(c);
       const sk = LT ? skillTable(LT, [...d.people.values()].filter(x => x.coordKey === c.key && x.active !== false && funnelOk(x)), divBase && divBase.bySkill, claimsBySkill) : "";
       return '<tr class="click' + (hl.coords(c) ? " hl" : "") + '" data-coord="' + esc(c.key) + '" tabindex="0" title="Show this coordinator\'s teams">' +
-        td("Coordinator", '<span class="who"><b>' + esc(c.name) + '</b><small>' + fmt(c.teamCount) + ' team leaders · ' + fmt(c.counselors) + ' counselors</small>' +
+        td("Coordinator", '<span class="who"><b>' + esc(c.name) + '</b>' + (coachesOf(c.name).length ? '<small>Coach: ' + esc(coachesOf(c.name).join(", ")) + '</small>' : "") + '<small>' + fmt(c.teamCount) + ' team leaders · ' + fmt(c.counselors) + ' counselors</small>' +
           (n || nTL ? '<small><span class="idletxt">' + [n ? fmt(n) + " counselors" : "", nTL ? fmt(nTL) + " TL" + (nTL === 1 ? "" : "s") : ""].filter(Boolean).join(", ") + ' idle 7d</span></small>' : "") +
           (sk ? '<button type="button" class="skbtn" data-sk="' + esc(c.key) + '" aria-expanded="false">By skill ▸</button>' : "") + '</span>') +
         td("Approved claims", claimsCell(c, pcRank.has(c.key) ? ord(pcRank.get(c.key)) + " of " + pcAll.length + " coordinators" : "", coordClaimsLine(c))) +
@@ -2080,6 +2081,13 @@ msEnhance("fSkill");
 msEnhance("fMonth");
 msEnhance("fBand");
 msEnhance("fAct");
+
+/* Coaches (helping hands of a coordinator): shown next to the coordinator's name */
+let COACHES = new Map();
+const coachKey = s => String(s || "").toLowerCase().replace(/\bdr\.?\s*/g, "").replace(/[^a-z]/g, "");
+function setCoaches(list){ COACHES = new Map(); (list || []).forEach(x => { const k = coachKey(x[0]); if (!COACHES.has(k)) COACHES.set(k, []); COACHES.get(k).push(x[1]); }); }
+const coachesOf = name => COACHES.get(coachKey(name)) || [];
+const withCoach = name => { const c = coachesOf(name); return c.length ? name + " · Coach: " + c.join(", ") : name; };
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){

@@ -412,6 +412,7 @@ tbody tr.hl td b{color:var(--ink)}
 .ms-none{padding:10px;font-size:13px;color:var(--faint)}
 @media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
 .cmem{color:var(--ink)} .cmemx{color:var(--faint)}
+.ccoach{display:inline-block;margin-left:8px;font-size:12px;font-weight:600;color:var(--muted)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1003,6 +1004,7 @@ async function fetchClaims(useShared){
     mode: F.mode !== undefined && D.mode ? String(D.mode[r[F.mode]] || "").trim() : ""
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  setCoaches(data.coaches);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
   const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0})) : null;
@@ -1396,7 +1398,7 @@ function render(){
   const counselors = [...d.people.values()].filter(p => !p.isTL && p.active);
   const coordItems = [...d.coords.values()].map(c => ({v:c.key, l:c.name, n:counselors.filter(p => p.coordKey === c.key).length + [...d.teams.values()].filter(t => !t.other && d.tlSet.has(t.uid) && t.coordKey === c.key).length}))
     .filter(it => it.n || curC.includes(it.v)).sort((a, b) => a.l.localeCompare(b.l));
-  cSel.innerHTML = '<option value="">All</option>' + coordItems.map(it => '<option value="' + esc(it.v) + '">' + esc(it.l) + '</option>').join("");
+  cSel.innerHTML = '<option value="">All</option>' + coordItems.map(it => '<option value="' + esc(it.v) + '">' + esc(withCoach(it.l)) + '</option>').join("");
   msSet(cSel, curC.filter(v => coordItems.some(it => it.v === v)));
 
   // Ranks: coordinators overall, team leaders within skill, counselors within their peer group
@@ -1455,7 +1457,7 @@ function render(){
       '<span class="skchip">' + esc(k) + ' <b>' + n + '</b></span>').join("") + (mism ? '<span class="mini diff">' + mism + ' different skill</span>' : '') + '</span>';
     const head = '<button type="button" class="chead n' + (hit(c.name) ? " match" : "") + '" data-coord="' + esc(c.key) + '" aria-expanded="' + open + '">' +
       '<svg class="ic chev" aria-hidden="true"><use href="#i-chev"/></svg>' +
-      '<span><span class="cname">' + esc(c.name) + '</span><br><span class="csub">' + (() => {                              // total head-count: team leaders + counselors
+      '<span><span class="cname">' + esc(c.name) + '</span>' + (coachesOf(c.name).length ? '<span class="ccoach">Coach: ' + esc(coachesOf(c.name).join(", ")) + '</span>' : "") + '<br><span class="csub">' + (() => {                              // total head-count: team leaders + counselors
         const nT = cols.filter(x => x.t).length, nC = cols.reduce((n, x) => n + x.members.length, 0), pl = (n, w) => fmt(n) + " " + w + (n === 1 ? "" : "s");
         return 'Coordinator · ' + pl(nT, "team") + ' · <b class="cmem">' + pl(nT + nC, "member") + '</b> <span class="cmemx">(' + pl(nT, "team leader") + ' + ' + pl(nC, "counselor") + ')</span>';
       })() + '</span>' + skillsLine + '</span>' +
@@ -1579,6 +1581,13 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") msClose(); }
 
 msEnhance("fSkill");
 msEnhance("fCoord");
+
+/* Coaches (helping hands of a coordinator): shown next to the coordinator's name */
+let COACHES = new Map();
+const coachKey = s => String(s || "").toLowerCase().replace(/\bdr\.?\s*/g, "").replace(/[^a-z]/g, "");
+function setCoaches(list){ COACHES = new Map(); (list || []).forEach(x => { const k = coachKey(x[0]); if (!COACHES.has(k)) COACHES.set(k, []); COACHES.get(k).push(x[1]); }); }
+const coachesOf = name => COACHES.get(coachKey(name)) || [];
+const withCoach = name => { const c = coachesOf(name); return c.length ? name + " · Coach: " + c.join(", ") : name; };
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){

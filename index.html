@@ -962,6 +962,7 @@ async function fetchClaims(useShared){
     cdate: F.cdate !== undefined ? String(r[F.cdate] || "").trim() : "", _cdTs: F.cdateTs !== undefined ? r[F.cdateTs] || 0 : 0
   }));
   const RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  setCoaches(data.coaches);
   const roster = (data.roster || []).map(r => ({uid:r[RF.uid], name:r[RF.name], role:r[RF.role], coord:r[RF.coord], sim:r[RF.sim],
     skill:r[RF.skill], tlUid:r[RF.tlUid], tlName:r[RF.tlName], active:r[RF.active] === 1, lastSeen:r[RF.lastSeen]}));
   const leads = Array.isArray(data.leads) ? data.leads.map(r => ({d: r[0], uid: String(r[1]), l: r[2] || 0, c: r[3] || 0, a: r[4] || 0})) : null;
@@ -1075,7 +1076,7 @@ function buildOptions(f){
       opts.set(c, {label: any && d.labelKey ? any[d.labelKey] : c, n: 0});
     }
     const vals = [...opts.keys()].sort((a, b) => String(opts.get(a).label).localeCompare(String(opts.get(b).label), undefined, {numeric:true}));
-    sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '">' + esc(opts.get(v).label) + ' (' + fmt(opts.get(v).n) + ')</option>').join("");
+    sel.innerHTML = '<option value="">All</option>' + vals.map(v => '<option value="' + esc(v) + '">' + esc(d.id === "fDrona" ? withCoach(opts.get(v).label) : opts.get(v).label) + ' (' + fmt(opts.get(v).n) + ')</option>').join("");
     msSet(sel, cur);
   }
   // Mode of conversion: options from the values in column F (Ameyo call first, blank last)
@@ -1409,6 +1410,13 @@ msEnhance("fMode");
 msEnhance("fStage");
 msEnhance("fRebut");
 msEnhance("fMonth");
+
+/* Coaches (helping hands of a coordinator): shown next to the coordinator's name */
+let COACHES = new Map();
+const coachKey = s => String(s || "").toLowerCase().replace(/\bdr\.?\s*/g, "").replace(/[^a-z]/g, "");
+function setCoaches(list){ COACHES = new Map(); (list || []).forEach(x => { const k = coachKey(x[0]); if (!COACHES.has(k)) COACHES.set(k, []); COACHES.get(k).push(x[1]); }); }
+const coachesOf = name => COACHES.get(coachKey(name)) || [];
+const withCoach = name => { const c = coachesOf(name); return c.length ? name + " · Coach: " + c.join(", ") : name; };
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
