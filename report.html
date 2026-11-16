@@ -260,6 +260,15 @@ html.nav-mini .sidenav span.two{display:none}
 .ms-opt.dim{opacity:.5;cursor:default}
 .ms-none{padding:10px;font-size:13px;color:var(--faint)}
 @media (max-width: 720px){ .ms-panel{position:fixed;left:12px!important;right:12px;top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;min-width:0;max-width:none;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column} .ms-panel[hidden]{display:none} .ms-list{max-height:none;flex:1;overflow:auto} }
+.agebtn{min-width:34px;min-height:30px;padding:2px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.agebtn.warn{color:var(--bad);border-color:var(--bad)}
+.agebtn:hover,.agebtn.on{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent)}
+.agedetail{margin-top:12px;padding:12px 14px}
+.agedetail th,.agedetail td{text-align:left!important}
+.agedetail td.num,.agedetail th:last-child{text-align:right!important}
+.agehead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:14px}
+.ageclose{border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;padding:4px 10px;cursor:pointer}
+@media print{ .agebtn{border:none;padding:0;min-width:0} .ageclose{display:none} }
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -636,7 +645,7 @@ td{border-color:var(--line-2)}
 
     <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-grid"/></svg>Claims summary</h2>
     <div class="panel rtable"><div class="tablebox"><table class="rt"><thead><tr>
-      <th>Claim type</th><th>Total claims filed</th><th>Approved</th><th>Rejected</th><th>Step 1 pending</th><th>Step 2 pending</th><th>Acceptance rate</th>
+      <th>Claim type</th><th>Total claims filed</th><th>Approved</th><th>Rejected</th><th>Step 1 pending</th><th>Step 2 pending</th><th>Awaiting proof</th><th>Acceptance rate</th>
     </tr></thead><tbody id="sumBody"></tbody></table></div></div>
     <p class="rnote">Acceptance rate = Approved ÷ Total claims filed. Step 2 pending includes proof required and proof submitted.</p>
 
@@ -651,12 +660,13 @@ td{border-color:var(--line-2)}
     <div class="panel rtable"><div class="tablebox"><table class="rt"><thead><tr>
       <th>Waiting at</th><th>0–1 days</th><th>2–3 days</th><th>4–7 days</th><th>Over 7 days</th><th>Total pending</th>
     </tr></thead><tbody id="ageBody"></tbody></table></div></div>
-    <p class="rnote">Step 1 waiting time counts from claim submission, Step 2 from the Step-1 check date; any start before 21 Oct 2026 counts from 21 Oct 2026.</p>
+    <div class="panel agedetail" id="ageDetail" hidden></div>
+    <p class="rnote">Select any number to see the claims behind it. Step 1 waiting time counts from claim submission; Step 2 from the Step-1 check date (proof submitted: from the date proof was asked for). Proof Required claims wait on the counselor, so they are shown separately and are not Step 2 pending; Step 2 TAT for them is counted up to the date proof was asked for. Any start before 21 Oct 2026 counts from 21 Oct 2026.</p>
   </section>
 
   <footer>
     <span><b>For LPU internal use only.</b> Access is limited to @lpu.co.in accounts. Please don't share screenshots outside LPU. Page visits are recorded for internal usage reports.</span>
-    <span>Counts only; no student details are shown.</span>
+    <span>Application numbers are shown according to your access.</span>
   </footer>
 </div>
 
@@ -962,9 +972,10 @@ function render(){
   $("rScope").textContent = "Showing " + fmt(list.length) + " claims" + (months.length ? ", payment month" + (months.length > 1 ? "s " : " ") + month : ", all payment months") +
     (from !== null || to !== null ? ", claims submitted " + ($("dFrom").value || "…") + " to " + ($("dTo").value || "…") : "") + ".";
 
-  const blankRow = () => ({n:0, ok:0, bad:0, s1p:0, s2p:0, t1:[], t2:[]});
+  const blankRow = () => ({n:0, ok:0, bad:0, s1p:0, s2p:0, prq:0, t1:[], t2:[]});
   const rows = RTYPES.map(t => Object.assign(blankRow(), {t})), total = blankRow();
-  const age = {s1p:[0, 0, 0, 0], s2p:[0, 0, 0, 0]};
+  const age = {s1p:[0, 0, 0, 0], s2p:[0, 0, 0, 0], prq:[0, 0, 0, 0]};
+  const ageList = {s1p:[[], [], [], []], s2p:[[], [], [], []], prq:[[], [], [], []]};      // the claims behind each number
   const bucket = d => d <= 1 ? 0 : d <= 3 ? 1 : d <= 7 ? 2 : 3;
   for (const r of list){
     const row = rows.find(x => x.t.re.test(r.claim || "")); if (!row) continue;
@@ -973,7 +984,8 @@ function render(){
       x.n++;
       if (r._res === "ok") x.ok++; else if (r._res === "bad") x.bad++;
       if (st === "s1p") x.s1p++;
-      if (st === "s2p" || st === "prq" || st === "psb") x.s2p++;
+      if (st === "s2p" || st === "psb") x.s2p++;                     // with the Step 2 team
+      if (st === "prq") x.prq++;                                     // Step 2 asked for proof: with the counselor
     }
     // TAT: Step 1 = Step-1 check date − submission (whole days, the check date has no time); Step 2 = Step-2 date & time − Step-1 check date
     if (r.s1d && r._ts && st !== "s1p"){
@@ -985,23 +997,51 @@ function render(){
       if (d2 >= 0){ row.t2.push(d2); total.t2.push(d2); }
     }
     // Pending ageing
-    if (st === "s1p" && r._ts) age.s1p[bucket(Math.floor((now - Math.max(r._ts, STEP1_START)) / RDAY))]++;
-    if ((st === "s2p" || st === "prq" || st === "psb")) { const start = Math.max(r.s1d || r._ts || 0, STEP1_START); age.s2p[bucket(Math.floor((now - start) / RDAY))]++; }
+    if (st === "s1p" && r._ts){ const start = Math.max(r._ts, STEP1_START), dd = Math.floor((now - start) / RDAY); age.s1p[bucket(dd)]++; ageList.s1p[bucket(dd)].push({r, st, start, dd}); }
+    if (st === "s2p" || st === "psb" || st === "prq"){
+      // to be evaluated: from the Step-1 check date; proof submitted / proof required: from the Step-2 check date (when proof was asked for)
+      const from = st === "s2p" ? (r.s1d || r._ts || 0) : (r.s2d || r.s1d || r._ts || 0);
+      const start = Math.max(from, STEP1_START), dd = Math.floor((now - start) / RDAY), k = st === "prq" ? "prq" : "s2p";
+      age[k][bucket(dd)]++; ageList[k][bucket(dd)].push({r, st, start, dd});
+    }
   }
   const pct = (a, b) => b ? Math.round(a * 100 / b) + "%" : "–";
   const sumRow = (label, x, cls) => '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
     td("Claim type", label) + td("Total claims filed", fmt(x.n), "num") + td("Approved", fmt(x.ok), "num") + td("Rejected", fmt(x.bad), "num") +
-    td("Step 1 pending", x.s1p ? '<span class="warn">' + fmt(x.s1p) + '</span>' : "0", "num") + td("Step 2 pending", x.s2p ? '<span class="warn">' + fmt(x.s2p) + '</span>' : "0", "num") +
+    td("Step 1 pending", x.s1p ? '<span class="warn">' + fmt(x.s1p) + '</span>' : "0", "num") + td("Step 2 pending", x.s2p ? '<span class="warn">' + fmt(x.s2p) + '</span>' : "0", "num") + td("Awaiting proof", fmt(x.prq), "num") +
     td("Acceptance rate", '<span class="accept">' + pct(x.ok, x.n) + '</span>', "num") + '</tr>';
   $("sumBody").innerHTML = rows.map(x => sumRow(x.t.emoji + " " + x.t.label, x)).join("") + sumRow("<b>Total</b>", total, "total");
   const tatRow = (label, x, cls) => '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' + td("Claim type", label) +
     td("Step 1 average", daysTxt(mean(x.t1)), "num") + td("Step 1 median", daysTxt(median(x.t1)), "num") + td("Step 1 claims", fmt(x.t1.length), "num") +
     td("Step 2 average", daysTxt(mean(x.t2)), "num") + td("Step 2 median", daysTxt(median(x.t2)), "num") + td("Step 2 claims", fmt(x.t2.length), "num") + '</tr>';
   $("tatBody").innerHTML = rows.map(x => tatRow(x.t.emoji + " " + x.t.label, x)).join("") + tatRow("<b>Overall</b>", total, "total");
-  const ageRow = (label, a) => '<tr>' + td("Waiting at", label) + td("0–1 days", fmt(a[0]), "num") + td("2–3 days", fmt(a[1]), "num") +
-    td("4–7 days", a[2] ? '<span class="warn">' + fmt(a[2]) + '</span>' : "0", "num") + td("Over 7 days", a[3] ? '<span class="warn">' + fmt(a[3]) + '</span>' : "0", "num") +
-    td("Total pending", '<b>' + fmt(a[0] + a[1] + a[2] + a[3]) + '</b>', "num") + '</tr>';
-  $("ageBody").innerHTML = ageRow("Step 1: Record verification", age.s1p) + ageRow("Step 2: Snooping verification", age.s2p);
+  const ageBtn = (key, b, n, warn) => !n ? "0" : '<button type="button" class="agebtn' + (warn ? " warn" : "") + (AGE_SEL && AGE_SEL.key === key && AGE_SEL.b === b ? " on" : "") +
+    '" data-key="' + key + '" data-b="' + b + '" title="Show these claims">' + fmt(n) + '</button>';
+  const ageRow = (label, key, a) => '<tr>' + td("Waiting at", label) + td("0–1 days", ageBtn(key, 0, a[0]), "num") + td("2–3 days", ageBtn(key, 1, a[1]), "num") +
+    td("4–7 days", ageBtn(key, 2, a[2], true), "num") + td("Over 7 days", ageBtn(key, 3, a[3], true), "num") +
+    td("Total pending", ageBtn(key, "all", a[0] + a[1] + a[2] + a[3]), "num") + '</tr>';
+  $("ageBody").innerHTML = ageRow("Step 1: Record verification", "s1p", age.s1p) + ageRow("Step 2: Snooping verification", "s2p", age.s2p) +
+    ageRow('Awaiting proof <small class="faint">(with counselor, not Step 2 pending)</small>', "prq", age.prq);
+  // the claims behind the chosen number
+  AGE_DATA = ageList;
+  const box = $("ageDetail");
+  if (!AGE_SEL){ box.hidden = true; box.innerHTML = ""; }
+  else {
+    const L = AGE_SEL.b === "all" ? [].concat(...ageList[AGE_SEL.key]) : ageList[AGE_SEL.key][AGE_SEL.b] || [];
+    const BN = ["0–1 days", "2–3 days", "4–7 days", "over 7 days"], ST = {s1p: "Step 1 pending", s2p: "Step 2 pending", prq: "Proof required", psb: "Proof submitted"};
+    const day = ms => ms ? new Date(ms).toLocaleDateString("en-IN", {day:"2-digit", month:"short", year:"numeric"}) : "–";
+    const typ = c => { const t = RTYPES.find(x => x.re.test(c || "")); return t ? t.emoji + " " + t.label : (c || "–"); };
+    box.hidden = false;
+    box.innerHTML = '<div class="agehead"><b>' + ({s1p: "Step 1: Record verification", s2p: "Step 2: Snooping verification", prq: "Awaiting proof from counselor"})[AGE_SEL.key] + ' · waiting ' +
+      (AGE_SEL.b === "all" ? "(all)" : BN[AGE_SEL.b]) + ' · ' + fmt(L.length) + ' claim' + (L.length === 1 ? "" : "s") + '</b>' +
+      '<button type="button" class="ageclose" id="ageClose">Close ✕</button></div>' +
+      (L.length ? '<div class="tablebox"><table class="rt"><thead><tr><th>Astra ID</th><th>Counselor</th><th>Claim</th><th>Application No.</th><th>Coordinator</th><th>Status</th><th>Waiting since</th><th>Days</th></tr></thead><tbody>' +
+        [...L].sort((a, b) => b.dd - a.dd || a.start - b.start).map(x => '<tr>' + td("Astra ID", '<b>' + esc(x.r.astra || "–") + '</b>') +
+          td("Counselor", esc(x.r.name || "–") + ' <small class="faint">UID ' + esc(x.r.uid || "–") + '</small>') + td("Claim", esc(typ(x.r.claim))) +
+          td("Application No.", esc(x.r.app || "–")) + td("Coordinator", esc(x.r.drona || "–")) + td("Status", esc(ST[x.st] || x.st)) +
+          td("Waiting since", day(x.start)) + td("Days", fmt(x.dd), "num") + '</tr>').join("") + '</tbody></table></div>'
+        : '<p class="rnote">No claims here now.</p>');
+  }
 
   const nActive = ["fMonth","dFrom","dTo"].filter(id => $(id).value).length;
   $("activeChip").hidden = !nActive; $("activeChip").textContent = nActive + " active";
@@ -1078,6 +1118,16 @@ document.addEventListener("click", e => { if (!e.target.closest(".ms")) msClose(
 document.addEventListener("keydown", e => { if (e.key === "Escape") msClose(); });
 
 msEnhance("fMonth");
+
+/* Pending ageing: which number is opened */
+let AGE_SEL = null, AGE_DATA = null;
+document.addEventListener("click", e => {
+  const b = e.target.closest(".agebtn");
+  if (b){ const key = b.dataset.key, bb = b.dataset.b === "all" ? "all" : Number(b.dataset.b);
+    AGE_SEL = AGE_SEL && AGE_SEL.key === key && AGE_SEL.b === bb ? null : {key, b: bb}; render();
+    if (AGE_SEL) $("ageDetail").scrollIntoView({behavior: "smooth", block: "nearest"}); return; }
+  if (e.target.id === "ageClose"){ AGE_SEL = null; render(); }
+});
 
 /* Installable app */
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
