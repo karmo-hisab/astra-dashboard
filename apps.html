@@ -1159,6 +1159,7 @@ async function fetchApps(useShared){
 function prepare(data){
   const F = {}; data.fields.forEach((f, i) => F[f] = i);
   const D = data.dict, RF = {}; (data.rosterFields || []).forEach((f, i) => RF[f] = i);
+  if (data.coaches) setCoaches(data.coaches);                       // coaches shown next to their coordinator
   ROSTER = (data.roster || []).map(r => ({uid:String(r[RF.uid]), name:r[RF.name], role:r[RF.role], coord:r[RF.coord], skill:r[RF.skill], active:r[RF.active] === 1}));
   const byUid = new Map(ROSTER.map(p => [p.uid, p])), byName = new Map();
   for (const p of ROSTER) if (/team\s*leader/i.test(p.role || "")) byName.set(normS(p.name), p);
@@ -1283,7 +1284,8 @@ function render(){
   const S = view === "summary" ? sortS : sortL;
   if (view === "summary"){
     const keyOf = {coord:a => a.coord, tl:a => a.tlKey, tskill:a => a.tlSkill || "(No TL skill)", pskill:a => a.pskill, phase:a => a.phase, form:a => a.form || "(No form)"}[groupBy];
-    const labelOf = {tl:a => a.tlName + (a.tlUid ? '<small class="subl">UID ' + esc(a.tlUid) + ', ' + esc(a.coord) + '</small>' : "")}[groupBy];
+    const labelOf = {tl:a => a.tlName + (a.tlUid ? '<small class="subl">UID ' + esc(a.tlUid) + ', ' + esc(a.coord) + '</small>' : ""),
+                     coord:a => esc(a.coord) + (coachesOf(a.coord).length ? '<small class="subl">Coach: ' + esc(coachesOf(a.coord).join(", ")) + '</small>' : "")}[groupBy];
     const m = new Map();
     for (const a of base){ const k = keyOf(a); if (!m.has(k)) m.set(k, {k, label: labelOf ? labelOf(a) : esc(k), n:0, sp:0, ip:0, dc:0, el:0, en:0}); const x = m.get(k); x.n++; if (!a.examSlot && !a.enrolled) x.sp++; if (a.intApplies && !a.intDate && !a.enrolled) x.ip++; if (!a.awaited) x.dc++; if (a.eligible) x.el++; if (a.enrolled) x.en++; }
     rows = [...m.values()]; rows.forEach(x => { x.adm = pctA(x.en, x.n); x.conv = pctA(x.en, x.el); });
@@ -1345,7 +1347,7 @@ function csvDownload(){
   const day = ms => ms ? dateTxt(ms).replace(/<[^>]+>/g, "").trim() : "";
   const cols = [
     ["Application", a => a.app], ["Form", a => a.form], ["Program", a => a.program], ["Program skill", a => a.pskill], ["Type", a => a.type],
-    ["Team leader", a => a.tlName], ["TL UID", a => a.tlUid || ""], ["Coordinator", a => a.coord], ["TL skill", a => a.tlSkill],
+    ["Team leader", a => a.tlName], ["TL UID", a => a.tlUid || ""], ["Coordinator", a => a.coord], ["Coach", a => coachesOf(a.coord).join(", ")], ["TL skill", a => a.tlSkill],
     ["Assigned on", a => day(a.assigned)],
     ["Phase", a => a.phase], ["Exam slot", a => a.examSlot || "Slot booking pending"],
     ["Interview", a => !a.intApplies ? "Not applicable" : (a.intDate || "Slot booking pending")],
