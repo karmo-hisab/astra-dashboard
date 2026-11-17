@@ -3,7 +3,7 @@
    if GitHub is slow, the saved copy is shown (the newer one is saved for next time).
    Claims and application data are never stored here (they come from the secure data service). */
 const CACHE = "hisab-kitab-v3";
-const FILES = ["./", "./index.html", "./teams.html", "./structure.html", "./apps.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const FILES = ["./", "./index.html", "./teams.html", "./structure.html", "./apps.html", "./claim.html", "./report.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 const WAIT_MS = 1000;
 
 self.addEventListener("install", e => {
