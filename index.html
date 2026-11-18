@@ -908,7 +908,9 @@ let forceFresh = false;                       // set by the Refresh button: ask 
 document.addEventListener("click", e => { if (e.target.closest("#refreshBtn")) forceFresh = true; }, true);
 /* Which claim application numbers this person sees in full (decided by the data service) */
 function previewEmail(){ try { return sessionStorage.getItem("hk_preview") || ""; } catch (_) { return ""; } }
+let CLAIM_ROLE = "";                                   // role from the data service: only coordinators get the rebuttal link
 function showClaimAccess(acc){
+  CLAIM_ROLE = acc && acc.role || "";
   const el = document.getElementById("claimAccessNote"); if (!el) return;
   const pv = acc && acc.preview;
   const bar = pv
@@ -1275,7 +1277,7 @@ function cell(c, r){
     case "app":   return '<span class="mask">' + esc(FOUND.astra.has(String(r.astra)) && /\*/.test(v || "") && FOUND.q === ($("q").value.trim().toLowerCase()) ? FOUND.app : (v || "–")) + '</span>';
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
                          (v ? '<span class="reason" title="' + esc(v) + '">' + esc(v) + '</span>' : "") + rebuttalTag(r) +
-                         (r._res === "bad" && r.astra ? '<a class="rebut-link" href="' + REBUTTAL_URL + encodeURIComponent(r.astra) + '" target="_blank" rel="noopener" title="Open the rebuttal form for Astra ID ' + esc(r.astra) + ' (accepted only from the claim\u2019s coordinator)">File rebuttal ↗</a>' : "");
+                         (r._res === "bad" && r.astra && CLAIM_ROLE === "Coordinator" && !/\*/.test(r.app || "") ? '<a class="rebut-link" href="' + REBUTTAL_URL + encodeURIComponent(r.astra) + '" target="_blank" rel="noopener" title="Open the rebuttal form for Astra ID ' + esc(r.astra) + '. Only the claim\u2019s coordinator can file a rebuttal.">File rebuttal ↗</a>' : "");
     case "fired": { const k = firedKind(v);
                     return '<span class="tag ' + (k === "used" ? "ok" : k === "unused" ? "wait" : "neutral") + '">' + icon(k ? "fired" : "notfired") + esc(firedLabel(v)) + '</span>'; }
     case "paid": return dateTime(v);
