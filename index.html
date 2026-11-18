@@ -275,6 +275,8 @@ html.nav-mini .sidenav span.two{display:none}
 .pvbar.on{border-style:solid;border-color:var(--accent);background:color-mix(in srgb, var(--accent) 7%, var(--card));color:var(--ink)}
 .pvbar.on button{border-color:var(--accent);color:var(--accent)}
 .pverr{color:var(--bad);font-weight:600}
+.rebut-link{display:inline-block;margin-top:5px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:2px 10px}
+.rebut-link:hover{background:color-mix(in srgb, var(--accent) 10%, transparent)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -1050,7 +1052,7 @@ const resOf = r => r._res === "ok" ? "ok" : r._res === "bad" ? "bad" : "wait";
 /* Does a claim pass every filter except the ones named in "skip"? (used to build each dropdown's options) */
 function rowMatches(r, f, skipArg){
   const skips = Array.isArray(skipArg) ? skipArg : [skipArg], has = k => skips.includes(k);
-  if (!has("q") && f.q && !r._search.includes(f.q)) return false;
+  if (!has("q") && f.q && !r._search.includes(f.q) && !(FOUND.q === f.q && FOUND.astra.has(String(r.astra)))) return false;
   if (!has("date") && f.from !== null && r._ts < f.from) return false;
   if (!has("date") && f.to !== null && r._ts > f.to) return false;
   if (!has("fResult") && f.res.length && !f.res.includes(resOf(r))) return false;
@@ -1233,6 +1235,25 @@ function modeTag(r){
 /* Rebuttal status (claims sheet column X), shown under the final status only when a rebuttal exists */
 const REBUTTAL_SHEET = "https://docs.google.com/spreadsheets/d/1geSxOEynNqJsKfb1rJGl0si7V40wwSjcXHyZRY-NO5Y/edit?gid=1942937272#gid=1942937272";
 const rebKind = v => { const t = String(v || "").toLowerCase(); return !t ? "" : /accept/.test(t) ? "acc" : /reject/.test(t) ? "rej" : "pen"; };
+/* Search a full application number outside one's team: those numbers arrive masked, so ask the data service */
+const REBUTTAL_URL = "https://docs.google.com/forms/d/e/1FAIpQLScwV7Un0QLvI439hxg_z74CcMJvBoCxY3uyQQz4neDUoFFTDQ/viewform?usp=pp_url&entry.944065315=";
+let FOUND = {q: "", app: "", astra: new Set()}, findT = null;
+function findAppLater(){
+  clearTimeout(findT);
+  const raw = $("q").value.trim(), q = raw.toLowerCase();
+  if (!/^[a-z]\d{7,9}$/i.test(raw)){ if (FOUND.q){ FOUND = {q: "", app: "", astra: new Set()}; } return; }
+  if (FOUND.q === q) return;
+  findT = setTimeout(async () => {
+    try {
+      const res = await fetch(API_URL, {method: "POST", body: JSON.stringify({token: idToken, what: "findApp", app: raw})});
+      const j = await res.json();
+      if ($("q").value.trim().toLowerCase() !== q || !j || !j.ok) return;      // the search changed meanwhile
+      FOUND = {q, app: j.app || raw.toUpperCase(), astra: new Set((j.astra || []).map(String))};
+      apply();
+    } catch (_) {}
+  }, 400);
+}
+
 function rebuttalTag(r){
   const k = rebKind(r.rebuttal); if (!k) return "";
   const label = k === "acc" ? "Accepted" : k === "rej" ? "Rejected" : "Pending";
@@ -1251,9 +1272,10 @@ function cell(c, r){
     case "name":  return '<span class="who"><b>' + esc(v || "–") + '</b><small>UID ' + esc(r.uid || "–") + '</small></span>';
     case "claim": { const t = TYPES.find(t => t.match.test(v || ""));
                     return (t ? '<span class="tag neutral" style="font-weight:500;color:var(--ink)" title="' + esc(t.label) + '"><span class="em" aria-hidden="true">' + t.emoji + '</span>' + esc(t.astra) + '</span>' : esc(v || "–")) + modeTag(r); }
-    case "app":   return '<span class="mask">' + esc(v || "–") + '</span>';
+    case "app":   return '<span class="mask">' + esc(FOUND.astra.has(String(r.astra)) && /\*/.test(v || "") && FOUND.q === ($("q").value.trim().toLowerCase()) ? FOUND.app : (v || "–")) + '</span>';
     case "final": return '<span class="tag ' + r._res + '">' + icon(RES_ICON[r._res]) + RES_LABEL[r._res] + '</span>' +
-                         (v ? '<span class="reason" title="' + esc(v) + '">' + esc(v) + '</span>' : "") + rebuttalTag(r);
+                         (v ? '<span class="reason" title="' + esc(v) + '">' + esc(v) + '</span>' : "") + rebuttalTag(r) +
+                         (r._res === "bad" && r.astra ? '<a class="rebut-link" href="' + REBUTTAL_URL + encodeURIComponent(r.astra) + '" target="_blank" rel="noopener" title="Open the rebuttal form for Astra ID ' + esc(r.astra) + ' (accepted only from the claim\u2019s coordinator)">File rebuttal ↗</a>' : "");
     case "fired": { const k = firedKind(v);
                     return '<span class="tag ' + (k === "used" ? "ok" : k === "unused" ? "wait" : "neutral") + '">' + icon(k ? "fired" : "notfired") + esc(firedLabel(v)) + '</span>'; }
     case "paid": return dateTime(v);
@@ -1307,7 +1329,7 @@ $("activeStrip").addEventListener("click", e => {
 });
 
 let t;
-$("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); });
+$("q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 200); findAppLater(); });
 ["fSarathi","fResult","fType","fMode","fStage","fRebut","fMonth","dFrom","dTo"].forEach(id => $(id).addEventListener("change", () => apply()));
 (function(){
   const setV = collapsed => {
