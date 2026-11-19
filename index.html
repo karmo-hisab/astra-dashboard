@@ -277,6 +277,8 @@ html.nav-mini .sidenav span.two{display:none}
 .pverr{color:var(--bad);font-weight:600}
 .rebut-link{display:inline-block;margin-top:4px;font-size:11px!important;font-weight:600;line-height:1.3;white-space:nowrap;color:var(--accent);text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:1px 8px}
 .rebut-link:hover{background:color-mix(in srgb, var(--accent) 10%, transparent)}
+.csvbtn{min-height:34px;margin-left:12px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.csvbtn:hover{border-color:var(--accent);color:var(--accent)}
 /* Page tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
 .tabs a{color:#C3CBE0;text-decoration:none;font-size:13.5px;font-weight:600;padding:5px 14px;border-radius:4px}
@@ -716,7 +718,8 @@ td{border-color:var(--line-2)}
 
   <div class="tablehead">
     <h2 class="section-title"><svg class="ic lg" aria-hidden="true"><use href="#i-table"/></svg>Claim register</h2>
-    <span class="resultbar"><span id="count"></span><span class="sorthint" style="margin-left:14px">Select a column heading to sort</span></span>
+    <span class="resultbar"><span id="count"></span><span class="sorthint" style="margin-left:14px">Select a column heading to sort</span>
+      <button type="button" class="csvbtn" id="csvBtn" title="Download the claims shown (all filters applied, all pages) as a CSV file">⬇ Download CSV</button></span>
   </div>
 
   <section class="panel table-panel">
@@ -1256,6 +1259,29 @@ function findAppLater(){
     } catch (_) {}
   }, 400);
 }
+
+/* Download the claims shown (filters, search and sort applied; all pages) as CSV. Application numbers stay as received,
+   so numbers hidden for this person stay hidden in the file too. */
+function claimsCsv(){
+  const day = ms => ms ? new Date(ms).toLocaleDateString("en-IN", {day: "2-digit", month: "short", year: "numeric"}) : "";
+  const dt = ms => ms ? new Date(ms).toLocaleString("en-IN", {day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"}) : "";
+  const plain = h => String(h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const appOf = r => FOUND.astra.has(String(r.astra)) && /\*/.test(r.app || "") && FOUND.q === $("q").value.trim().toLowerCase() ? FOUND.app : (r.app || "");
+  const cols = [
+    ["Claim submitted", r => dt(r._ts)], ["Counselor", r => r.name], ["UID", r => r.uid], ["Claim", r => r.claim], ["Mode of conversion", r => r.mode],
+    ["Application No.", appOf], ["Astra ID", r => r.astra], ["Payment date & time by claimant", r => r.cdate || ""],
+    ["Actual payment date & time (NPF)", r => r.paid || ""], ["Dronacharya (Coordinator)", r => r.drona], ["Coach", r => coachesOf(r.drona).join(", ")],
+    ["Sarathi (Team Leader)", r => r.sarathi], ["Result", r => RES_LABEL[r._res] || ""], ["Verification stage", r => STAGE_LABEL[stageOf(r)] || ""],
+    ["Final status", r => r.final || ""], ["Rebuttal", r => plain(rebuttalTag(r)) || r.rebuttal || ""], ["Astra ID fired", r => firedLabel(r.fired)],
+    ["Step 1 check date", r => day(r.s1d)], ["Step 2 check date", r => day(r.s2d)]
+  ];
+  const q = v => { const t = String(v == null ? "" : v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const csv = "\ufeff" + [cols.map(c => q(c[0])).join(",")].concat(VIEW.map(r => cols.map(c => q(c[1](r))).join(","))).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8"}));
+  const a = document.createElement("a"); a.href = url; a.download = "astra-claims_" + new Date().toISOString().slice(0, 10) + ".csv";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+document.addEventListener("click", e => { if (e.target.id === "csvBtn") claimsCsv(); });
 
 function rebuttalTag(r){
   const k = rebKind(r.rebuttal); if (!k) return "";

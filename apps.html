@@ -809,7 +809,7 @@ td{border-color:var(--line-2)}
       <button type="button" role="tab" data-view="list" aria-selected="false">Follow-up list</button>
     </div>
     <span class="viewright"><span class="resultbar" id="viewCount"></span>
-      <button type="button" class="csvbtn" id="csvBtn" hidden title="Download the applications shown (all filters applied) as a CSV file">⬇ Download CSV</button></span>
+      <button type="button" class="csvbtn" id="csvBtn" hidden title="Download what is shown (all filters applied) as a CSV file">⬇ Download CSV</button></span>
   </div>
   <div class="viewopts" id="summaryOnly">
     <label class="f inline">Group by
@@ -1303,6 +1303,7 @@ function render(){
       td("Application → Admission", '<span class="pbar ' + cls(x.adm) + '"><span class="pv">' + pctTxt(x.adm) + '</span><span class="pt"><span style="width:' + Math.min(100, x.adm || 0) + '%"></span></span></span>', "num") +
       td("Eligibility → Admission", '<span class="pbar ' + cls2(x.conv) + '"><span class="pv">' + pctTxt(x.conv) + '</span><span class="pt"><span style="width:' + Math.min(100, x.conv || 0) + '%"></span></span></span>', "num") + '</tr>';
     $("viewCount").textContent = fmt(rows.length) + " " + title.toLowerCase() + (rows.length === 1 ? "" : "s") + ", application → admission " + pctTxt(overall);
+    SUM_ROWS = {title, rows: rows.slice()};
   } else {
     const q = $("q").value.trim().toLowerCase(), fo = FOCUS[$("fFocus").value];
     rows = base.filter(a => (!q || a._search.includes(q)) && (!fo || fo(a)));
@@ -1328,7 +1329,7 @@ function render(){
     $("viewCount").textContent = fmt(rows.length) + " application" + (rows.length === 1 ? "" : "s");
     LIST_ROWS = rows;
   }
-  $("csvBtn").hidden = view !== "list";
+  $("csvBtn").hidden = false;
   const size = pageSize(), pages = Math.max(1, Math.ceil(rows.length / size));
   pg = Math.min(Math.max(1, pg), pages);
   const start = (pg - 1) * size, items = rows.slice(start, start + size);
@@ -1341,8 +1342,9 @@ function render(){
 }
 
 /* ---------- Download the follow-up list as CSV (exactly the applications shown, all pages) ---------- */
-let LIST_ROWS = [];
+let LIST_ROWS = [], SUM_ROWS = null;
 function csvDownload(){
+  if (view === "summary"){ summaryCsv(); return; }
   const plain = h => String(h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   const day = ms => ms ? dateTxt(ms).replace(/<[^>]+>/g, "").trim() : "";
   const cols = [
@@ -1361,6 +1363,22 @@ function csvDownload(){
   document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 $("csvBtn").addEventListener("click", csvDownload);
+/* Summary view: one line per group, as shown on screen */
+function summaryCsv(){
+  if (!SUM_ROWS) return;
+  const t = SUM_ROWS.title, isCoord = t === "Coordinator", isTL = t === "Team leader";
+  const head = [t].concat(isCoord ? ["Coach"] : isTL ? ["TL UID", "Coordinator"] : [])
+    .concat(["Assigned", "Exam slot pending", "Interview slot pending", "Result declared", "Eligible", "Enrolled", "Application → Admission %", "Eligibility → Admission %"]);
+  const first = x => { const a = base0(x); return isCoord ? [x.k, coachesOf(x.k).join(", ")] : isTL ? [a ? a.tlName : x.k, a ? a.tlUid || "" : "", a ? a.coord || "" : ""] : [x.k]; };
+  const pc = v => v === null || v === undefined ? "" : (Math.round(v * 10) / 10).toFixed(1);
+  const q = v => { const s2 = String(v == null ? "" : v); return /[",\n]/.test(s2) ? '"' + s2.replace(/"/g, '""') + '"' : s2; };
+  const lines = SUM_ROWS.rows.map(x => first(x).concat([x.n, x.sp, x.ip, x.dc, x.el, x.en, pc(x.adm), pc(x.conv)]).map(q).join(","));
+  const csv = "\ufeff" + [head.map(q).join(",")].concat(lines).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8"}));
+  const link = document.createElement("a"); link.href = url; link.download = "tl-stats-by-" + t.toLowerCase().replace(/\s+/g, "-") + "_" + new Date().toISOString().slice(0, 10) + ".csv";
+  document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+const base0 = x => APPS.find(a => a.tlKey === x.k);                  // one application of that team leader, for name / UID / coordinator
 
 /* ---------- Events ---------- */
 [...FL.map(d => d.id), "dFrom", "dTo", "fFocus"].forEach(id => $(id).addEventListener("change", () => {
